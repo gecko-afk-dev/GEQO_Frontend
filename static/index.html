@@ -920,6 +920,18 @@ input:checked + .toggle-track::after { transform: translateX(18px); }
 <script>
 const { createApp } = Vue;
 
+// 1. Detect if we are testing locally or live on the internet
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+// 2. Set the "Base URL" for all backend API requests
+axios.defaults.baseURL = isLocal 
+  ? 'http://localhost:8000'       // Point to local Python server during testing
+  : 'https://api.mygeqo.com';     // Point to Render server in production
+
+createApp({
+  data() {
+    return {
+      // ... your existing data ...
 createApp({
   data() {
     return {
@@ -1151,15 +1163,21 @@ createApp({
     connectWebSocket() {
       const token = localStorage.getItem('geqo_token');
       if (!token) return;
-      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-      this.ws = new WebSocket(`${proto}://${location.host}/api/v1/dashboard/ws?token=${token}`);
       
+      // --- NEW CODE START ---
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const wsProtocol = isLocal ? 'ws:' : 'wss:';
+      const wsHost = isLocal ? 'localhost:8000' : 'api.mygeqo.com';
+      
+      this.ws = new WebSocket(`${wsProtocol}//${wsHost}/api/v1/dashboard/ws/${this.restaurantDashboard.restaurant?.id || ''}?token=${token}`);
+      // --- NEW CODE END ---
+
       this.ws.onmessage = (e) => {
         try {
           const msg = JSON.parse(e.data);
           if (msg.type === 'new_order') {
-            this.loadRestaurantDashboard();
-            this.playNotificationSound();
+             this.loadRestaurantDashboard();
+             this.playNotificationSound();
           }
         } catch {}
       };
