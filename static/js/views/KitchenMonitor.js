@@ -401,14 +401,14 @@ export default {
         };
 
         // ── WebSocket ───────────────────────────────────────────────────────
-       const token    = localStorage.getItem('token');
+        const initWebSocket = () => {
+            if (!props.user?.restaurant_id) return;
             
-            // --- NEW DYNAMIC HOST LOGIC ---
+            const token = localStorage.getItem('token');
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             const protocol = isLocal ? 'ws:' : 'wss:';
             const wsHost = isLocal ? 'localhost:8000' : 'api.mygeqo.com';
-            const wsUrl    = `${protocol}//${wsHost}/api/v1/dashboard/ws/${props.user.restaurant_id}?token=${token}`;
-            // ------------------------------
+            const wsUrl = `${protocol}//${wsHost}/api/v1/dashboard/ws/${props.user.restaurant_id}?token=${token}`;
 
             ws = new WebSocket(wsUrl);
             ws.onopen    = () => { wsConnected.value = true; };
