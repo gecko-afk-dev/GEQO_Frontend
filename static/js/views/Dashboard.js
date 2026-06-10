@@ -47,7 +47,7 @@ export default {
                             Overview
                         </button>
                         
-                        <!-- Active Orders: Owner, Cashier -->
+                        <!-- Active Orders: Owner, Cashier (NOT Admin) -->
                         <button v-if="['restaurant_owner', 'cashier'].includes(user.role)"
                                 @click="currentView = 'orders'"
                                 :class="currentView === 'orders' ? 'bg-slate-100 text-slate-955 font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
@@ -60,15 +60,15 @@ export default {
                         </button>
 
                         <!-- Restaurants Admin: Admin only -->
-                        <button v-slot v-if="user.role === 'admin'"
+                        <button v-if="user.role === 'admin'"
                                 @click="currentView = 'restaurants'"
                                 :class="currentView === 'restaurants' ? 'bg-slate-100 text-slate-955 font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
                             Restaurants Admin
                         </button>
 
-                        <!-- Menu Management: Admin, Owner, Cashier -->
-                        <button v-if="['admin', 'restaurant_owner', 'cashier'].includes(user.role)"
+                        <!-- Menu Management: Owner, Cashier (Removed Admin) -->
+                        <button v-if="['restaurant_owner', 'cashier'].includes(user.role)"
                                 @click="currentView = 'menu'"
                                 :class="currentView === 'menu' ? 'bg-slate-100 text-slate-955 font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
@@ -83,8 +83,8 @@ export default {
                             Staff Management
                         </button>
 
-                        <!-- Drivers: Admin, Owner, Cashier -->
-                        <button v-if="['admin', 'restaurant_owner', 'cashier'].includes(user.role)"
+                        <!-- Drivers: Owner, Cashier (Removed Admin) -->
+                        <button v-if="['restaurant_owner', 'cashier'].includes(user.role)"
                                 @click="currentView = 'drivers'"
                                 :class="currentView === 'drivers' ? 'bg-slate-100 text-slate-955 font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">

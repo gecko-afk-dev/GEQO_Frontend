@@ -109,11 +109,14 @@ export default {
             }
         };
 
-        const initWebSocket = () => {
-            if (!props.user || !props.user.restaurant_id) return;
-            const token = localStorage.getItem('token');
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}/api/v1/dashboard/ws/${props.user.restaurant_id}?token=${token}`;
+        const token = localStorage.getItem('token');
+            
+            // --- NEW DYNAMIC HOST LOGIC ---
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const protocol = isLocal ? 'ws:' : 'wss:';
+            const wsHost = isLocal ? 'localhost:8000' : 'api.mygeqo.com';
+            const wsUrl = `${protocol}//${wsHost}/api/v1/dashboard/ws/${props.user.restaurant_id}?token=${token}`;
+            // ------------------------------
 
             ws = new WebSocket(wsUrl);
 
