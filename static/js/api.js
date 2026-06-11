@@ -21,6 +21,10 @@ api.interceptors.response.use(response => response, error => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.reload();
+    } else if (error.response && error.response.status >= 500) {
+        alert('A server error occurred. Our team has been notified.');
+    } else if (!error.response) {
+        alert('Network error. Please check your connection.');
     }
     return Promise.reject(error);
 });

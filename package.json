@@ -1,0 +1,15 @@
+{
+  "name": "geqo-frontend-tools",
+  "version": "1.0.0",
+  "description": "Tooling environment for GEQO vanilla frontend",
+  "scripts": {
+    "lint": "eslint \"static/js/**/*.js\"",
+    "lint:fix": "eslint \"static/js/**/*.js\" --fix",
+    "format": "prettier --write \"static/**/*.{js,html,css}\""
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-plugin-vue": "^9.23.0",
+    "prettier": "^3.2.5"
+  }
+}
