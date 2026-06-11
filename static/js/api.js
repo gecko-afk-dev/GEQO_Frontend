@@ -1,5 +1,8 @@
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const backendURL = isLocal ? 'http://localhost:8000' : 'https://api.mygeqo.com';
+
 export const api = axios.create({
-    baseURL: '/api/v1',
+    baseURL: `${backendURL}/api/v1`,
     headers: {
         'Content-Type': 'application/json'
     }

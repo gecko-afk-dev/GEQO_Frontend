@@ -120,17 +120,7 @@
             </template>
         </template>
     </div>
-<!-- Add this new script block RIGHT BEFORE app.js -->
-    <script>
-        // 1. Detect if we are testing locally or live on the internet
-        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-        // 2. Set the "Base URL" for all backend API requests
-        axios.defaults.baseURL = isLocal 
-            ? 'http://localhost:8000'       // Point to local Python server during testing
-            : 'https://api.mygeqo.com';     // Point to Render server in production
-    </script>
-
+    <!-- API Config moved to js/api.js -->
     <script type="module" src="/js/app.js"></script>
 </body>
 </html>
