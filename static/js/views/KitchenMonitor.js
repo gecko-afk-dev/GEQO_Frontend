@@ -156,14 +156,13 @@ export default {
                                     <select :id="'kds-driver-' + order.id"
                                             v-model="selectedDrivers[order.id]"
                                             class="w-full bg-canvas border border-white/10 text-slate-300 rounded-lg px-3 py-2 text-xs font-semibold mb-2 focus:border-emerald outline-none">
-                                        <option value="">— Assign Driver —</option>
+                                        <option value="">— Broadcast to Fleet —</option>
                                         <option v-for="d in drivers" :key="d.id" :value="d.id">{{ d.name }}</option>
                                     </select>
                                     <button @click="promptTransition(order, 'dispatched')"
-                                            :disabled="!selectedDrivers[order.id]"
                                             :id="'kds-dispatch-' + order.id"
-                                            class="kds-action-btn w-full bg-emerald/10 hover:bg-emerald/20 text-emerald border border-emerald/30 rounded-lg text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed">
-                                        🚚 Dispatch Driver
+                                            class="kds-action-btn w-full bg-emerald/10 hover:bg-emerald/20 text-emerald border border-emerald/30 rounded-lg text-sm font-bold">
+                                        {{ selectedDrivers[order.id] ? '🚚 Assign Driver' : '📡 Broadcast' }}
                                     </button>
                                 </div>
                                 <div v-else class="px-4 pb-4">
@@ -364,7 +363,11 @@ export default {
             const { order, to } = pendingTransition.value;
             pendingTransition.value = null;
             try {
-                await api.patch(`/dashboard/orders/${order.id}/status`, { status: to });
+                const payload = { new_status: to };
+                if (to === 'dispatched' && selectedDrivers.value[order.id]) {
+                    payload.driver_id = selectedDrivers.value[order.id];
+                }
+                await api.post(`/dashboard/orders/${order.id}/status`, payload);
                 await loadOrders();
             } catch (err) {
                 console.error('[KDS] status update failed', err);
