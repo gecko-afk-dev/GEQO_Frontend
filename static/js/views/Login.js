@@ -69,9 +69,7 @@ export default {
                     email: email.value,
                     password: password.value
                 });
-                const { access_token, user } = response.data;
-                localStorage.setItem('token', access_token);
-                localStorage.setItem('user', JSON.stringify(user));
+                const { user } = response.data;
                 emit('login', user);
             } catch (err) {
                 error.value = err.response?.data?.detail || 'Login failed';

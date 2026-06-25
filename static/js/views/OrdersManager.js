@@ -116,9 +116,9 @@ export default {
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             const protocol = isLocal ? 'ws:' : 'wss:';
             const wsHost = isLocal ? 'localhost:8000' : 'api.mygeqo.com';
-            const wsUrl = `${protocol}//${wsHost}/api/v1/dashboard/ws/${props.user.restaurant_id}?token=${token}`;
+            const wsUrl = `${protocol}//${wsHost}/api/v1/dashboard/ws/${props.user.restaurant_id}`;
 
-            ws = new WebSocket(wsUrl);
+            ws = new WebSocket(wsUrl, [`bearer.${token}`]);
 
             ws.onopen = () => { wsConnected.value = true; };
             ws.onclose = () => { wsConnected.value = false; setTimeout(initWebSocket, 3000); };

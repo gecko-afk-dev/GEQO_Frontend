@@ -31,10 +31,14 @@ createApp({
             user.value = userData;
         };
 
-        const handleLogout = () => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+        const handleLogout = async () => {
+            try {
+                await api.post('/admin/logout');
+            } catch (err) {
+                console.warn('Logout request failed, clearing session anyway', err);
+            }
             user.value = null;
+            window.location.href = '/static/index.html';
         };
 
         const handlePasswordResetDone = () => {
@@ -46,7 +50,6 @@ createApp({
         const handleForcePasswordUpdated = () => {
             if (user.value) {
                 user.value.requires_password_change = false;
-                localStorage.setItem('user', JSON.stringify(user.value));
             }
         };
 
