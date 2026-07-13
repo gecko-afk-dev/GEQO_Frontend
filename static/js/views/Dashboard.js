@@ -42,7 +42,7 @@ export default {
                         <!-- Overview: Admin, Owner, Cashier -->
                         <button v-if="['admin', 'restaurant_owner', 'cashier'].includes(user.role)"
                                 @click="handleNavClick('Overview', 'overview')"
-                                :class="!isFeatureEnabled('overview') ? 'opacity-50 text-slate-400 cursor-not-allowed bg-slate-50/50' : (currentView === 'overview' ? 'bg-slate-100 text-slate-955 font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium')"
+                                :class="!isFeatureEnabled('overview') ? 'opacity-50 text-slate-400 cursor-not-allowed bg-slate-50/50' : (currentView === 'overview' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium')"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center gap-1.5">
                             <span v-if="!isFeatureEnabled('overview')">🔒</span>
                             Overview
@@ -51,7 +51,7 @@ export default {
                         <!-- Active Orders: Owner, Cashier (NOT Admin) -->
                         <button v-if="['restaurant_owner', 'cashier'].includes(user.role)"
                                 @click="handleNavClick('orders')"
-                                :class="currentView === 'orders' ? 'bg-slate-100 text-slate-955 font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
+                                :class="currentView === 'orders' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap relative flex items-center gap-1.5">
                             Active Orders
                             <span class="absolute top-2 right-1.5 flex h-2 w-2">
@@ -63,7 +63,7 @@ export default {
                         <!-- Restaurants Admin: Admin only -->
                         <button v-if="user.role === 'admin'"
                                 @click="handleNavClick('restaurants')"
-                                :class="currentView === 'restaurants' ? 'bg-slate-100 text-slate-955 font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
+                                :class="currentView === 'restaurants' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center gap-1.5">
                             Restaurants Admin
                         </button>
@@ -71,7 +71,7 @@ export default {
                         <!-- Menu Management: Owner, Cashier (Removed Admin) -->
                         <button v-if="['restaurant_owner', 'cashier'].includes(user.role)"
                                 @click="handleNavClick('menu')"
-                                :class="currentView === 'menu' ? 'bg-slate-100 text-slate-955 font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
+                                :class="currentView === 'menu' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center gap-1.5">
                             Menu Management
                         </button>
@@ -79,7 +79,7 @@ export default {
                         <!-- Staff Management: Owner only -->
                         <button v-if="user.role === 'restaurant_owner'"
                                 @click="handleNavClick('Staff Management', 'staff')"
-                                :class="!isFeatureEnabled('staff') ? 'opacity-50 text-slate-400 cursor-not-allowed bg-slate-50/50' : (currentView === 'staff' ? 'bg-slate-100 text-slate-955 font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium')"
+                                :class="!isFeatureEnabled('staff') ? 'opacity-50 text-slate-400 cursor-not-allowed bg-slate-50/50' : (currentView === 'staff' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium')"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center gap-1.5">
                             <span v-if="!isFeatureEnabled('staff')">🔒</span>
                             Staff Management
@@ -88,7 +88,7 @@ export default {
                         <!-- Drivers: Owner, Cashier (Removed Admin) -->
                         <button v-if="['restaurant_owner', 'cashier'].includes(user.role)"
                                 @click="handleNavClick('Drivers', 'drivers')"
-                                :class="!isFeatureEnabled('drivers') ? 'opacity-50 text-slate-400 cursor-not-allowed bg-slate-50/50' : (currentView === 'drivers' ? 'bg-slate-100 text-slate-955 font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium')"
+                                :class="!isFeatureEnabled('drivers') ? 'opacity-50 text-slate-400 cursor-not-allowed bg-slate-50/50' : (currentView === 'drivers' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium')"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center gap-1.5">
                             <span v-if="!isFeatureEnabled('drivers')">🔒</span>
                             Drivers
@@ -97,7 +97,7 @@ export default {
                         <!-- Audit Logs: Admin, Owner -->
                         <button v-if="['admin', 'restaurant_owner'].includes(user.role)"
                                 @click="handleNavClick('Audit Logs', 'audit_logs')"
-                                :class="!isFeatureEnabled('audit_logs') ? 'opacity-50 text-slate-400 cursor-not-allowed bg-slate-50/50' : (currentView === 'audit-log' ? 'bg-slate-100 text-slate-955 font-bold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium')"
+                                :class="!isFeatureEnabled('audit_logs') ? 'opacity-50 text-slate-400 cursor-not-allowed bg-slate-50/50' : (currentView === 'audit-log' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium')"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center gap-1.5">
                             <span v-if="!isFeatureEnabled('audit_logs')">🔒</span>
                             Audit Logs
