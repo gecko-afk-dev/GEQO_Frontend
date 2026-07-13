@@ -38,7 +38,7 @@ createApp({
                 console.warn('Logout request failed, clearing session anyway', err);
             }
             user.value = null;
-            window.location.href = '/static/index.html';
+            window.location.href = '/';
         };
 
         const handlePasswordResetDone = () => {
