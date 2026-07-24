@@ -395,7 +395,7 @@ export default {
         const loadDrivers = async () => {
             if (!props.user?.restaurant_id) return;
             try {
-                const res = await api.get('/drivers');
+                const res = await api.get('/admin/drivers');
                 drivers.value = res.data || [];
             } catch (err) {
                 // Non-fatal: driver list is optional

@@ -3,6 +3,7 @@ import Login from './views/Login.js';
 import Dashboard from './views/Dashboard.js';
 import ResetPassword from './views/ResetPassword.js';
 import ForcePasswordChange from './views/ForcePasswordChange.js';
+import { api } from './api.js';
 
 createApp({
     components: { Login, Dashboard, ResetPassword, ForcePasswordChange },
@@ -13,18 +14,17 @@ createApp({
         const resetToken = ref(urlParams.get('reset_token') || urlParams.get('setup_token'));
         const isSetup = ref(urlParams.has('setup_token'));
 
-        const checkAuth = () => {
-            const token = localStorage.getItem('token');
-            const storedUser = localStorage.getItem('user');
-            if (token && storedUser) {
-                try {
-                    user.value = JSON.parse(storedUser);
-                } catch (e) {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                }
+        const checkAuth = async () => {
+            try {
+                const res = await api.get('/admin/me');
+                user.value = res.data;
+                sessionStorage.setItem('geqo_user', JSON.stringify(res.data));
+            } catch {
+                user.value = null;
+                sessionStorage.removeItem('geqo_user');
+            } finally {
+                loading.value = false;
             }
-            loading.value = false;
         };
 
         const handleLogin = (userData) => {
@@ -37,6 +37,7 @@ createApp({
             } catch (err) {
                 console.warn('Logout request failed, clearing session anyway', err);
             }
+            sessionStorage.removeItem('geqo_user');
             user.value = null;
             window.location.href = '/';
         };
