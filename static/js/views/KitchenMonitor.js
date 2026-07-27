@@ -13,6 +13,7 @@ import {
     ref, computed, onMounted, onUnmounted, watch
 } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 import { api } from '../api.js';
+import { createDashboardSocket } from '../ws.js';
 
 export default {
     name: 'KitchenMonitor',
@@ -406,16 +407,21 @@ export default {
         // ── WebSocket ───────────────────────────────────────────────────────
         const initWebSocket = () => {
             if (!props.user?.restaurant_id) return;
-            
-            const token = localStorage.getItem('token');
-            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const protocol = isLocal ? 'ws:' : 'wss:';
-            const wsHost = isLocal ? 'localhost:8000' : 'api.mygeqo.com';
-            const wsUrl = `${protocol}//${wsHost}/api/v1/dashboard/ws/${props.user.restaurant_id}`;
 
-            ws = new WebSocket(wsUrl, [`bearer.${token}`]);
-            ws.onopen    = () => { wsConnected.value = true; };
-            ws.onclose   = () => { wsConnected.value = false; setTimeout(initWebSocket, 3000); };
+            ws = createDashboardSocket(props.user.restaurant_id);
+
+            ws.onopen = () => { wsConnected.value = true; };
+
+            ws.onclose = (event) => {
+                wsConnected.value = false;
+                // 4003 = tenant mismatch — retrying would loop, do not reconnect.
+                if (event.code === 4003) {
+                    console.error('[KDS] WebSocket: access denied for this restaurant');
+                    return;
+                }
+                setTimeout(initWebSocket, 3000);
+            };
+
             ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);

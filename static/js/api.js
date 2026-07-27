@@ -12,11 +12,9 @@ export const api = axios.create({
 api.interceptors.response.use(response => response, error => {
     if (error.response && error.response.status === 401) {
         // Guard against multiple concurrent 401s all triggering a redirect simultaneously.
-        // Reloading was wrong here — it would re-fire the same API calls and loop forever.
         if (!window._geqoRedirecting) {
             window._geqoRedirecting = true;
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            sessionStorage.removeItem('geqo_user');
             window.location.href = '/';
         }
     } else if (error.response && error.response.status >= 500) {

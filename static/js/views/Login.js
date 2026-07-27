@@ -89,6 +89,10 @@ export default {
                     password: password.value
                 });
                 const { user } = response.data;
+                // Cache user profile for the lifetime of this tab.
+                // sessionStorage is cleared on tab close; the httpOnly cookie
+                // remains the source of truth for authentication.
+                sessionStorage.setItem('geqo_user', JSON.stringify(user));
                 emit('login', user);
             } catch (err) {
                 error.value = err.response?.data?.detail || 'Login failed';
