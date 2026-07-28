@@ -11,11 +11,13 @@ export const api = axios.create({
 
 api.interceptors.response.use(response => response, error => {
     if (error.response && error.response.status === 401) {
-        // Guard against multiple concurrent 401s all triggering a redirect simultaneously.
-        if (!window._geqoRedirecting) {
-            window._geqoRedirecting = true;
-            sessionStorage.removeItem('geqo_user');
-            window.location.href = '/';
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        const path = window.location.pathname;
+        if (path !== '/' && path !== '/index.html') {
+            window.location.replace('/');
+        } else {
+            window.dispatchEvent(new Event('storage'));
         }
     } else if (error.response && error.response.status >= 500) {
         alert('A server error occurred. Our team has been notified.');
