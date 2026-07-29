@@ -79,6 +79,8 @@ export default {
         const loading = ref(true);
         const wsConnected = ref(false);
         let ws = null;
+        let wsRetryCount = 0;
+        const WS_MAX_RETRIES = 5;
 
         const loadOrders = async () => {
             if (!props.user || !props.user.restaurant_id) return;
@@ -113,15 +115,42 @@ export default {
             if (!props.user || !props.user.restaurant_id) return;
             
             const token = localStorage.getItem('token');
+            // If there's no usable token yet (e.g. pre-login render), abort.
+            // The cookie path will handle auth in production; the sentinel
+            // value 'cookie' signals we should let the server try cookie auth.
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             const protocol = isLocal ? 'ws:' : 'wss:';
             const wsHost = isLocal ? 'localhost:8000' : 'api.mygeqo.com';
             const wsUrl = `${protocol}//${wsHost}/api/v1/dashboard/ws/${props.user.restaurant_id}`;
 
-            ws = new WebSocket(wsUrl, [`bearer.${token}`]);
+            // Use subprotocol when we have a real JWT; otherwise open without
+            // one and let the server use the httpOnly cookie (production path).
+            const isRealToken = token && token !== 'cookie';
+            ws = isRealToken
+                ? new WebSocket(wsUrl, [`bearer.${token}`])
+                : new WebSocket(wsUrl);
 
-            ws.onopen = () => { wsConnected.value = true; };
-            ws.onclose = () => { wsConnected.value = false; setTimeout(initWebSocket, 3000); };
+            ws.onopen = () => {
+                wsConnected.value = true;
+                wsRetryCount = 0;  // reset on successful connection
+            };
+
+            ws.onclose = (event) => {
+                wsConnected.value = false;
+                // Auth failures — retrying would just loop forever.
+                // 4001 = missing/invalid token, 4003 = tenant mismatch.
+                if (event.code === 4001 || event.code === 4003) {
+                    console.error('[OrdersManager] WebSocket auth rejected (code', event.code, '). Not retrying.');
+                    return;
+                }
+                // Generic disconnect — retry with backoff, but cap attempts.
+                if (wsRetryCount >= WS_MAX_RETRIES) {
+                    console.warn('[OrdersManager] WebSocket: max retries reached. Giving up.');
+                    return;
+                }
+                wsRetryCount++;
+                setTimeout(initWebSocket, 3000);
+            };
 
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);

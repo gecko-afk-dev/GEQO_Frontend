@@ -1,13 +1,15 @@
 /**
  * ws.js — Shared WebSocket factory for dashboard KDS feeds.
  *
- * Production: the browser sends the httpOnly `access_token` cookie automatically
- * on the WS handshake (same-origin, or cross-site with SameSite=lax).
- * No token is read from JS memory.
+ * Auth strategy (mirrors the backend's priority in dashboard.py):
+ *   1. httpOnly `access_token` cookie — sent automatically on same-origin or
+ *      cross-site requests where SameSite=lax allows it (production default).
+ *   2. Sec-WebSocket-Protocol: bearer.{token} — used as a fallback when the
+ *      cookie is blocked (local cross-origin dev, different ports).
  *
- * Local dev cross-origin: if the frontend runs on a different port to the API
- * the cookie is cross-site and may be blocked. In that case, serve both from
- * the same origin (FastAPI static mount or Caddy reverse proxy).
+ * Login.js stores a real JWT in localStorage.token when the backend returns
+ * one, or the sentinel value 'cookie' when operating in cookie-only mode.
+ * We only send the subprotocol when we have a real JWT.
  */
 
 const _isLocal =
@@ -16,7 +18,7 @@ const _isLocal =
 
 /**
  * Open a dashboard WebSocket for a given restaurant.
- * The access_token cookie is sent automatically — no JS token needed.
+ * Falls back to bearer subprotocol when a real JWT is available in localStorage.
  *
  * @param {number} restaurantId
  * @returns {WebSocket}
@@ -26,6 +28,14 @@ export function createDashboardSocket(restaurantId) {
     const host     = _isLocal ? 'localhost:8000' : 'api.mygeqo.com';
     const url      = `${protocol}//${host}/api/v1/dashboard/ws/${restaurantId}`;
 
-    // No subprotocol — rely on cookie auth. The backend accepts both.
-    return new WebSocket(url);
+    // Read token set by Login.js. The sentinel 'cookie' means the server is in
+    // cookie-only mode — do NOT send 'bearer.cookie' as a subprotocol.
+    const token = localStorage.getItem('token');
+    const isRealToken = token && token !== 'cookie';
+
+    // Pass subprotocol when we have a real JWT; rely on cookie auth otherwise.
+    return isRealToken
+        ? new WebSocket(url, [`bearer.${token}`])
+        : new WebSocket(url);
 }
+

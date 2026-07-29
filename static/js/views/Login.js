@@ -88,11 +88,17 @@ export default {
                     email: email.value,
                     password: password.value
                 });
-                const { user } = response.data;
-                // Cache user profile for the lifetime of this tab.
-                // sessionStorage is cleared on tab close; the httpOnly cookie
-                // remains the source of truth for authentication.
-                sessionStorage.setItem('geqo_user', JSON.stringify(user));
+                const { access_token, user } = response.data;
+                // Persist the token in localStorage so that:
+                //   1. app.js checkAuth() can confirm the session is active.
+                //   2. OrdersManager WebSocket can send the bearer subprotocol
+                //      on cross-origin dev connections where the httpOnly cookie
+                //      is blocked by SameSite rules.
+                // NOTE: In production the backend sets access_token = null and
+                // relies on the httpOnly cookie. When that happens we store the
+                // string 'cookie' as a sentinel so checkAuth() still passes.
+                localStorage.setItem('token', access_token || 'cookie');
+                localStorage.setItem('user', JSON.stringify(user));
                 emit('login', user);
             } catch (err) {
                 error.value = err.response?.data?.detail || 'Login failed';
