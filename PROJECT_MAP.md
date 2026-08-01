@@ -86,7 +86,7 @@ Customer (WhatsApp) → Meta Cloud API → webhook.py
 
 **Enums:** `OrderStatus`, `FulfillmentMethod`, `UserRole`, `RestaurantStatus`, `PaymentStatus`, `BetaCardStatus`, `TransactionType`
 
-**Tables:** `User`, `Restaurant` (Geo-fencing: `latitude`, `longitude`, `max_delivery_radius_km`; Financial: `wallet_balance`), `Customer`, `Category`, `MenuItem`, `ModifierGroup`, `ModifierOption`, `Order` (`delivery_fee`, `customer_notes`, `customer_name`), `OrderItem`, `OrderItemExclusion`, `OrderItemModifier`, `Driver`, `Cart`, `CartItem`, `CartItemExclusion`, `CartItemModifier`, `DailyAnalytics`, `AuditLog` (`detail` as `JSONB`), `BetaCard`, `BetaSignup`, `WalletTransaction`
+**Tables:** `User`, `Restaurant` (Geo-fencing: `latitude`, `longitude`, `max_delivery_radius_km`; Financial: `wallet_balance`), `Customer`, `Category`, `MenuItem`, `ModifierGroup` (Modifier Inheritance: belongs to either `category_id` or `menu_item_id`), `ModifierOption`, `Order` (`delivery_fee`, `customer_notes`, `customer_name`), `OrderItem`, `OrderItemExclusion`, `OrderItemModifier`, `Driver`, `Cart`, `CartItem`, `CartItemExclusion`, `CartItemModifier`, `DailyAnalytics`, `AuditLog` (`detail` as `JSONB`), `BetaCard`, `BetaSignup`, `WalletTransaction`
 
 ### `app/api/` — Endpoints (summary)
 
@@ -100,7 +100,7 @@ Customer (WhatsApp) → Meta Cloud API → webhook.py
 - `GET /admin/billing/transactions`, `POST /admin/billing/adjust`
 
 **dashboard.py** — `GET /dashboard/orders/{restaurant_id}`, `POST /dashboard/orders/{order_id}/status`, `WS /dashboard/ws/{restaurant_id}`
-**menu.py** — CRUD categories/items, modifier groups/options.
+**menu.py** — CRUD categories/items, modifier groups/options (Modifier Inheritance logic).
 **drivers.py** — Delivery driver management.
 **auth.py** — `forgot-password`, `reset-password`, `setup-password`, `force-change-password`.
 **beta.py** — 1-Click Beta Onboarding (Validates `GEQO-XXXXXX`, rate limits, sends emails).
