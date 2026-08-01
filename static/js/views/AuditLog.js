@@ -138,12 +138,12 @@ export default {
 
             switch(log.action) {
                 case 'ORDER_STATUS_UPDATED':
-                    return \`Updated order from '\${log.detail.old}' to '\${log.detail.new}'\`;
+                    return `Updated order from '${log.detail.old}' to '${log.detail.new}'`;
                 case 'ITEM_AVAILABILITY_TOGGLED':
                     const status = log.detail.is_available ? 'Available' : 'Out of Stock';
-                    return \`Marked menu item '\${log.detail.item_name}' as \${status}\`;
+                    return `Marked menu item '${log.detail.item_name}' as ${status}`;
                 case 'BILLING_ADJUSTED':
-                    return \`Adjusted wallet balance by \${log.detail.amount > 0 ? '+' : ''}\${log.detail.amount} MAD (\${log.detail.type}). Reason: \${log.detail.description}\`;
+                    return `Adjusted wallet balance by ${log.detail.amount > 0 ? '+' : ''}${log.detail.amount} MAD (${log.detail.type}). Reason: ${log.detail.description}`;
                 default:
                     // Fallback for unknown JSON structures
                     return JSON.stringify(log.detail);

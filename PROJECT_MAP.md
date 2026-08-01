@@ -143,7 +143,7 @@ static/
       StaffManager.js
       DriversManager.js
       RestaurantsAdmin.js # Includes "Adjust Wallet" / Credit capabilities
-      AuditLog.js
+      AuditLog.js         # Stabilized: JSONB vertical timeline UI, mapped correctly
       Billing.js          # Owner view of Wallet Transactions data table
       Settings.js         # Profile management + Leaflet.js interactive geo-fencing map
       ResetPassword.js
@@ -173,8 +173,11 @@ static/
 Next.js 15 App Router app serving the customer-facing ordering funnel via Magic Links.
 
 - **Trigger:** Customer messages WhatsApp bot → Bot replies with `https://menu.mygeqo.com/?session=JWT`.
-- **Usage:** Customers browse trilingual menu, customize items (modifiers, exclusions), and checkout.
-- **Backend Sync:** Submits cart to `/api/v1/public/orders` where server recalculates totals and validates distances using Haversine geo-math against the restaurant's `max_delivery_radius_km`.
+- **Usage:** Customers browse trilingual menu, customize items, and checkout.
+  - **Modifiers (Talabat-Style):** Strict enforcement of `min_selection`/`max_selection`. Uses radios for `max=1` and checkboxes for `max>1`. Dynamically hides modifier UI if none exist.
+  - **Map UX (Checkout):** Implements Leaflet pin-drop confirmation ("Is this your exact location?") to prevent fat-finger mistakes. Features a robust GPS fallback to Casablanca `[33.5731, -7.5898]` if `navigator.geolocation` crashes (e.g., `kCLErrorLocationUnknown`).
+  - **Checkout Payload:** Sends Cart Payload, `customer_name` (via controlled React input), and confirmed map coordinates.
+- **Backend Sync:** Submits cart to `POST /api/v1/public/orders/checkout` where server recalculates totals and validates distances using Haversine geo-math against the restaurant's `max_delivery_radius_km`.
 
 ---
 
