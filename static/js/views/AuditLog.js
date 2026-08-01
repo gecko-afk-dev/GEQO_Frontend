@@ -79,7 +79,7 @@ export default {
                 </div>
             </div>
         </div>
-    \`,
+    `,
     setup() {
         const logs = ref([]);
         const loading = ref(true);
@@ -89,7 +89,7 @@ export default {
         const fetchLogs = async (newOffset = 0) => {
             loading.value = true;
             try {
-                const res = await api.get(\`/admin/audit-log?limit=\${limit.value}&offset=\${newOffset}\`);
+                const res = await api.get(`/admin/audit-log?limit=${limit.value}&offset=${newOffset}`);
                 logs.value = res.data;
                 offset.value = newOffset;
             } catch (err) {
