@@ -7,6 +7,8 @@ import OrdersManager from './OrdersManager.js';
 import StaffManager from './StaffManager.js';
 import KitchenMonitor from './KitchenMonitor.js';
 import AuditLog from './AuditLog.js';
+import Settings from './Settings.js';
+import Billing from './Billing.js';
 
 export default {
     template: `
@@ -102,6 +104,14 @@ export default {
                             <span v-if="!isFeatureEnabled('audit_logs')">🔒</span>
                             Audit Logs
                         </button>
+
+                        <!-- Billing: Admin, Owner -->
+                        <button v-if="['admin', 'restaurant_owner'].includes(user.role)"
+                                @click="handleNavClick('Billing', 'billing')"
+                                :class="currentView === 'billing' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
+                                class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center gap-1.5">
+                            💳 Billing
+                        </button>
                     </div>
                 </div>
             </nav>
@@ -110,6 +120,17 @@ export default {
             <main :class="user.role === 'kitchen_staff' ? 'flex-1 flex flex-col h-screen min-h-0 bg-slate-950 p-0 m-0' : 'flex-1 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 w-full'">
                 <component :is="currentComponent" :user="user" @logout="$emit('logout')"></component>
             </main>
+
+            <!-- Floating Settings Button (Bottom Left) -->
+            <button v-if="user.role !== 'kitchen_staff'"
+                    @click="handleNavClick('Settings', 'settings')"
+                    class="fixed bottom-6 left-6 z-40 p-3 rounded-full shadow-lg border transition-all flex items-center justify-center group bg-white hover:bg-slate-50 text-slate-600 border-slate-200"
+                    :class="currentView === 'settings' ? '!bg-blue-600 !text-white !border-blue-600 shadow-blue-500/30' : ''">
+                <svg class="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+            </button>
 
             <!-- Locked Feature Notification Toast -->
             <transition name="fade">
@@ -136,7 +157,9 @@ export default {
         OrdersManager,
         StaffManager,
         KitchenMonitor,
-        AuditLog
+        AuditLog,
+        Settings,
+        Billing
     },
     props: {
         user: Object
@@ -178,6 +201,8 @@ export default {
             else if (viewName === 'Staff Management') currentView.value = 'staff';
             else if (viewName === 'Drivers') currentView.value = 'drivers';
             else if (viewName === 'Audit Logs') currentView.value = 'audit-log';
+            else if (viewName === 'Settings') currentView.value = 'settings';
+            else if (viewName === 'Billing') currentView.value = 'billing';
         };
 
         const currentComponent = computed(() => {
@@ -193,6 +218,8 @@ export default {
             if (view === 'staff' && role === 'restaurant_owner' && isFeatureEnabled('staff')) return 'StaffManager';
             if (view === 'drivers' && ['admin', 'restaurant_owner', 'cashier'].includes(role) && isFeatureEnabled('drivers')) return 'DriversManager';
             if (view === 'audit-log' && ['admin', 'restaurant_owner'].includes(role) && isFeatureEnabled('audit_logs')) return 'AuditLog';
+            if (view === 'settings') return 'Settings';
+            if (view === 'billing' && ['admin', 'restaurant_owner'].includes(role)) return 'Billing';
             
             return isFeatureEnabled('overview') ? 'Overview' : 'OrdersManager';
         });

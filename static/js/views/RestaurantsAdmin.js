@@ -81,7 +81,7 @@ export default {
                                 <th>Restaurant</th>
                                 <th>City</th>
                                 <th>Contact</th>
-                                <th>Commission</th>
+                                <th>Wallet Balance</th>
                                 <th>Vol. (30d)</th>
                                 <th>Billing Tier</th>
                                 <th>Status</th>
@@ -102,7 +102,9 @@ export default {
                                 <td class="text-slate-500 text-sm">{{ r.city || '—' }}</td>
                                 <td class="text-slate-500 text-xs">{{ r.contact_email }}</td>
                                 <td>
-                                    <span class="badge badge-slate">{{ ((r.commission_rate || 0) * 100).toFixed(0) }}%</span>
+                                    <span class="font-mono text-sm" :class="r.wallet_balance < 0 ? 'text-harissa font-bold' : 'text-slate-300'">
+                                        {{ (r.wallet_balance || 0).toFixed(2) }} MAD
+                                    </span>
                                 </td>
                                 <td class="text-slate-500 text-sm font-semibold">{{ r.orders_30d ?? '—' }}</td>
                                 <td>
@@ -115,6 +117,9 @@ export default {
                                 </td>
                                 <td class="text-right">
                                     <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button @click="openCreditModal(r)"
+                                                :id="'restaurant-credit-' + r.id"
+                                                class="btn btn-ghost text-xs px-3 h-8 text-saffron">Credit</button>
                                         <button @click="editRestaurant(r)"
                                                 :id="'restaurant-edit-' + r.id"
                                                 class="btn btn-ghost text-xs px-3 h-8">Edit</button>
@@ -142,12 +147,16 @@ export default {
                             <div>
                                 <div class="font-black text-slate-100">{{ r.name }}</div>
                                 <div class="text-xs text-slate-600 mt-0.5">{{ r.contact_email }}</div>
+                                <div class="text-xs mt-1" :class="r.wallet_balance < 0 ? 'text-harissa font-bold' : 'text-slate-400'">
+                                    Wallet: {{ (r.wallet_balance || 0).toFixed(2) }} MAD
+                                </div>
                             </div>
                             <span class="badge" :class="r.status === 'active' ? 'badge-emerald' : 'badge-harissa'">
                                 {{ r.status === 'active' ? 'Active' : 'Suspended' }}
                             </span>
                         </div>
                         <div class="flex gap-2">
+                            <button @click="openCreditModal(r)" class="btn btn-ghost text-xs h-9 flex-1 text-saffron">Credit</button>
                             <button @click="editRestaurant(r)" class="btn btn-ghost text-xs h-9 flex-1">Edit</button>
                             <button v-if="r.status === 'active'" @click="promptSuspend(r)" class="btn btn-danger text-xs h-9 flex-1">Suspend</button>
                             <button v-else @click="activate(r.id)" class="btn text-xs h-9 flex-1 bg-emerald/10 text-emerald border border-emerald/30">Activate</button>
@@ -402,6 +411,33 @@ export default {
                 </div>
             </template>
 
+            <!-- ════ CREDIT MODAL ════ -->
+            <template v-if="showCredit">
+                <div class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div class="w-full max-w-sm rounded-2xl border border-superadmin-border shadow-2xl"
+                         style="background: var(--superadmin-bg)">
+                        <div class="px-6 pt-6 pb-4 border-b border-superadmin-border">
+                            <h3 class="text-lg font-black text-slate-100">Credit Wallet</h3>
+                            <p class="text-xs text-slate-500">{{ creditTarget?.name }}</p>
+                        </div>
+                        <div class="px-6 py-5">
+                            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Amount (MAD)</label>
+                            <input v-model.number="creditAmount" type="number" step="0.01" class="input-dark w-full text-lg font-mono" placeholder="100.00">
+                            <div v-if="creditError" class="mt-3 p-3 rounded-xl bg-harissa/10 border border-harissa/30 text-harissa text-sm">
+                                {{ creditError }}
+                            </div>
+                        </div>
+                        <div class="px-6 pb-6 flex gap-3">
+                            <button @click="showCredit = false" class="btn btn-ghost flex-1">Cancel</button>
+                            <button @click="submitCredit" :disabled="creditLoading" class="btn btn-saffron flex-1 font-bold">
+                                <span v-if="creditLoading" class="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full mr-2 inline-block align-middle"></span>
+                                {{ creditLoading ? 'Processing...' : 'Confirm' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
         </div>
     `,
 
@@ -432,6 +468,39 @@ export default {
         const provisionError = ref('');
         const provisionLoading = ref(false);
         const toast          = ref('');
+
+        // ── Credit Wallet ─────────────────────────────────────────────────
+        const showCredit = ref(false);
+        const creditTarget = ref(null);
+        const creditAmount = ref(0);
+        const creditLoading = ref(false);
+        const creditError = ref('');
+
+        const openCreditModal = (r) => {
+            creditTarget.value = r;
+            creditAmount.value = 0;
+            creditError.value = '';
+            showCredit.value = true;
+        };
+
+        const submitCredit = async () => {
+            if (creditAmount.value <= 0) {
+                creditError.value = 'Amount must be greater than 0';
+                return;
+            }
+            creditLoading.value = true;
+            creditError.value = '';
+            try {
+                await api.post(\`/admin/restaurants/\${creditTarget.value.id}/credit\`, { amount: creditAmount.value });
+                showToast(\`Credited \${creditAmount.value} MAD to \${creditTarget.value.name}\`);
+                showCredit.value = false;
+                await loadRestaurants();
+            } catch (err) {
+                creditError.value = err.response?.data?.detail || 'Failed to credit wallet.';
+            } finally {
+                creditLoading.value = false;
+            }
+        };
 
         // ── Toast helper ──────────────────────────────────────────────────
         const showToast = (msg) => {
@@ -594,6 +663,7 @@ export default {
             provisionForm, provisionError, provisionLoading,
             loadLeads, openProvisionModal, closeProvisionModal, submitProvision,
             activeTab, toast, formatDate,
+            showCredit, creditTarget, creditAmount, creditLoading, creditError, openCreditModal, submitCredit
         };
     }
 };

@@ -348,7 +348,7 @@ export default {
             stockConfirmItem.value = null;
             const newAvail = !item.is_available;
             try {
-                await api.patch(`/admin/menu/items/${item.id}`, { is_available: newAvail });
+                await api.post(`/dashboard/items/${item.id}/toggle-availability`);
                 item.is_available = newAvail;
             } catch (err) {
                 console.error('[MenuManager] stock toggle error', err);
