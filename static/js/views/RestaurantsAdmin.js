@@ -491,8 +491,8 @@ export default {
             creditLoading.value = true;
             creditError.value = '';
             try {
-                await api.post(\`/admin/restaurants/\${creditTarget.value.id}/credit\`, { amount: creditAmount.value });
-                showToast(\`Credited \${creditAmount.value} MAD to \${creditTarget.value.name}\`);
+                await api.post(`/admin/restaurants/${creditTarget.value.id}/credit`, { amount: creditAmount.value });
+                showToast(`Credited ${creditAmount.value} MAD to ${creditTarget.value.name}`);
                 showCredit.value = false;
                 await loadRestaurants();
             } catch (err) {
