@@ -117,9 +117,9 @@ export default {
                                 </td>
                                 <td class="text-right">
                                     <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button @click="openCreditModal(r)"
-                                                :id="'restaurant-credit-' + r.id"
-                                                class="btn btn-ghost text-xs px-3 h-8 text-saffron">Credit</button>
+                                        <button @click="openAdjustModal(r)"
+                                                :id="'restaurant-adjust-' + r.id"
+                                                class="btn btn-ghost text-xs px-3 h-8 text-saffron">Adjust</button>
                                         <button @click="editRestaurant(r)"
                                                 :id="'restaurant-edit-' + r.id"
                                                 class="btn btn-ghost text-xs px-3 h-8">Edit</button>
@@ -156,7 +156,7 @@ export default {
                             </span>
                         </div>
                         <div class="flex gap-2">
-                            <button @click="openCreditModal(r)" class="btn btn-ghost text-xs h-9 flex-1 text-saffron">Credit</button>
+                            <button @click="openAdjustModal(r)" class="btn btn-ghost text-xs h-9 flex-1 text-saffron">Adjust</button>
                             <button @click="editRestaurant(r)" class="btn btn-ghost text-xs h-9 flex-1">Edit</button>
                             <button v-if="r.status === 'active'" @click="promptSuspend(r)" class="btn btn-danger text-xs h-9 flex-1">Suspend</button>
                             <button v-else @click="activate(r.id)" class="btn text-xs h-9 flex-1 bg-emerald/10 text-emerald border border-emerald/30">Activate</button>
@@ -411,27 +411,41 @@ export default {
                 </div>
             </template>
 
-            <!-- ════ CREDIT MODAL ════ -->
-            <template v-if="showCredit">
+            <!-- ════ ADJUST MODAL ════ -->
+            <template v-if="showAdjust">
                 <div class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div class="w-full max-w-sm rounded-2xl border border-superadmin-border shadow-2xl"
                          style="background: var(--superadmin-bg)">
                         <div class="px-6 pt-6 pb-4 border-b border-superadmin-border">
-                            <h3 class="text-lg font-black text-slate-100">Credit Wallet</h3>
-                            <p class="text-xs text-slate-500">{{ creditTarget?.name }}</p>
+                            <h3 class="text-lg font-black text-slate-100">Adjust Wallet</h3>
+                            <p class="text-xs text-slate-500">{{ adjustTarget?.name }}</p>
                         </div>
-                        <div class="px-6 py-5">
-                            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Amount (MAD)</label>
-                            <input v-model.number="creditAmount" type="number" step="0.01" class="input-dark w-full text-lg font-mono" placeholder="100.00">
-                            <div v-if="creditError" class="mt-3 p-3 rounded-xl bg-harissa/10 border border-harissa/30 text-harissa text-sm">
-                                {{ creditError }}
+                        <div class="px-6 py-5 space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Amount (MAD)</label>
+                                <input v-model.number="adjustAmount" type="number" step="0.01" class="input-dark w-full text-lg font-mono" placeholder="100.00">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Type</label>
+                                <select v-model="adjustType" class="input-dark w-full">
+                                    <option value="credit">Credit (Top-up)</option>
+                                    <option value="debit">Debit (Deduct)</option>
+                                    <option value="correction">Correction</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Description</label>
+                                <input v-model="adjustDescription" type="text" class="input-dark w-full" placeholder="e.g. Manual top-up via bank transfer">
+                            </div>
+                            <div v-if="adjustError" class="mt-3 p-3 rounded-xl bg-harissa/10 border border-harissa/30 text-harissa text-sm">
+                                {{ adjustError }}
                             </div>
                         </div>
                         <div class="px-6 pb-6 flex gap-3">
-                            <button @click="showCredit = false" class="btn btn-ghost flex-1">Cancel</button>
-                            <button @click="submitCredit" :disabled="creditLoading" class="btn btn-saffron flex-1 font-bold">
-                                <span v-if="creditLoading" class="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full mr-2 inline-block align-middle"></span>
-                                {{ creditLoading ? 'Processing...' : 'Confirm' }}
+                            <button @click="showAdjust = false" class="btn btn-ghost flex-1">Cancel</button>
+                            <button @click="submitAdjust" :disabled="adjustLoading" class="btn btn-saffron flex-1 font-bold">
+                                <span v-if="adjustLoading" class="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full mr-2 inline-block align-middle"></span>
+                                {{ adjustLoading ? 'Processing...' : 'Confirm' }}
                             </button>
                         </div>
                     </div>
@@ -469,36 +483,55 @@ export default {
         const provisionLoading = ref(false);
         const toast          = ref('');
 
-        // ── Credit Wallet ─────────────────────────────────────────────────
-        const showCredit = ref(false);
-        const creditTarget = ref(null);
-        const creditAmount = ref(0);
-        const creditLoading = ref(false);
-        const creditError = ref('');
+        // ── Adjust Wallet ─────────────────────────────────────────────────
+        const showAdjust = ref(false);
+        const adjustTarget = ref(null);
+        const adjustAmount = ref(0);
+        const adjustType = ref('credit');
+        const adjustDescription = ref('');
+        const adjustLoading = ref(false);
+        const adjustError = ref('');
 
-        const openCreditModal = (r) => {
-            creditTarget.value = r;
-            creditAmount.value = 0;
-            creditError.value = '';
-            showCredit.value = true;
+        const openAdjustModal = (r) => {
+            adjustTarget.value = r;
+            adjustAmount.value = 0;
+            adjustType.value = 'credit';
+            adjustDescription.value = '';
+            adjustError.value = '';
+            showAdjust.value = true;
         };
 
-        const submitCredit = async () => {
-            if (creditAmount.value <= 0) {
-                creditError.value = 'Amount must be greater than 0';
+        const submitAdjust = async () => {
+            if (adjustAmount.value === 0) {
+                adjustError.value = 'Amount cannot be 0';
                 return;
             }
-            creditLoading.value = true;
-            creditError.value = '';
+            if (!adjustDescription.value.trim()) {
+                adjustError.value = 'Description is required';
+                return;
+            }
+            adjustLoading.value = true;
+            adjustError.value = '';
             try {
-                await api.post(`/admin/restaurants/${creditTarget.value.id}/credit`, { amount: creditAmount.value });
-                showToast(`Credited ${creditAmount.value} MAD to ${creditTarget.value.name}`);
-                showCredit.value = false;
+                let amt = adjustAmount.value;
+                if (adjustType.value === 'debit') {
+                    amt = -Math.abs(amt);
+                } else if (adjustType.value === 'credit') {
+                    amt = Math.abs(amt);
+                }
+                await api.post(`/admin/billing/adjust`, { 
+                    restaurant_id: adjustTarget.value.id,
+                    amount: amt,
+                    type: adjustType.value,
+                    description: adjustDescription.value
+                });
+                showToast(`Adjusted wallet for ${adjustTarget.value.name}`);
+                showAdjust.value = false;
                 await loadRestaurants();
             } catch (err) {
-                creditError.value = err.response?.data?.detail || 'Failed to credit wallet.';
+                adjustError.value = err.response?.data?.detail || 'Failed to adjust wallet.';
             } finally {
-                creditLoading.value = false;
+                adjustLoading.value = false;
             }
         };
 
@@ -663,7 +696,7 @@ export default {
             provisionForm, provisionError, provisionLoading,
             loadLeads, openProvisionModal, closeProvisionModal, submitProvision,
             activeTab, toast, formatDate,
-            showCredit, creditTarget, creditAmount, creditLoading, creditError, openCreditModal, submitCredit
+            showAdjust, adjustTarget, adjustAmount, adjustType, adjustDescription, adjustLoading, adjustError, openAdjustModal, submitAdjust
         };
     }
 };

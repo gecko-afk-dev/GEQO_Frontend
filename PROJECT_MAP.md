@@ -2,18 +2,18 @@
 
 **Purpose:** Token-efficient map of the full GEQO WhatsApp-first ordering platform. Use this file (with `@PROJECT_MAP.md`) in future prompts instead of re-scanning repos.
 
-**Last scanned:** 2026-07-19  
-**Sources:** `ARCHITECTURE.md`, full repo tree + key file reads across all three workspaces.
+**Last scanned:** 2026-08-01
 
 ---
 
-## 1. Ecosystem Overview
+## 1. Ecosystem Overview (4 Distinct Domains)
 
 | Repo | Local path | Role | Stack |
 |------|------------|------|-------|
-| **Backend API** | `c:\Users\pc\geqo\whatsapp_ordering` | WhatsApp webhooks, flows, orders, auth, multi-tenant DB | FastAPI, SQLAlchemy 2 (async), PostgreSQL, AsyncPG |
-| **Admin Dashboard** | `c:\Users\pc\Documents\GitHub\GEQO_Frontend` | Restaurant/super-admin SPA (KDS, menu, staff, analytics) | Vue 3 (CDN ESM), Axios, Tailwind CDN, PWA |
-| **Marketing Site** | `c:\Users\pc\geqo marketing_site\geqo-marketing-site` | Public landing + beta invite claim form | Next.js 15, React 19, Tailwind 4, i18n (en/fr/ar) |
+| **Backend API** | `/Users/hamzamoustaati/Whatsapp-oredering-repo` | WhatsApp webhooks, Magic Links, orders, auth, multi-tenant DB | FastAPI, SQLAlchemy 2 (async), PostgreSQL (Neon), AsyncPG |
+| **Admin Dashboard** | `/Users/hamzamoustaati/Desktop/Frontend Repo/GEQO_Frontend` | Restaurant/super-admin SPA (KDS, menu, staff, settings, billing) | Vue 3 (CDN ESM), Axios, Tailwind CDN, PWA |
+| **Marketing Site** | `/Users/hamzamoustaati/GEQO Marketing Page/geqo-marketing-site` | Public landing + beta invite claim form | Next.js 15, React 19, Tailwind 4, i18n (en/fr/ar) |
+| **Consumer Menu PWA** | `/Users/hamzamoustaati/GEQO_Menu_PWA` | Customer-facing hybrid ordering app (launched via Magic Link) | Next.js 15 (App Router), React 19, Tailwind 4 |
 
 ### Production URLs
 
@@ -22,25 +22,25 @@
 | API | `https://api.mygeqo.com` |
 | Admin dashboard | `https://app.mygeqo.com` |
 | Marketing | `https://mygeqo.com` / `https://www.mygeqo.com` |
-| Local API | `http://localhost:8000` |
-| Local dashboard | served as static files (often via backend or local static server) |
-| Local marketing | `http://localhost:3000` (Next.js dev) |
+| Consumer Menu PWA | `https://menu.mygeqo.com` |
 
-### High-level flow
+### High-Level Flow (The "Hybrid PWA Funnel")
 
+```text
+Customer (WhatsApp) → Meta Cloud API → webhook.py
+                                            ↓ Replies with JWT Magic Link (?session=...)
+                                     Consumer Menu PWA (menu.mygeqo.com)
+                                            ↓ REST (JWT auth) → public_menu.py / public_orders.py
+                                       PostgreSQL (Neon)
+                                            ↓
+                   socket_manager.py ← order_service.py
+                        ↓ WebSocket
+             GEQO_Frontend (KitchenMonitor / OrdersManager)
+                        ↑ REST (cookie JWT)
+             Admin users (owners, cashiers, kitchen_staff, admin)
 ```
-Customer (WhatsApp) → Meta Cloud API → webhook.py / flow_handler.py
-                                              ↓
-                                         PostgreSQL (multi-tenant)
-                                              ↓
-                    socket_manager.py ← order_service.py
-                         ↓ WebSocket
-              GEQO_Frontend (KitchenMonitor / OrdersManager)
-                         ↑ REST (cookie JWT)
-              Admin users (owners, cashiers, kitchen_staff, admin)
 
-Marketing site (/claim) → POST /api/v1/public/beta-signup → beta.py → email + BetaCard/BetaSignup tables
-```
+*(Note: Consumer WhatsApp Flows are DEAD. `flow_handler.py` ONLY handles the Driver PIN Verification Flow.)*
 
 ---
 
@@ -50,286 +50,154 @@ Marketing site (/claim) → POST /api/v1/public/beta-signup → beta.py → emai
 
 | File | Purpose |
 |------|---------|
-| `docker-compose.yml` | Postgres + FastAPI app + Caddy (443/80). DB not exposed externally. |
-| `Dockerfile` | Production Python image |
-| `Caddyfile` | HTTPS reverse proxy (required for Meta webhooks) |
-| `requirements.txt` | Python deps |
-| `README.md` | Setup, env vars, API table |
-| `.env.example` | WhatsApp, DB, SMTP, feature flags |
-| `create_admin.py` | Standalone admin creation script |
-| `migrate_roles.py` | Role migration utility |
-| `seed_beta_cards.py` | Beta card batch seeding |
-| `app/seed_admin.py` | In-container admin seeder (`python -m app.seed_admin`) |
-| `app/seed_trilingual.py` | Sample restaurant + trilingual menu |
-| `app/sign_flow.py` | WhatsApp Flow signing helper |
-| `test_endpoint.py` / `test_endpoint.ps1` | Manual endpoint tests |
-| `SECURITY_FIXES_REPORT.md` | Security audit notes (WebSocket subprotocol auth, etc.) |
-| `.github/workflows/security.yml` | CI security checks |
+| `docker-compose.yml` | Postgres + FastAPI app + Caddy (443/80). |
+| `Dockerfile` | Production Python image. |
+| `requirements.txt` | Python deps. |
+| `README.md` | Setup, env vars, API table. |
+| `.env.example` | WhatsApp, DB, Resend API key, feature flags. |
+| `create_admin.py` | Standalone admin creation script. |
+| `migrate_roles.py` | Role migration utility. |
+| `seed_beta_cards.py` | Beta card batch seeding. |
 
 ### `app/main.py` — Router registration
 
 | Prefix | Module | Purpose |
 |--------|--------|---------|
-| `/api/v1` | `webhook.py` | WhatsApp GET verify + POST messages |
-| `/api/v1/dashboard` | `dashboard.py` | Orders REST + WebSocket KDS feed |
-| `/api/v1/flow` | `flow_handler.py` | Meta Flow encrypted data exchange |
-| `/api/v1/admin` | `admin.py` | Login, analytics, restaurants, staff, audit |
-| `/api/v1/admin/menu` | `menu.py` | Categories, items, modifiers |
-| `/api/v1/admin/drivers` | `drivers.py` | Delivery driver CRUD |
-| `/api/v1/auth` | `auth.py` | Password reset / setup / force-change |
-| `/api/v1/public` | `beta.py` | Public beta signup (rate-limited) |
-
-CORS hardcoded for: `localhost:8000/5173/3000`, `app.mygeqo.com`, `mygeqo.com`, `www.mygeqo.com`.
+| `/api/v1` | `webhook.py` | WhatsApp GET verify + POST messages (issues Magic Links). |
+| `/api/v1/dashboard` | `dashboard.py` | Orders REST + WebSocket KDS feed. |
+| `/api/v1/flow` | `flow_handler.py` | Meta Flow (Driver PIN verification ONLY). |
+| `/api/v1/admin` | `admin.py` | Login, analytics, restaurants, staff, billing APIs. |
+| `/api/v1/admin/menu` | `menu.py` | Categories, items, modifiers. |
+| `/api/v1/admin/drivers`| `drivers.py` | Delivery driver CRUD. |
+| `/api/v1/auth` | `auth.py` | Password reset / setup / force-change. |
+| `/api/v1/public` | `beta.py` | Public beta signup (1-Click Onboarding). |
+| `/api/v1/public/menu` | `public_menu.py` | PWA: Fetch restaurant menu data. |
+| `/api/v1/public/orders`| `public_orders.py` | PWA: Submit orders (server-side pricing + Haversine geo-math). |
 
 ### `app/core/`
 
 | File | Purpose |
 |------|---------|
-| `config.py` | Pydantic Settings from `.env` (fail-fast). Feature flags: `FEATURE_OVERVIEW_ENABLED`, `FEATURE_STAFF_ENABLED`, `FEATURE_DRIVERS_ENABLED`, `FEATURE_AUDIT_LOGS_ENABLED` |
-| `database.py` | Async SQLAlchemy engine + `AsyncSessionLocal` |
-| `auth.py` | JWT (HS256, 30 min), bcrypt passwords. Auth via Bearer header **or** `access_token` httpOnly cookie. Role guards: `get_current_admin`, `get_current_owner`, etc. |
+| `config.py` | Pydantic Settings from `.env`. Feature flags. |
+| `database.py` | Async SQLAlchemy engine (Neon.tech) + `AsyncSessionLocal`. |
+| `auth.py` | JWT (HS256). Auth via Bearer header **or** `access_token` httpOnly cookie. Role guards. |
 
-### `app/models.py` — Key entities (16 tables)
+### `app/models.py` — Key entities (17 tables)
 
-**Enums:** `OrderStatus`, `FulfillmentMethod`, `UserRole`, `RestaurantStatus`, `PaymentStatus`, `BetaCardStatus`
+**Enums:** `OrderStatus`, `FulfillmentMethod`, `UserRole`, `RestaurantStatus`, `PaymentStatus`, `BetaCardStatus`, `TransactionType`
 
-**Tables:** `User`, `Restaurant`, `Customer`, `Category`, `MenuItem`, `ModifierGroup`, `ModifierOption`, `Order`, `OrderItem`, `OrderItemExclusion`, `OrderItemModifier`, `Driver`, `Cart`, `CartItem`, `CartItemExclusion`, `CartItemModifier`, `DailyAnalytics`, `AuditLog`, `BetaCard`, `BetaSignup`
-
-**Roles:** `admin`, `restaurant_owner`, `cashier`, `kitchen_staff`
+**Tables:** `User`, `Restaurant` (Geo-fencing: `latitude`, `longitude`, `max_delivery_radius_km`; Financial: `wallet_balance`), `Customer`, `Category`, `MenuItem`, `ModifierGroup`, `ModifierOption`, `Order` (`delivery_fee`, `customer_notes`, `customer_name`), `OrderItem`, `OrderItemExclusion`, `OrderItemModifier`, `Driver`, `Cart`, `CartItem`, `CartItemExclusion`, `CartItemModifier`, `DailyAnalytics`, `AuditLog` (`detail` as `JSONB`), `BetaCard`, `BetaSignup`, `WalletTransaction`
 
 ### `app/api/` — Endpoints (summary)
 
 **admin.py**
-- `POST /admin/login` — Sets httpOnly `access_token` cookie; returns `user` object + `feature_flags` (no token in body)
-- `POST /admin/logout` — Clears cookie
-- `POST /admin/setup-admin` — Bootstrap admin (requires `SETUP_BOOTSTRAP_TOKEN` + `X-Setup-Token` header)
-- `GET /admin/analytics/summary` — Super-admin metrics
-- `GET /admin/analytics/restaurants` — Per-restaurant analytics
-- `GET|POST /admin/restaurants`, `PUT /admin/restaurants/{id}`, `POST .../suspend`, `POST .../activate`
-- `GET /admin/restaurant/dashboard` — Owner/cashier dashboard stats
-- `POST /admin/restaurant/items/{item_id}/toggle` — Quick availability toggle
+- `POST /admin/login` — Sets httpOnly `access_token` cookie; returns `user` + `feature_flags`.
+- `POST /admin/logout`
+- `GET /admin/analytics/summary`, `GET /admin/analytics/restaurants`, `GET /admin/restaurant/dashboard`
+- `GET|POST|PUT /admin/restaurants`, `POST .../suspend`, `POST .../activate`
 - `GET /admin/staff`, `POST /admin/staff/invite`, `POST /admin/staff/{id}/toggle`, `DELETE /admin/staff/{id}`
-- `GET /admin/audit-log?limit=&offset=`
+- `GET /admin/audit-log`
+- `GET /admin/billing/transactions`, `POST /admin/billing/adjust`
 
-**dashboard.py**
-- `GET /dashboard/orders/{restaurant_id}` — Active orders
-- `POST /dashboard/orders/{order_id}/status` — `{ new_status, driver_id? }`
-- `POST /dashboard/items/{item_id}/toggle-availability`
-- `WS /dashboard/ws/{restaurant_id}` — JWT via `Sec-WebSocket-Protocol: bearer.{token}`
-
-**menu.py** — `GET /{restaurant_id}`, CRUD categories/items, modifier groups/options
-
-**drivers.py** — `GET|POST /`, `DELETE /{driver_id}` (mounted at `/api/v1/admin/drivers`)
-
-**auth.py** — `forgot-password`, `reset-password`, `setup-password`, `force-change-password`
-
-**webhook.py** — Meta signature verification (HMAC SHA256), message routing, cart/order lifecycle, pushes WebSocket events
-
-**flow_handler.py** — `POST /flow-endpoint` — AES encryption for WhatsApp Flows (menu, delivery PIN)
-
-**beta.py** — `POST /public/beta-signup` — Validates `GEQO-XXXXXX` card codes, rate limit 5/min/IP, sends confirmation + admin notification emails
+**dashboard.py** — `GET /dashboard/orders/{restaurant_id}`, `POST /dashboard/orders/{order_id}/status`, `WS /dashboard/ws/{restaurant_id}`
+**menu.py** — CRUD categories/items, modifier groups/options.
+**drivers.py** — Delivery driver management.
+**auth.py** — `forgot-password`, `reset-password`, `setup-password`, `force-change-password`.
+**beta.py** — 1-Click Beta Onboarding (Validates `GEQO-XXXXXX`, rate limits, sends emails).
+**public_menu.py** — Read-only menu fetch for PWA.
+**public_orders.py** — PWA cart submission, calculates distances with Haversine formula, validates geo-fencing, server-side price calculation.
 
 ### `app/services/`
 
 | File | Purpose |
 |------|---------|
-| `whatsapp.py` | WhatsApp Cloud API client (text, buttons, location, flows) |
-| `order_service.py` | Cart processing, delivery PIN, order notifications |
-| `socket_manager.py` | Per-restaurant WebSocket fan-out (`NEW_ORDER`, `ORDER_STATUS_UPDATED`) |
-| `email.py` | SMTP (Lark Suite) — password reset, beta confirmation, admin signup alerts |
-
-### `app/templates/email/`
-
-- `beta_confirmation.html`, `admin_new_signup.html`
+| `whatsapp.py` | WhatsApp Cloud API client (text, Magic Links, locations). |
+| `order_service.py` | Cart processing, notifications, atomic commission deduction (-3.0 MAD `WalletTransaction` + `wallet_balance` sync). |
+| `socket_manager.py` | Per-restaurant WebSocket fan-out (`NEW_ORDER`, `ORDER_STATUS_UPDATED`). |
+| `email.py` | Resend HTTP API (bypasses Render SMTP port blocks) — password reset, beta alerts. |
+| `audit.py` | Global Audit Logging JSONB utility (`log_audit_action` syncs with parent transaction). |
 
 ---
 
-## 3. Frontend — `GEQO_Frontend`
+## 3. Admin Dashboard — `GEQO_Frontend` (Vue 3 SPA)
 
-Lightweight Vue 3 SPA — **no bundler**; runtime via CDN. Dev tooling only (ESLint, Prettier).
+Lightweight Vue 3 SPA (CDN ESM), Tailwind CDN, PWA.
 
 ### File tree
 
-```
+```text
 static/
-  index.html          # SPA entry, Tailwind config (Maghreb charcoal/saffron theme), PWA meta
-  setup.html          # DISABLED — points to SETUP_BOOTSTRAP_TOKEN + /admin/setup-admin
-  manifest.json       # PWA manifest (icons at /static/icon-192.png, icon-512.png)
+  index.html          # SPA entry, Tailwind config (Maghreb charcoal/saffron theme)
   sw.js               # Service worker (cache-first local, network-first /api)
-  css/index.css       # Design tokens, animations, component classes
+  css/index.css       # Design tokens, animations
   js/
     app.js            # Root Vue app, auth gate, password reset routes
-    api.js            # Axios client → ${backendURL}/api/v1, withCredentials=true
+    api.js            # Axios client: withCredentials: true + infinite-loop 401 protection
     views/
       Login.js
-      Dashboard.js    # Shell: nav, RBAC routing, feature-flag locks (NOT in ARCHITECTURE.md)
+      Dashboard.js    # Shell: nav, RBAC routing, feature-flag locks
       Overview.js
       KitchenMonitor.js   # KDS — full-screen for kitchen_staff
       OrdersManager.js
       MenuManager.js
       StaffManager.js
       DriversManager.js
-      RestaurantsAdmin.js
+      RestaurantsAdmin.js # Includes "Adjust Wallet" / Credit capabilities
       AuditLog.js
+      Billing.js          # Owner view of Wallet Transactions data table
+      Settings.js         # Profile management + Leaflet.js interactive geo-fencing map
       ResetPassword.js
       ForcePasswordChange.js
-package.json          # lint/format scripts only
-.eslintrc.json
-.pre-commit-config.yaml
-.github/workflows/frontend-quality.yml   # ESLint on push/PR to main
 ```
 
-### Auth model (important)
+### Auth model
 
 - **REST:** Backend sets httpOnly `access_token` cookie on login. Axios uses `withCredentials: true`.
-- **Login.js** emits `user` only — does **not** write `localStorage`.
-- **app.js** `checkAuth()` requires **both** `localStorage.token` and `localStorage.user` → page refresh may show login even with valid cookie.
-- **WebSocket:** KitchenMonitor + OrdersManager read `localStorage.getItem('token')` and pass `bearer.{token}` subprotocol — **token is never set in current login flow** → real-time KDS may fail until auth storage is aligned.
+- **WebSocket:** KitchenMonitor + OrdersManager read `localStorage.getItem('token')` and pass `bearer.{token}` subprotocol.
 
 ### RBAC & navigation (`Dashboard.js`)
 
 | Role | Default view | Access |
 |------|--------------|--------|
-| `kitchen_staff` | KitchenMonitor (full screen, no header/nav) | KDS only |
-| `admin` | Overview | All nav items; Restaurants Admin |
-| `restaurant_owner` | Overview or Orders (if overview locked) | Menu, Orders, Staff*, Drivers*, Audit* |
-| `cashier` | Same as owner minus Staff | Menu, Orders, Drivers* |
+| `kitchen_staff` | KitchenMonitor | KDS only |
+| `admin` | Overview | All nav items; Restaurants Admin; Billing |
+| `restaurant_owner` | Overview or Orders | Menu, Orders, Staff*, Drivers*, Audit*, Settings, Billing |
+| `cashier` | Same as owner | Menu, Orders, Drivers* |
 
-*Gated by server `feature_flags` from login response. Locked features show toast; admin bypasses all flags.
-
-### Frontend → API mapping
-
-| View | Endpoints (relative to `/api/v1`) |
-|------|-----------------------------------|
-| Login | `POST /admin/login`, `POST /auth/forgot-password` |
-| app.js | `POST /admin/logout` |
-| ResetPassword | `POST /auth/reset-password` or `/auth/setup-password` |
-| ForcePasswordChange | `POST /auth/force-change-password` |
-| Overview | `GET /admin/analytics/summary` (admin) or `GET /admin/restaurant/dashboard` (owner/cashier) |
-| KitchenMonitor | `GET /dashboard/orders/{restaurant_id}`, `POST /dashboard/orders/{id}/status`, `GET /drivers` ⚠️, `WS /dashboard/ws/{restaurant_id}` |
-| OrdersManager | Same orders endpoints + WebSocket |
-| MenuManager | `GET /admin/menu/{restaurant_id}`, CRUD categories/items via `/admin/menu/...` |
-| StaffManager | `GET /admin/staff`, `POST /admin/staff/invite`, `POST /admin/staff/{id}/toggle`, `DELETE /admin/staff/{id}` |
-| DriversManager | `GET|POST /admin/drivers`, `DELETE /admin/drivers/{id}` |
-| RestaurantsAdmin | `GET|POST /admin/restaurants`, `PUT /admin/restaurants/{id}`, suspend/activate |
-| AuditLog | `GET /admin/audit-log?limit=&offset=` |
-
-⚠️ **Bug:** KitchenMonitor calls `GET /drivers` but backend mounts drivers at `/admin/drivers`. DriversManager uses the correct path.
-
-### WebSocket events
-
-- URL: `ws(s)://{host}/api/v1/dashboard/ws/{restaurant_id}`
-- Auth: subprotocol `bearer.{jwt}`
-- Events handled: `NEW_ORDER`, `ORDER_STATUS_UPDATED` → reload orders
-- Reconnect: 3s backoff on close
-
-### Runtime dependencies (CDN in index.html)
-
-Vue 3 ESM, Axios, Tailwind CDN, Google Fonts (Plus Jakarta Sans + Cairo)
+*\*Gated by server `feature_flags`.*
 
 ---
 
-## 4. Marketing Site — `geqo-marketing-site`
+## 4. Consumer Menu PWA — `GEQO_Menu_PWA`
 
-**App root:** `tailwind-landing-page-template-main/tailwind-landing-page-template-main/` (nested template folder)
+Next.js 15 App Router app serving the customer-facing ordering funnel via Magic Links.
 
-### Stack
-
-Next.js 15 (App Router), React 19, Tailwind 4, TypeScript, pnpm
-
-### Key routes & components
-
-| Path | File | Purpose |
-|------|------|---------|
-| `/` | `app/(default)/page.tsx` | Main landing |
-| `/claim` | `app/(default)/claim/page.tsx` | Beta invite claim page |
-| `/api/v1/public/beta-signup` | `app/api/v1/public/beta-signup/route.ts` | Server-side proxy to backend (forwards CF IP headers) |
-
-**Components:** `hero-home`, `pain-relief`, `how-it-works`, `signup-form`, `success-overlay`, `banner`, `accordion`, `ui/header`, `ui/footer`, `ui/logo`
-
-**i18n:** `lib/i18n/` — `translations.ts`, `i18n-context.tsx`, `use-translation.ts` (en/fr/ar)
-
-### Beta signup flow
-
-1. User visits `/claim?card=GEQO-XXXXXX` (optional prefill)
-2. `signup-form.tsx` → `POST ${API_BASE}/api/v1/public/beta-signup` with `{ manager_name, restaurant_name, email, whatsapp_number, card_code, locale }`
-3. Local dev: `NEXT_PUBLIC_API_URL` or `http://localhost:8000`
-4. Production: same-origin `/api/...` via Next.js route handler → `https://api.mygeqo.com/api/v1/public/beta-signup`
+- **Trigger:** Customer messages WhatsApp bot → Bot replies with `https://menu.mygeqo.com/?session=JWT`.
+- **Usage:** Customers browse trilingual menu, customize items (modifiers, exclusions), and checkout.
+- **Backend Sync:** Submits cart to `/api/v1/public/orders` where server recalculates totals and validates distances using Haversine geo-math against the restaurant's `max_delivery_radius_km`.
 
 ---
 
-## 5. Cross-repo conventions
+## 5. Marketing Site — `geqo-marketing-site`
 
-### API base path
+Next.js 15 (App Router), React 19, Tailwind 4.
 
-All authenticated dashboard calls: `/api/v1/...`
-
-### Order status lifecycle
-
-`pending → received → accepted → preparing → ready → dispatched → delivered` (or `cancelled`)
-
-### Feature flags (backend `.env` → login `feature_flags`)
-
-Default in `.env.example`: all `false` except orders/menu always enabled in UI for non-admin.
-
-### Security notes (from codebase)
-
-- Webhook: HMAC signature required (`WHATSAPP_APP_SECRET`)
-- Flow endpoint: AES encrypted payloads
-- JWT in WebSocket URL removed — uses subprotocol instead
-- Admin setup: disabled in UI (`setup.html`); use env token + API
-- Rate limiters in webhook + beta are in-memory (not Redis) — single-instance only
+- `/`: Main landing page.
+- `/claim`: Beta invite claim page (`?card=GEQO-XXXXXX`).
+- Submits to `POST /api/v1/public/beta-signup` (server-side proxy forwarding CF IP headers to Backend API).
+- **i18n:** `lib/i18n/` (en/fr/ar).
 
 ---
 
-## 6. Dev quick reference
+## 6. Security & Infrastructure Notes
 
-```bash
-# Backend (Docker)
-cd c:\Users\pc\geqo\whatsapp_ordering
-cp .env.example .env   # edit credentials
-docker compose up -d --build
-
-# Backend (local)
-uvicorn app.main:app --reload
-
-# Frontend lint
-cd c:\Users\pc\Documents\GitHub\GEQO_Frontend
-npm install && npm run lint
-
-# Marketing site
-cd "c:\Users\pc\geqo marketing_site\geqo-marketing-site\tailwind-landing-page-template-main\tailwind-landing-page-template-main"
-pnpm install && pnpm dev
-```
+- **Database:** PostgreSQL on Neon.tech.
+- **Emails:** Resend HTTP API (avoids Render SMTP blocking).
+- **Webhooks:** HMAC SHA256 signature required (`WHATSAPP_APP_SECRET`).
+- **Geo-fencing:** Enforced server-side using Haversine formula based on `Restaurant.latitude`/`longitude`.
+- **Immutability:** `WalletTransaction` is the source of truth for financial ledgers, synced atomically with `wallet_balance`.
+- **Audit Logging:** Global JSONB-backed event logging for operational mutations (orders, menu items, billing, staff).
 
 ---
 
-## 7. Gaps vs ARCHITECTURE.md (corrected/added)
-
-| Item | ARCHITECTURE.md | Actual |
-|------|-----------------|--------|
-| `Dashboard.js` | Missing | Shell component with RBAC + feature flags |
-| `setup.html` | Onboarding page | Disabled security notice |
-| `beta.py` + marketing site | Missing | Full beta signup pipeline |
-| User roles | admin, owner | + `cashier`, `kitchen_staff` |
-| Drivers API path | `/drivers` implied | `/admin/drivers` |
-| Auth | JWT in localStorage | httpOnly cookie for REST; localStorage token unused |
-| Third repo | Not documented | Marketing site (Next.js) |
-| Email templates | Mentioned generically | `app/templates/email/` |
-| CI | Not mentioned | Frontend ESLint + backend security workflow |
-
----
-
-## 8. Prompt usage
-
-For future tasks, reference:
-
-```
-@PROJECT_MAP.md — [specific area: backend webhook | KDS | menu CRUD | beta signup | auth fix]
-```
-
-Narrow scope to one repo section above before opening files. Only read source when changing behavior or debugging.
-
----
-
-*Generated from full scan of three workspaces + ARCHITECTURE.md. Update this file when adding routers, views, or new repos.*
+*Generated from full scan of 4 workspaces. Update this file when adding routers, views, or new repos.*

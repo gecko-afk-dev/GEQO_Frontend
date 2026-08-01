@@ -1,4 +1,4 @@
-import { ref, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
+import { ref, onMounted, computed } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 import { api } from '../api.js';
 
 export default {
@@ -19,8 +19,8 @@ export default {
                 </button>
             </div>
 
-            <!-- Table Card -->
-            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+            <!-- Timeline Card -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col">
                 <div v-if="loading" class="flex flex-col items-center justify-center py-16">
                     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     <span class="text-sm text-slate-500 mt-3 font-medium">Retrieving audit log history...</span>
@@ -36,43 +36,35 @@ export default {
                     <p class="text-sm text-slate-400 mt-1 max-w-sm">Operations logs will appear here once actions are performed on the dashboard.</p>
                 </div>
 
-                <div v-else class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-100">
-                        <thead class="bg-slate-50/50">
-                            <tr>
-                                <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Timestamp</th>
-                                <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Actor</th>
-                                <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Action</th>
-                                <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Target</th>
-                                <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Detail</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 text-sm">
-                            <tr v-for="log in logs" :key="log.id" class="hover:bg-slate-50/30 transition-colors">
-                                <td class="px-6 py-4 whitespace-nowrap text-slate-500 font-mono text-xs">
-                                    {{ formatTimestamp(log.created_at) }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="font-medium text-slate-800">{{ log.actor_email }}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span :class="actionBadgeClass(log.action)" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide">
+                <div v-else class="relative border-l border-slate-200 ml-3 md:ml-4 space-y-8 pb-8">
+                    <div v-for="log in logs" :key="log.id" class="relative pl-6 md:pl-8 group">
+                        <!-- Timeline node -->
+                        <span class="absolute -left-2 top-1.5 h-4 w-4 rounded-full border-2 border-white bg-slate-200 group-hover:bg-blue-500 group-hover:ring-4 group-hover:ring-blue-50 transition-all"></span>
+                        
+                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span :class="actionBadgeClass(log.action)" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
                                         {{ formatAction(log.action) }}
                                     </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap font-mono text-xs text-slate-500">
-                                    {{ log.target || '-' }}
-                                </td>
-                                <td class="px-6 py-4 text-slate-600">
-                                    {{ log.detail }}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                    <span class="text-sm font-medium text-slate-700">{{ log.actor_email }}</span>
+                                </div>
+                                <p class="text-slate-600 text-sm mt-1.5 leading-relaxed">
+                                    {{ generateReadableDetail(log) }}
+                                </p>
+                                <p v-if="log.target" class="text-xs text-slate-400 font-mono mt-2">
+                                    Target: {{ log.target }}
+                                </p>
+                            </div>
+                            <div class="text-xs text-slate-500 font-medium whitespace-nowrap pt-1">
+                                {{ formatTimestamp(log.created_at) }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Pagination footer -->
-                <div v-if="logs.length > 0 || offset > 0" class="px-6 py-4 bg-slate-50/60 border-t border-slate-100 flex items-center justify-between">
+                <div v-if="logs.length > 0 || offset > 0" class="pt-6 mt-4 border-t border-slate-100 flex items-center justify-between">
                     <span class="text-xs font-medium text-slate-500">
                         Showing page {{ currentPage }} ({{ logs.length }} logs)
                     </span>
@@ -87,7 +79,7 @@ export default {
                 </div>
             </div>
         </div>
-    `,
+    \`,
     setup() {
         const logs = ref([]);
         const loading = ref(true);
@@ -97,7 +89,7 @@ export default {
         const fetchLogs = async (newOffset = 0) => {
             loading.value = true;
             try {
-                const res = await api.get(`/admin/audit-log?limit=${limit.value}&offset=${newOffset}`);
+                const res = await api.get(\`/admin/audit-log?limit=\${limit.value}&offset=\${newOffset}\`);
                 logs.value = res.data;
                 offset.value = newOffset;
             } catch (err) {
@@ -127,10 +119,35 @@ export default {
             if (action.includes('TOGGLE') || action.includes('STATUS')) {
                 return 'bg-amber-50 text-amber-700 border border-amber-200';
             }
-            if (action.includes('REMOVED') || action.includes('DELETE') || action.includes('SUSPEND')) {
+            if (action.includes('REMOVED') || action.includes('DELETE') || action.includes('SUSPEND') || action.includes('DEBIT')) {
                 return 'bg-rose-50 text-rose-700 border border-rose-200';
             }
+            if (action.includes('BILLING') || action.includes('CREDIT')) {
+                return 'bg-purple-50 text-purple-700 border border-purple-200';
+            }
             return 'bg-slate-100 text-slate-700 border border-slate-200';
+        };
+
+        const generateReadableDetail = (log) => {
+            if (!log.detail) return 'Action performed without additional details.';
+            
+            // Legacy strings wrapped in {"message": ...}
+            if (log.detail.message) {
+                return log.detail.message;
+            }
+
+            switch(log.action) {
+                case 'ORDER_STATUS_UPDATED':
+                    return \`Updated order from '\${log.detail.old}' to '\${log.detail.new}'\`;
+                case 'ITEM_AVAILABILITY_TOGGLED':
+                    const status = log.detail.is_available ? 'Available' : 'Out of Stock';
+                    return \`Marked menu item '\${log.detail.item_name}' as \${status}\`;
+                case 'BILLING_ADJUSTED':
+                    return \`Adjusted wallet balance by \${log.detail.amount > 0 ? '+' : ''}\${log.detail.amount} MAD (\${log.detail.type}). Reason: \${log.detail.description}\`;
+                default:
+                    // Fallback for unknown JSON structures
+                    return JSON.stringify(log.detail);
+            }
         };
 
         const currentPage = computed(() => {
@@ -159,6 +176,7 @@ export default {
             formatTimestamp,
             formatAction,
             actionBadgeClass,
+            generateReadableDetail,
             nextPage,
             prevPage
         };

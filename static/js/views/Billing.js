@@ -48,6 +48,41 @@ export default {
                         </button>
                     </div>
                 </div>
+
+                <!-- Transactions Table -->
+                <div class="mt-8">
+                    <h3 class="text-xl font-bold text-slate-100 mb-4">Transaction History</h3>
+                    <div class="overflow-x-auto rounded-2xl border border-white/[0.05]">
+                        <table class="table-dark w-full text-left border-collapse" style="background: var(--superadmin-bg)">
+                            <thead>
+                                <tr class="border-b border-white/[0.05]">
+                                    <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                                    <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Type</th>
+                                    <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Description</th>
+                                    <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-if="transactions.length === 0">
+                                    <td colspan="4" class="p-8 text-center text-slate-500 italic text-sm">No transactions yet.</td>
+                                </tr>
+                                <tr v-for="t in transactions" :key="t.id" class="border-b border-white/[0.05] hover:bg-white/[0.02]">
+                                    <td class="p-4 text-sm text-slate-400">{{ formatDate(t.created_at) }}</td>
+                                    <td class="p-4">
+                                        <span class="px-2 py-1 text-xs rounded-lg uppercase tracking-wider font-bold"
+                                              :class="t.type === 'credit' ? 'bg-emerald/10 text-emerald' : (t.type === 'debit' ? 'bg-harissa/10 text-harissa' : 'bg-saffron/10 text-saffron')">
+                                            {{ t.type }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-sm text-slate-300">{{ t.description || '—' }}</td>
+                                    <td class="p-4 text-right font-mono text-sm" :class="t.amount > 0 ? 'text-emerald' : 'text-slate-100'">
+                                        {{ t.amount > 0 ? '+' : '' }}{{ t.amount.toFixed(2) }} MAD
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <!-- ════ TOP UP INSTRUCTIONS MODAL ════ -->
@@ -100,6 +135,7 @@ export default {
     props: ['user'],
     setup(props) {
         const balance = ref(0);
+        const transactions = ref([]);
         const loading = ref(true);
         const showInstructions = ref(false);
 
@@ -108,13 +144,23 @@ export default {
                 // Fetch the current restaurant's dashboard which includes the wallet_balance
                 const res = await api.get('/admin/restaurant/dashboard');
                 balance.value = res.data.restaurant.wallet_balance || 0;
+                
+                // Fetch transactions
+                const txRes = await api.get('/admin/billing/transactions');
+                transactions.value = txRes.data;
             } catch (err) {
-                console.error('[Billing] error loading balance', err);
+                console.error('[Billing] error loading balance or transactions', err);
             } finally {
                 loading.value = false;
             }
         });
 
-        return { balance, loading, showInstructions };
+        const formatDate = (iso) => {
+            if (!iso) return '—';
+            const d = new Date(iso);
+            return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        };
+
+        return { balance, transactions, loading, showInstructions, formatDate };
     }
 };
