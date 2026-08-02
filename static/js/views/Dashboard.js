@@ -19,7 +19,7 @@ export default {
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between items-center h-16">
                         <div class="flex items-center">
-                            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm mr-3">
+                            <div class="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm mr-3">
                                 <span class="text-white font-bold text-lg leading-none">G</span>
                             </div>
                             <h1 class="text-xl font-bold text-slate-900 tracking-tight">GEQO Dashboard</h1>
@@ -28,8 +28,8 @@ export default {
                             <div class="hidden sm:flex flex-col items-end">
                                 <span class="text-sm font-medium text-slate-900">{{ user.email }}</span>
                                 <div class="flex items-center gap-2">
-                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 mt-0.5 uppercase tracking-wider">{{ formatRole(user.role) }}</span>
-                                    <span v-if="user.role === 'restaurant_owner'"
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 mt-0.5 uppercase tracking-wider">{{ formatRole(user.role) }}</span>
+                                    <span v-if="['restaurant_owner', 'admin'].includes(user.role)"
                                           class="text-xs font-bold px-2.5 py-0.5 rounded-full mt-0.5 whitespace-nowrap"
                                           :class="walletBadgeClass">
                                         {{ liveWalletBalance.toFixed(2) }} MAD
@@ -52,7 +52,7 @@ export default {
                         <!-- Overview: Admin, Owner, Cashier -->
                         <button v-if="['admin', 'restaurant_owner', 'cashier'].includes(user.role)"
                                 @click="currentView = 'overview'"
-                                :class="currentView === 'overview' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
+                                :class="currentView === 'overview' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
                             Overview
                         </button>
@@ -60,7 +60,7 @@ export default {
                         <!-- Active Orders: Owner, Cashier -->
                         <button v-if="['restaurant_owner', 'cashier'].includes(user.role)"
                                 @click="currentView = 'orders'"
-                                :class="currentView === 'orders' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
+                                :class="currentView === 'orders' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap relative">
                             Active Orders
                             <span class="absolute top-2 right-1.5 flex h-2 w-2">
@@ -72,7 +72,7 @@ export default {
                         <!-- Restaurants Admin: Admin only -->
                         <button v-if="user.role === 'admin'"
                                 @click="currentView = 'restaurants'"
-                                :class="currentView === 'restaurants' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
+                                :class="currentView === 'restaurants' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
                             Restaurants Admin
                         </button>
@@ -80,15 +80,15 @@ export default {
                         <!-- Menu Management: Owner, Cashier -->
                         <button v-if="['restaurant_owner', 'cashier'].includes(user.role)"
                                 @click="currentView = 'menu'"
-                                :class="currentView === 'menu' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
+                                :class="currentView === 'menu' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
                             Menu Management
                         </button>
 
                         <!-- Staff Management: Owner only -->
-                        <button v-if="user.role === 'restaurant_owner'"
+                        <button v-if="['restaurant_owner', 'admin'].includes(user.role)"
                                 @click="currentView = 'staff'"
-                                :class="currentView === 'staff' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
+                                :class="currentView === 'staff' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
                             Staff Management
                         </button>
@@ -96,7 +96,7 @@ export default {
                         <!-- Delivery Agents: Owner, Cashier -->
                         <button v-if="['restaurant_owner', 'cashier'].includes(user.role)"
                                 @click="currentView = 'drivers'"
-                                :class="currentView === 'drivers' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
+                                :class="currentView === 'drivers' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
                             Delivery Agents
                         </button>
@@ -104,15 +104,15 @@ export default {
                         <!-- Audit Logs: Admin, Owner -->
                         <button v-if="['admin', 'restaurant_owner'].includes(user.role)"
                                 @click="currentView = 'audit-log'"
-                                :class="currentView === 'audit-log' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
+                                :class="currentView === 'audit-log' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
                             Audit Logs
                         </button>
 
                         <!-- Billing: Owner ONLY -->
-                        <button v-if="user.role === 'restaurant_owner'"
+                        <button v-if="['restaurant_owner', 'admin'].includes(user.role)"
                                 @click="currentView = 'billing'"
-                                :class="currentView === 'billing' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
+                                :class="currentView === 'billing' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
                             💳 Billing
                         </button>
@@ -129,7 +129,7 @@ export default {
             <button v-if="user.role !== 'kitchen_staff'"
                     @click="currentView = 'settings'"
                     class="fixed bottom-6 left-6 z-40 p-3 rounded-full shadow-lg border transition-all flex items-center justify-center group bg-white hover:bg-slate-50 text-slate-600 border-slate-200"
-                    :class="currentView === 'settings' ? '!bg-blue-600 !text-white !border-blue-600 shadow-blue-500/30' : ''">
+                    :class="currentView === 'settings' ? '!bg-emerald-600 !text-white !border-blue-600 shadow-blue-500/30' : ''">
                 <svg class="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -172,15 +172,15 @@ export default {
         };
 
         onMounted(() => {
-            if (props.user.role === 'restaurant_owner') {
+            if (['restaurant_owner', 'admin'].includes(props.user.role)) {
                 fetchLiveBalance();
             }
         });
 
         const walletBadgeClass = computed(() => {
-            if (liveWalletBalance.value > 20) return 'bg-emerald-50 text-emerald-600';
-            if (liveWalletBalance.value >= 0) return 'bg-yellow-50 text-yellow-600';
-            return 'bg-red-50 text-red-600';
+            if (liveWalletBalance.value > 20) return 'bg-emerald-100 text-emerald-800';
+            if (liveWalletBalance.value >= 0) return 'bg-amber-100 text-amber-800';
+            return 'bg-red-100 text-red-800';
         });
 
         const currentComponent = computed(() => {

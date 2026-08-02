@@ -38,7 +38,7 @@ export default {
                         </div>
                     </div>
                     <div class="flex justify-end">
-                        <button type="button" @click="showForgot = true" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Forgot password?</button>
+                        <button type="button" @click="showForgot = true" class="text-sm text-emerald-600 hover:text-blue-800 font-medium">Forgot password?</button>
                     </div>
                     <button type="submit" :disabled="loading" class="w-full btn-primary mt-2 flex justify-center items-center">
                         <span v-if="loading" class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"></span>

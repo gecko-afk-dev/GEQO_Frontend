@@ -6,7 +6,7 @@ export default {
         <div>
             <div class="flex justify-between items-center mb-6">
                 <!-- h2 brutally removed -->
-                <button @click="loadOrders" class="text-sm font-medium text-blue-600 hover:text-blue-800">
+                <button @click="loadOrders" class="text-sm font-medium text-emerald-600 hover:text-blue-800">
                     Refresh
                 </button>
             </div>
@@ -46,7 +46,7 @@ export default {
                             <!-- Actions based on status -->
                             <div class="flex space-x-2 mt-3">
                                 <template v-if="order.status === 'received'">
-                                    <button @click="updateStatus(order.id, 'accepted')" class="flex-1 btn-primary text-xs py-2 bg-blue-600 hover:bg-blue-700">Accept</button>
+                                    <button @click="updateStatus(order.id, 'accepted')" class="flex-1 btn-primary text-xs py-2 bg-emerald-600 hover:bg-blue-700">Accept</button>
                                     <button @click="updateStatus(order.id, 'cancelled')" class="flex-1 btn-primary text-xs py-2 bg-red-600 hover:bg-red-700">Reject</button>
                                 </template>
                                 <template v-else-if="order.status === 'accepted'">
@@ -166,7 +166,7 @@ export default {
 
         const statusBgColor = (status) => {
             const colors = {
-                'received': 'bg-blue-50 border-b-blue-100',
+                'received': 'bg-emerald-50 border-b-blue-100',
                 'accepted': 'bg-amber-50 border-b-amber-100',
                 'preparing': 'bg-purple-50 border-b-purple-100',
                 'ready': 'bg-emerald-50 border-b-emerald-100',

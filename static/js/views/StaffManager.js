@@ -11,7 +11,7 @@ export default {
                     <!-- h2 removed -->
                     <p class="text-sm text-slate-500 mt-1">Manage Cashiers and Kitchen Staff. Invite new members to collaborate.</p>
                 </div>
-                <button @click="showInviteModal = true" class="inline-flex items-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl shadow-sm hover:shadow transition-all duration-200 gap-2">
+                <button @click="showInviteModal = true" class="inline-flex items-center px-4 py-2.5 bg-emerald-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl shadow-sm hover:shadow transition-all duration-200 gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
                     </svg>
@@ -122,7 +122,7 @@ export default {
                             <button type="button" @click="closeInviteModal" class="px-4 py-2.5 border border-slate-200 text-slate-600 text-sm font-medium rounded-xl hover:bg-slate-50 transition-colors">
                                 Cancel
                             </button>
-                            <button type="submit" :disabled="submitting" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl shadow-sm transition-colors flex items-center gap-2">
+                            <button type="submit" :disabled="submitting" class="px-4 py-2.5 bg-emerald-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl shadow-sm transition-colors flex items-center gap-2">
                                 <span v-if="submitting" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
                                 {{ submitting ? 'Sending invite...' : 'Send Invite' }}
                             </button>

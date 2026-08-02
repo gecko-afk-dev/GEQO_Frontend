@@ -39,7 +39,7 @@ export default {
                 <div v-else class="relative border-l border-slate-200 ml-3 md:ml-4 space-y-8 pb-8">
                     <div v-for="log in logs" :key="log.id" class="relative pl-6 md:pl-8 group">
                         <!-- Timeline node -->
-                        <span class="absolute -left-2 top-1.5 h-4 w-4 rounded-full border-2 border-white bg-slate-200 group-hover:bg-blue-500 group-hover:ring-4 group-hover:ring-blue-50 transition-all"></span>
+                        <span class="absolute -left-2 top-1.5 h-4 w-4 rounded-full border-2 border-white bg-slate-200 group-hover:bg-emerald-500 group-hover:ring-4 group-hover:ring-blue-50 transition-all"></span>
                         
                         <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
                             <div class="flex-1">
@@ -114,7 +114,7 @@ export default {
                 return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
             }
             if (action.includes('ORDER')) {
-                return 'bg-blue-50 text-blue-700 border border-blue-200';
+                return 'bg-emerald-50 text-emerald-700 border border-blue-200';
             }
             if (action.includes('TOGGLE') || action.includes('STATUS')) {
                 return 'bg-amber-50 text-amber-700 border border-amber-200';
