@@ -171,10 +171,11 @@ static/
 
 ## 4. Consumer Menu PWA — `GEQO_Menu_PWA`
 
-Next.js 15 App Router app serving the customer-facing ordering funnel via Magic Links.
+Next.js 15 App Router app serving the customer-facing ordering funnel via Magic Links. Features the "$100M Native App" Aesthetic ("Appetite" design system).
 
 - **Trigger:** Customer messages WhatsApp bot → Bot replies with `https://menu.mygeqo.com/?session=JWT`.
 - **Usage:** Customers browse trilingual menu, customize items, and checkout.
+  - **Native UI/UX:** Uses `vaul` for bottom sheets (Modifier Sheet) and `framer-motion` for micro-interactions (bouncing Cart Pill), providing a Glovo/Talabat-tier native app feel in the browser. 
   - **Modifiers (Talabat-Style):** Strict enforcement of `min_selection`/`max_selection`. Uses radios for `max=1` and checkboxes for `max>1`. Dynamically hides modifier UI if none exist.
   - **Map UX (Checkout):** Implements Leaflet pin-drop confirmation ("Is this your exact location?") to prevent fat-finger mistakes. Features a robust GPS fallback to Casablanca `[33.5731, -7.5898]` if `navigator.geolocation` crashes (e.g., `kCLErrorLocationUnknown`).
   - **Checkout Payload:** Sends Cart Payload, `customer_name` (via controlled React input), and confirmed map coordinates.
