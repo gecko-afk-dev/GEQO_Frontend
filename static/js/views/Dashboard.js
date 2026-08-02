@@ -27,7 +27,7 @@ export default {
                                 <span class="text-sm font-medium text-slate-900">{{ user.email }}</span>
                                 <div class="flex items-center gap-2">
                                     <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 mt-0.5 uppercase tracking-wider">{{ formatRole(user.role) }}</span>
-                                    <span v-if="['restaurant_owner', 'admin'].includes(user.role)"
+                                    <span v-if="user.role === 'restaurant_owner'"
                                           class="text-xs font-bold px-2.5 py-0.5 rounded-full mt-0.5 whitespace-nowrap"
                                           :class="walletBadgeClass">
                                         {{ liveWalletBalance.toFixed(2) }} MAD

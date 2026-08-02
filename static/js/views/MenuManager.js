@@ -241,8 +241,11 @@ export default {
                                 <input v-model="catForm.name_ar" id="cat-name-ar" type="text" dir="rtl" class="input-dark font-cairo" placeholder="برغر">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Image URL</label>
-                                <input v-model="catForm.image_url" type="url" class="input-dark" placeholder="https://...">
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Category Image</label>
+                                <input type="file" accept="image/*" @change="e => handleImageSelected(e, catForm)" class="input-dark text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-saffron file:text-black hover:file:bg-saffron-light">
+                                <div v-if="catForm.image_url" class="mt-3">
+                                    <img :src="catForm.image_url" class="w-16 h-16 object-cover rounded-lg border border-white/10" />
+                                </div>
                             </div>
                         </div>
                         <div v-if="modalError" class="mt-4 p-3 rounded-lg bg-harissa/10 border border-harissa/30 text-harissa text-sm">{{ modalError }}</div>
@@ -281,8 +284,17 @@ export default {
                                 <input v-model="itemForm.item_details" id="item-details" type="text" class="input-dark" placeholder="Served with fries">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Image URL</label>
-                                <input v-model="itemForm.image_url" type="url" class="input-dark" placeholder="https://...">
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Item Image</label>
+                                <div class="flex items-center gap-3 mb-3">
+                                    <input type="checkbox" v-model="itemForm.inherit_image" id="item-inherit-img" class="accent-saffron w-4 h-4">
+                                    <label for="item-inherit-img" class="text-sm font-semibold text-slate-300">Use Category Image</label>
+                                </div>
+                                <div v-if="!itemForm.inherit_image">
+                                    <input type="file" accept="image/*" @change="e => handleImageSelected(e, itemForm)" class="input-dark text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-saffron file:text-black hover:file:bg-saffron-light">
+                                    <div v-if="itemForm.image_url" class="mt-3">
+                                        <img :src="itemForm.image_url" class="w-16 h-16 object-cover rounded-lg border border-white/10" />
+                                    </div>
+                                </div>
                             </div>
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" v-model="itemForm.is_available" id="item-available" class="accent-saffron w-4 h-4">
@@ -423,8 +435,18 @@ export default {
         const catForm  = ref({ name_en: '', name_fr: '', name_ar: '', image_url: '' });
         const itemForm = ref({
             name_en: '', name_fr: '', name_ar: '',
-            price: 0, item_details: '', image_url: '', is_available: true
+            price: 0, item_details: '', image_url: '', inherit_image: false, is_available: true
         });
+
+        const handleImageSelected = (e, formRef) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                formRef.image_url = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
 
         // ── Filtered categories based on tab ───────────────────────────────
         const filteredCategories = computed(() => {
@@ -594,7 +616,7 @@ export default {
         // ── Item CRUD ────────────────────────────────────────────────────────
         const openAddItemModal = (catId) => {
             addItemCatId.value = catId;
-            itemForm.value     = { name_en: '', name_fr: '', name_ar: '', price: 0, item_details: '', image_url: '', is_available: true };
+            itemForm.value     = { name_en: '', name_fr: '', name_ar: '', price: 0, item_details: '', image_url: '', inherit_image: false, is_available: true };
             modalError.value   = '';
             showAddItem.value  = true;
         };
@@ -602,9 +624,15 @@ export default {
             modalError.value = '';
             if (!itemForm.value.name_en.trim()) { modalError.value = 'English name is required.'; return; }
             if (itemForm.value.price <= 0)       { modalError.value = 'Price must be greater than 0.'; return; }
+            const payload = { ...itemForm.value };
+            if (payload.inherit_image) {
+                payload.image_url = null;
+            }
+            delete payload.inherit_image;
+            
             try {
                 await api.post('/admin/menu/items', {
-                    ...itemForm.value,
+                    ...payload,
                     category_id: addItemCatId.value,
                     restaurant_id: props.user.restaurant_id,
                 });
@@ -634,6 +662,7 @@ export default {
             showModifiers, modifierContextType, modifierContextEntity, newGroupForm, newOptionForms,
             openModifiersModal, closeModifiersModal, addModifierGroup, addModifierOption, deleteModifierGroup, deleteModifierOption,
             modalError,
+            handleImageSelected
         };
     }
 };
