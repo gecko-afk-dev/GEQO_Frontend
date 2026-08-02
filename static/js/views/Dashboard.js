@@ -26,7 +26,14 @@ export default {
                         <div class="flex items-center space-x-4">
                             <div class="hidden sm:flex flex-col items-end">
                                 <span class="text-sm font-medium text-slate-900">{{ user.email }}</span>
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 mt-0.5 uppercase tracking-wider">{{ formatRole(user.role) }}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 mt-0.5 uppercase tracking-wider">{{ formatRole(user.role) }}</span>
+                                <span v-if="user.role === 'restaurant_owner'" 
+                                      class="text-xs font-bold px-2 py-0.5 rounded-full mt-0.5 whitespace-nowrap"
+                                      :class="user.wallet_balance > 20 ? 'bg-emerald-50 text-emerald-600' : (user.wallet_balance >= 0 ? 'bg-yellow-50 text-yellow-600' : 'bg-red-50 text-red-600')">
+                                    Wallet: {{ (user.wallet_balance || 0).toFixed(2) }} MAD {{ user.wallet_balance < 0 ? '(Grace)' : '' }}
+                                </span>
+                                </div>
                             </div>
                             <div class="w-px h-8 bg-slate-200 hidden sm:block"></div>
                             <button @click="$emit('logout')" class="text-sm font-semibold text-slate-500 hover:text-red-650 transition-colors px-2.5 py-1 rounded-lg hover:bg-slate-100">
@@ -105,8 +112,8 @@ export default {
                             Audit Logs
                         </button>
 
-                        <!-- Billing: Admin, Owner -->
-                        <button v-if="['admin', 'restaurant_owner'].includes(user.role)"
+                        <!-- Billing: Owner -->
+                        <button v-if="['restaurant_owner'].includes(user.role)"
                                 @click="handleNavClick('Billing', 'billing')"
                                 :class="currentView === 'billing' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center gap-1.5">

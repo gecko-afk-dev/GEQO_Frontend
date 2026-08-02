@@ -51,22 +51,39 @@ export default {
                     </div>
                 </div>
 
-                <!-- Wallet Card -->
-                <div class="card-dark p-8 flex flex-col md:flex-row items-center justify-between gap-6 border border-white/[0.05]">
-                    <div>
+                                <!-- Wallet & Top Up Card -->
+                <div class="card-dark p-8 border border-white/[0.05] grid md:grid-cols-2 gap-8">
+                    <!-- Balance Section -->
+                    <div class="flex flex-col justify-center">
                         <p class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Current Wallet Balance</p>
-                        <div class="text-5xl font-black tracking-tight font-mono flex items-baseline gap-2"
+                        <div class="text-5xl font-black tracking-tight font-mono flex items-baseline gap-2 mb-4"
                              :class="balance < 0 ? 'text-harissa' : 'text-slate-100'">
                             {{ balance.toFixed(2) }}
                             <span class="text-2xl text-slate-500 font-sans">MAD</span>
                         </div>
+                        <p class="text-xs text-slate-500">3.0 MAD is automatically deducted per successful order.</p>
                     </div>
                     
-                    <div class="text-center md:text-right shrink-0">
-                        <p class="text-xs text-slate-500 mb-2 max-w-[200px] ml-auto">3.0 MAD is automatically deducted per successful order.</p>
-                        <button @click="showInstructions = true" class="btn btn-saffron px-8 text-sm h-12 shadow-[0_0_20px_rgba(245,158,11,0.25)]">
-                            Top Up Account
-                        </button>
+                    <!-- Top Up Instructions -->
+                    <div class="bg-slate-900/50 rounded-2xl p-6 border border-white/[0.05]">
+                        <h4 class="text-base font-black text-slate-100 mb-4">Top Up Account</h4>
+                        <p class="text-sm text-slate-400 mb-4">
+                            Make a bank transfer using the details below. Send the transfer receipt (screenshot) to our WhatsApp Support. Your wallet will be credited within 2-4 hours.
+                        </p>
+                        <div class="bg-black/50 border border-white/[0.05] rounded-xl p-4 space-y-3 font-mono text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Bank:</span>
+                                <span class="text-slate-200 font-bold">CIH Bank</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Name:</span>
+                                <span class="text-slate-200 font-bold">GEQO S.A.R.L</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">RIB:</span>
+                                <span class="text-saffron font-bold text-right tracking-widest">230 780 000000000 0</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -106,51 +123,7 @@ export default {
                 </div>
             </div>
 
-            <!-- ════ TOP UP INSTRUCTIONS MODAL ════ -->
-            <template v-if="showInstructions">
-                <div class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div class="w-full max-w-md rounded-2xl border border-white/[0.08] shadow-2xl overflow-hidden bg-slate-900">
-                        <div class="px-6 pt-6 pb-4 border-b border-white/[0.08] flex justify-between items-center bg-slate-800/50">
-                            <h3 class="text-lg font-black text-slate-100">Top Up Instructions</h3>
-                            <button @click="showInstructions = false" class="text-slate-500 hover:text-slate-300 transition-colors">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                            </button>
-                        </div>
-                        <div class="px-6 py-6 space-y-4">
-                            <p class="text-sm text-slate-300">
-                                To add funds to your GEQO wallet, please make a bank transfer using the details below.
-                            </p>
-                            
-                            <div class="bg-black/50 border border-white/[0.05] rounded-xl p-4 space-y-3 font-mono text-sm">
-                                <div class="flex justify-between">
-                                    <span class="text-slate-500">Bank:</span>
-                                    <span class="text-slate-200 font-bold">CIH Bank</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-slate-500">Beneficiary:</span>
-                                    <span class="text-slate-200 font-bold">GEQO S.A.R.L</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-slate-500">RIB:</span>
-                                    <span class="text-saffron font-bold text-right tracking-widest">230 780 000000000 0</span>
-                                </div>
-                            </div>
-                            
-                            <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 flex gap-3 mt-4">
-                                <span class="text-xl">📱</span>
-                                <p class="text-sm text-blue-200 leading-relaxed">
-                                    After transferring, please send the transfer receipt (screenshot) to our 
-                                    <a href="#" class="text-blue-400 font-bold hover:underline">WhatsApp Support</a>. 
-                                    Your wallet will be credited within 2-4 hours.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="px-6 pb-6 pt-2">
-                            <button @click="showInstructions = false" class="btn btn-ghost w-full bg-slate-800 hover:bg-slate-700 text-white">Got it</button>
-                        </div>
-                    </div>
-                </div>
-            </template>
+            
         </div>
     `,
     props: ['user'],
@@ -158,7 +131,7 @@ export default {
         const balance = ref(0);
         const transactions = ref([]);
         const loading = ref(true);
-        const showInstructions = ref(false);
+        
 
         onMounted(async () => {
             try {
@@ -182,6 +155,6 @@ export default {
             return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         };
 
-        return { balance, transactions, loading, showInstructions, formatDate };
+        return { balance, transactions, loading,  formatDate };
     }
 };

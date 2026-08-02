@@ -5,7 +5,7 @@ export default {
     template: `
         <div>
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-slate-800">Driver Management</h2>
+                <!-- h2 brutally removed -->
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">

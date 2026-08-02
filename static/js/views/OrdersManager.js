@@ -5,14 +5,7 @@ export default {
     template: `
         <div>
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-slate-800 flex items-center">
-                    Active Orders
-                    <span v-if="wsConnected" class="ml-3 flex h-3 w-3 relative">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                    </span>
-                    <span v-else class="ml-3 h-3 w-3 rounded-full bg-red-500"></span>
-                </h2>
+                <!-- h2 brutally removed -->
                 <button @click="loadOrders" class="text-sm font-medium text-blue-600 hover:text-blue-800">
                     Refresh
                 </button>
