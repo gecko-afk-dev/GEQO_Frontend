@@ -86,7 +86,7 @@ Customer (WhatsApp) → Meta Cloud API → webhook.py
 
 **Enums:** `OrderStatus`, `FulfillmentMethod`, `UserRole`, `RestaurantStatus`, `PaymentStatus`, `BetaCardStatus`, `TransactionType`
 
-**Tables:** `User`, `Restaurant` (Geo-fencing: `latitude`, `longitude`, `max_delivery_radius_km`; Financial: `wallet_balance`), `Customer`, `Category`, `MenuItem`, `ModifierGroup` (Modifier Inheritance: belongs to either `category_id` or `menu_item_id`), `ModifierOption`, `Order` (`delivery_fee`, `customer_notes`, `customer_name`), `OrderItem`, `OrderItemExclusion`, `OrderItemModifier`, `Driver`, `Cart`, `CartItem`, `CartItemExclusion`, `CartItemModifier`, `DailyAnalytics`, `AuditLog` (`detail` as `JSONB`), `BetaCard`, `BetaSignup`, `WalletTransaction`
+**Tables:** `User`, `Restaurant` (Geo-fencing: `latitude`, `longitude`, `max_delivery_radius_km`; Financial: `wallet_balance`), `Customer`, `Category` (`image_url`), `MenuItem` (`image_url`), `ModifierGroup` (Modifier Inheritance: belongs to either `category_id` or `menu_item_id`), `ModifierOption`, `Order` (`delivery_fee`, `customer_notes`, `customer_name`), `OrderItem`, `OrderItemExclusion`, `OrderItemModifier`, `Driver`, `Cart`, `CartItem`, `CartItemExclusion`, `CartItemModifier`, `DailyAnalytics`, `AuditLog` (`detail` as `JSONB`), `BetaCard`, `BetaSignup`, `WalletTransaction`
 
 ### `app/api/` — Endpoints (summary)
 
@@ -141,10 +141,11 @@ static/
       OrdersManager.js
       MenuManager.js
       StaffManager.js
-      DriversManager.js
+      DriversManager.js   # UI text renamed to 'Delivery Agents'
       RestaurantsAdmin.js # Includes "Adjust Wallet" / Credit capabilities
+      RestaurantProfile.js# NEW: Dedicated Admin HQ tabbed interface per-tenant
       AuditLog.js         # Stabilized: JSONB vertical timeline UI, mapped correctly
-      Billing.js          # Owner view of Wallet Transactions data table
+      Billing.js          # Owner view with Wallet Consumption Bar
       Settings.js         # Profile management + Leaflet.js interactive geo-fencing map
       ResetPassword.js
       ForcePasswordChange.js

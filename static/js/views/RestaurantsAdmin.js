@@ -7,9 +7,12 @@
  */
 import { ref, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 import { api } from '../api.js';
+import RestaurantProfile from './RestaurantProfile.js';
 
 export default {
     name: 'RestaurantsAdmin',
+    components: { RestaurantProfile },
+    props: ['user'],
     template: `
         <div class="space-y-6 animate-fade-in">
 
@@ -50,6 +53,18 @@ export default {
 
             <!-- ════════════════════════════════════ -->
             <!-- TAB: RESTAURANT FLEET               -->
+            <template v-if="activeTab === 'restaurants' && selectedRestaurant">
+                <RestaurantProfile 
+                    :user="user" 
+                    :restaurant="selectedRestaurant" 
+                    @back="selectedRestaurant = null"
+                    @adjust-wallet="openAdjustModal"
+                    @suspend="promptSuspend"
+                    @activate="activate"
+                />
+            </template>
+
+            <template v-if="activeTab === 'restaurants' && !selectedRestaurant">
             <!-- ════════════════════════════════════ -->
             <template v-if="activeTab === 'restaurants'">
 
@@ -96,7 +111,7 @@ export default {
                                 class="group"
                                 style="background: var(--superadmin-bg); border-bottom-color: var(--superadmin-border)">
                                 <td>
-                                    <div class="font-bold text-slate-200 text-sm">{{ r.name }}</div>
+                                    <button @click="selectedRestaurant = r" class="font-bold text-blue-400 hover:text-blue-300 hover:underline text-sm text-left">{{ r.name }}</button>
                                     <div class="text-xs text-slate-700">ID #{{ r.id }}</div>
                                 </td>
                                 <td class="text-slate-500 text-sm">{{ r.city || '—' }}</td>
@@ -145,7 +160,7 @@ export default {
                          class="card-superadmin p-4 hover-glow-saffron transition-all">
                         <div class="flex items-start justify-between mb-3">
                             <div>
-                                <div class="font-black text-slate-100">{{ r.name }}</div>
+                                <button @click="selectedRestaurant = r" class="font-black text-blue-400 hover:text-blue-300 hover:underline text-left">{{ r.name }}</button>
                                 <div class="text-xs text-slate-600 mt-0.5">{{ r.contact_email }}</div>
                                 <div class="text-xs mt-1" :class="r.wallet_balance < 0 ? 'text-harissa font-bold' : 'text-slate-400'">
                                     Wallet: {{ (r.wallet_balance || 0).toFixed(2) }} MAD
@@ -463,6 +478,7 @@ export default {
         const error         = ref('');
         const suspendTarget = ref(null);
         const activeTab     = ref('restaurants');
+        const selectedRestaurant = ref(null);
 
         const emptyForm = () => ({
             name: '', wa_phone_number: '', api_token: '', phone_number_id: '',
@@ -695,7 +711,7 @@ export default {
             leads, leadsLoading, showProvision, provisionLead,
             provisionForm, provisionError, provisionLoading,
             loadLeads, openProvisionModal, closeProvisionModal, submitProvision,
-            activeTab, toast, formatDate,
+            activeTab, toast, formatDate, selectedRestaurant,
             showAdjust, adjustTarget, adjustAmount, adjustType, adjustDescription, adjustLoading, adjustError, openAdjustModal, submitAdjust
         };
     }

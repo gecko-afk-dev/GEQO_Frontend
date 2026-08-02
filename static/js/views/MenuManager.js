@@ -21,8 +21,7 @@ export default {
             <!-- ════════ PAGE HEADER ════════ -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h2 class="text-2xl font-black text-slate-100">Menu Management</h2>
-                    <p class="text-sm text-slate-500 mt-0.5">Manage items, prices, and availability</p>
+                    <!-- H2 Removed -->
                 </div>
                 <button @click="openAddCategoryModal" id="menu-add-category-btn"
                         class="btn btn-saffron text-sm px-5 h-10 shrink-0">
@@ -75,9 +74,12 @@ export default {
 
                     <!-- Category header -->
                     <div class="px-5 py-4 border-b border-white/[0.06] flex justify-between items-center bg-surface/40">
-                        <div>
-                            <h3 class="text-base font-black text-slate-100">{{ cat.name_en }}</h3>
-                            <span class="text-xs text-slate-600 font-medium">{{ cat.name_fr }} / <span dir="auto" class="font-cairo">{{ cat.name_ar }}</span></span>
+                        <div class="flex items-center gap-3">
+                            <img v-if="cat.image_url" :src="cat.image_url" class="w-10 h-10 rounded-lg object-cover bg-slate-800" alt="">
+                            <div>
+                                <h3 class="text-base font-black text-slate-100">{{ cat.name_en }}</h3>
+                                <span class="text-xs text-slate-600 font-medium">{{ cat.name_fr }} / <span dir="auto" class="font-cairo">{{ cat.name_ar }}</span></span>
+                            </div>
                         </div>
                         <div class="flex items-center gap-3">
                             <button @click="openModifiersModal('category', cat)" class="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors">
@@ -113,9 +115,12 @@ export default {
                                     :class="!item.is_available ? 'opacity-60' : ''"
                                     class="group">
                                     <!-- Name -->
-                                    <td>
-                                        <div dir="auto" class="font-semibold text-slate-200 font-cairo">{{ item.name_en }}</div>
+                                    <td class="flex items-center gap-3 py-3">
+                                        <img v-if="item.image_url" :src="item.image_url" class="w-8 h-8 rounded-md object-cover bg-slate-800" alt="">
+                                        <div>
+                                            <div dir="auto" class="font-semibold text-slate-200 font-cairo">{{ item.name_en }}</div>
                                         <div class="text-xs text-slate-600">{{ item.name_fr }}</div>
+                                        </div>
                                     </td>
                                     <!-- Price — inline edit -->
                                     <td class="w-32">
@@ -171,6 +176,7 @@ export default {
                         <div v-for="item in cat.items" :key="item.id"
                              class="px-5 py-4 flex items-center justify-between gap-3"
                              :class="!item.is_available ? 'opacity-60' : ''">
+                            <img v-if="item.image_url" :src="item.image_url" class="w-12 h-12 rounded-md object-cover bg-slate-800 shrink-0" alt="">
                             <div class="flex-1 min-w-0">
                                 <div dir="auto" class="font-semibold text-slate-200 text-sm truncate font-cairo">{{ item.name_en }}</div>
                                 <div class="text-xs text-slate-500">{{ item.price }} MAD</div>
@@ -234,6 +240,10 @@ export default {
                                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Name (AR)</label>
                                 <input v-model="catForm.name_ar" id="cat-name-ar" type="text" dir="rtl" class="input-dark font-cairo" placeholder="برغر">
                             </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Image URL</label>
+                                <input v-model="catForm.image_url" type="url" class="input-dark" placeholder="https://...">
+                            </div>
                         </div>
                         <div v-if="modalError" class="mt-4 p-3 rounded-lg bg-harissa/10 border border-harissa/30 text-harissa text-sm">{{ modalError }}</div>
                         <div class="flex gap-3 mt-6">
@@ -269,6 +279,10 @@ export default {
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Description (optional)</label>
                                 <input v-model="itemForm.item_details" id="item-details" type="text" class="input-dark" placeholder="Served with fries">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Image URL</label>
+                                <input v-model="itemForm.image_url" type="url" class="input-dark" placeholder="https://...">
                             </div>
                             <div class="flex items-center gap-3">
                                 <input type="checkbox" v-model="itemForm.is_available" id="item-available" class="accent-saffron w-4 h-4">
@@ -406,10 +420,10 @@ export default {
         const addItemCatId    = ref(null);
         const modalError      = ref('');
 
-        const catForm  = ref({ name_en: '', name_fr: '', name_ar: '' });
+        const catForm  = ref({ name_en: '', name_fr: '', name_ar: '', image_url: '' });
         const itemForm = ref({
             name_en: '', name_fr: '', name_ar: '',
-            price: 0, item_details: '', is_available: true
+            price: 0, item_details: '', image_url: '', is_available: true
         });
 
         // ── Filtered categories based on tab ───────────────────────────────
@@ -551,7 +565,7 @@ export default {
 
         // ── Category CRUD ───────────────────────────────────────────────────
         const openAddCategoryModal = () => {
-            catForm.value = { name_en: '', name_fr: '', name_ar: '' };
+            catForm.value = { name_en: '', name_fr: '', name_ar: '', image_url: '' };
             modalError.value = '';
             showAddCategory.value = true;
         };
@@ -580,7 +594,7 @@ export default {
         // ── Item CRUD ────────────────────────────────────────────────────────
         const openAddItemModal = (catId) => {
             addItemCatId.value = catId;
-            itemForm.value     = { name_en: '', name_fr: '', name_ar: '', price: 0, item_details: '', is_available: true };
+            itemForm.value     = { name_en: '', name_fr: '', name_ar: '', price: 0, item_details: '', image_url: '', is_available: true };
             modalError.value   = '';
             showAddItem.value  = true;
         };

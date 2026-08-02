@@ -9,9 +9,9 @@ export default {
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Add Driver Form -->
+                <!-- Add Delivery Agent Form -->
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-fit">
-                    <h3 class="text-lg font-bold text-slate-800 mb-4">Add New Driver</h3>
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">Add New Delivery Agent</h3>
                     <form @submit.prevent="addDriver" class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Name</label>
@@ -22,12 +22,12 @@ export default {
                             <input v-model="newDriver.wa_id" type="text" required class="input-premium" placeholder="e.g. 212600000000">
                         </div>
                         <button type="submit" :disabled="adding" class="w-full btn-primary mt-2">
-                            {{ adding ? 'Adding...' : 'Add Driver' }}
+                            {{ adding ? 'Adding...' : 'Add Delivery Agent' }}
                         </button>
                     </form>
                 </div>
                 
-                <!-- Drivers List -->
+                <!-- Delivery Agents List -->
                 <div class="md:col-span-2">
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                         <table class="min-w-full divide-y divide-slate-200">

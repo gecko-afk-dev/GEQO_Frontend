@@ -8,7 +8,7 @@ export default {
             <!-- Header section -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Staff Management</h2>
+                    <!-- h2 removed -->
                     <p class="text-sm text-slate-500 mt-1">Manage Cashiers and Kitchen Staff. Invite new members to collaborate.</p>
                 </div>
                 <button @click="showInviteModal = true" class="inline-flex items-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl shadow-sm hover:shadow transition-all duration-200 gap-2">

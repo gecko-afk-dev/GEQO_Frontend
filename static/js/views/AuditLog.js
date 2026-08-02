@@ -8,7 +8,7 @@ export default {
             <!-- Header section -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Security & Audit Trails</h2>
+                    <!-- h2 removed -->
                     <p class="text-sm text-slate-500 mt-1">Platform operations log. Track status changes, staff updates, and menu adjustments.</p>
                 </div>
                 <button @click="fetchLogs(0)" class="inline-flex items-center px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-xl transition-all duration-200 gap-1.5">

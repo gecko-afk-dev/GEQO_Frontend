@@ -7,7 +7,7 @@ export default {
         <div class="space-y-6 animate-fade-in max-w-4xl">
             <!-- Header -->
             <div>
-                <h2 class="text-2xl font-black text-slate-100">Billing & Wallet</h2>
+                <!-- h2 removed -->
                 <p class="text-sm text-slate-500 mt-0.5">Manage your prepaid wallet balance to ensure smooth order processing.</p>
             </div>
 
@@ -27,6 +27,27 @@ export default {
                         <p class="text-slate-300 text-sm">
                             Your wallet balance has fallen below zero. Please top up your account immediately to prevent any potential service interruptions.
                         </p>
+                    </div>
+                </div>
+
+                <!-- Wallet Consumption Bar -->
+                <div class="card-dark p-6 border border-white/[0.05]">
+                    <div class="flex justify-between items-end mb-2">
+                        <span class="text-sm font-bold text-slate-400 uppercase tracking-wider">Real-Time Wallet Level</span>
+                        <span class="text-xs font-bold"
+                              :class="balance > 100 ? 'text-emerald' : (balance > 0 ? 'text-saffron' : 'text-harissa')">
+                            {{ balance > 100 ? 'Healthy' : (balance > 0 ? 'Low' : 'Depleted') }}
+                        </span>
+                    </div>
+                    <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full transition-all duration-500"
+                             :class="balance > 100 ? 'bg-emerald' : (balance > 0 ? 'bg-saffron' : 'bg-harissa')"
+                             :style="{ width: Math.min(Math.max((balance / 500) * 100, 2), 100) + '%' }">
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-500 mt-2 font-mono">
+                        <span>0 MAD</span>
+                        <span>500+ MAD</span>
                     </div>
                 </div>
 

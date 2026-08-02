@@ -87,13 +87,13 @@ export default {
                             Staff Management
                         </button>
 
-                        <!-- Drivers: Owner, Cashier (Removed Admin) -->
+                        <!-- Delivery Agents: Owner, Cashier -->
                         <button v-if="['restaurant_owner', 'cashier'].includes(user.role)"
-                                @click="handleNavClick('Drivers', 'drivers')"
+                                @click="handleNavClick('Delivery Agents', 'drivers')"
                                 :class="!isFeatureEnabled('drivers') ? 'opacity-50 text-slate-400 cursor-not-allowed bg-slate-50/50' : (currentView === 'drivers' ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium')"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center gap-1.5">
                             <span v-if="!isFeatureEnabled('drivers')">🔒</span>
-                            Drivers
+                            Delivery Agents
                         </button>
 
                         <!-- Audit Logs: Admin, Owner -->
@@ -199,7 +199,7 @@ export default {
             else if (viewName === 'restaurants') currentView.value = 'restaurants';
             else if (viewName === 'Overview') currentView.value = 'overview';
             else if (viewName === 'Staff Management') currentView.value = 'staff';
-            else if (viewName === 'Drivers') currentView.value = 'drivers';
+            else if (viewName === 'Delivery Agents' || viewName === 'Drivers') currentView.value = 'drivers';
             else if (viewName === 'Audit Logs') currentView.value = 'audit-log';
             else if (viewName === 'Settings') currentView.value = 'settings';
             else if (viewName === 'Billing') currentView.value = 'billing';
