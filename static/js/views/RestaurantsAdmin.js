@@ -58,15 +58,13 @@ export default {
                     :user="user" 
                     :restaurant="selectedRestaurant" 
                     @back="selectedRestaurant = null"
-                    @adjust-wallet="openAdjustModal"
                     @suspend="promptSuspend"
                     @activate="activate"
+                    @refreshList="loadRestaurants"
                 />
             </template>
 
             <template v-if="activeTab === 'restaurants' && !selectedRestaurant">
-            <!-- ════════════════════════════════════ -->
-            <template v-if="activeTab === 'restaurants'">
 
                 <!-- ════ HEADER ════ -->
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
