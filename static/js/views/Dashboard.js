@@ -19,9 +19,7 @@ export default {
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between items-center h-16">
                         <div class="flex items-center">
-                            <div class="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center shadow-sm mr-3">
-                                <span class="text-white font-bold text-lg leading-none">G</span>
-                            </div>
+                            <img src="/images/icon.svg" alt="GEQO" class="w-8 h-8 mr-3 object-contain" />
                             <h1 class="text-xl font-bold text-slate-900 tracking-tight">GEQO Dashboard</h1>
                         </div>
                         <div class="flex items-center space-x-4">
