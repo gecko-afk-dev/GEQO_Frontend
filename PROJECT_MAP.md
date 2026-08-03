@@ -86,7 +86,7 @@ Customer (WhatsApp) → Meta Cloud API → webhook.py
 
 **Enums:** `OrderStatus`, `FulfillmentMethod`, `UserRole`, `RestaurantStatus`, `PaymentStatus`, `BetaCardStatus`, `TransactionType`
 
-**Tables:** `User`, `Restaurant` (Geo-fencing: `latitude`, `longitude`, `max_delivery_radius_km`; Financial: `wallet_balance`), `Customer`, `Category` (`image_url`), `MenuItem` (`image_url`), `ModifierGroup` (Modifier Inheritance: belongs to either `category_id` or `menu_item_id`), `ModifierOption`, `Order` (`delivery_fee`, `customer_notes`, `customer_name`), `OrderItem`, `OrderItemExclusion`, `OrderItemModifier`, `Driver`, `Cart`, `CartItem`, `CartItemExclusion`, `CartItemModifier`, `DailyAnalytics`, `AuditLog` (`detail` as `JSONB`), `BetaCard`, `BetaSignup`, `WalletTransaction`
+**Tables:** `User`, `Restaurant` (Geo-fencing: `latitude`, `longitude`, `max_delivery_radius_km`; Financial: `wallet_balance`), `Customer`, `Category` (`image_url`), `MenuItem` (`image_url`), `ModifierGroup` (V2 Menu Architecture: Strict Item-level modifiers, `group_type` enum), `ModifierOption` (`is_available` toggle), `Order` (`delivery_fee`, `customer_notes`, `customer_name`), `OrderItem`, `OrderItemExclusion`, `OrderItemModifier`, `Driver`, `Cart`, `CartItem`, `CartItemExclusion`, `CartItemModifier`, `DailyAnalytics`, `AuditLog` (`detail` as `JSONB`), `BetaCard`, `BetaSignup`, `WalletTransaction`
 
 ### `app/api/` — Endpoints (summary)
 
@@ -100,7 +100,7 @@ Customer (WhatsApp) → Meta Cloud API → webhook.py
 - `GET /admin/billing/transactions`, `POST /admin/billing/adjust`
 
 **dashboard.py** — `GET /dashboard/orders/{restaurant_id}`, `POST /dashboard/orders/{order_id}/status`, `WS /dashboard/ws/{restaurant_id}`
-**menu.py** — CRUD categories/items, modifier groups/options (Modifier Inheritance logic).
+**menu.py** — CRUD categories/items, modifier groups/options. Full PUT editability and POST `copy-modifiers` endpoint for fast cloning.
 **drivers.py** — Delivery driver management.
 **auth.py** — `forgot-password`, `reset-password`, `setup-password`, `force-change-password`.
 **beta.py** — 1-Click Beta Onboarding (Validates `GEQO-XXXXXX`, rate limits, sends emails).
@@ -139,7 +139,7 @@ static/
       Overview.js
       KitchenMonitor.js   # KDS — full-screen for kitchen_staff
       OrdersManager.js
-      MenuManager.js      # Base64 File Uploads & "Inherit Category Image" UI
+      MenuManager.js      # Base64 File Uploads, Item/Cat Edit Modals, Modifier Cloning Dropdowns & Option Stock Toggles
       StaffManager.js
       DriversManager.js   # UI text renamed to 'Delivery Agents'
       RestaurantsAdmin.js # Includes "Adjust Wallet" / Credit capabilities

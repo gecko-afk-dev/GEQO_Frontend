@@ -82,8 +82,8 @@ export default {
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
-                            <button @click="openModifiersModal('category', cat)" class="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors">
-                                Edit Modifiers
+                            <button @click="openEditCategoryModal(cat)" class="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors">
+                                ✎ Edit
                             </button>
                             <button @click="openAddItemModal(cat.id)" :id="'menu-add-item-' + cat.id"
                                     class="text-xs font-bold text-saffron hover:text-saffron-light transition-colors">
@@ -153,7 +153,10 @@ export default {
                                     </td>
                                     <!-- Delete -->
                                     <td class="text-right whitespace-nowrap">
-                                        <button @click="openModifiersModal('item', item)" class="text-blue-400 hover:text-blue-300 transition-colors text-xs font-bold mr-3 opacity-0 group-hover:opacity-100">
+                                        <button @click="openEditItemModal(item, cat.id)" class="text-blue-400 hover:text-blue-300 transition-colors text-xs font-bold mr-3 opacity-0 group-hover:opacity-100">
+                                            ✎ Edit
+                                        </button>
+                                        <button @click="openModifiersModal(item, cat.id)" class="text-blue-400 hover:text-blue-300 transition-colors text-xs font-bold mr-3 opacity-0 group-hover:opacity-100">
                                             Mods
                                         </button>
                                         <button @click="deleteItem(item.id)"
@@ -187,7 +190,8 @@ export default {
                                         :class="item.is_available ? 'badge-emerald' : 'badge-harissa'">
                                     {{ item.is_available ? 'In Stock' : 'Out' }}
                                 </button>
-                                <button @click="openModifiersModal('item', item)" class="text-blue-400 text-xs font-bold">Mods</button>
+                                <button @click="openEditItemModal(item, cat.id)" class="text-blue-400 text-xs font-bold">✎</button>
+                                <button @click="openModifiersModal(item, cat.id)" class="text-blue-400 text-xs font-bold">Mods</button>
                                 <button @click="deleteItem(item.id)" class="text-slate-700 hover:text-harissa transition-colors">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -226,7 +230,7 @@ export default {
             <template v-if="showAddCategory">
                 <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div class="card-dark w-full max-w-md p-6 shadow-2xl">
-                        <h3 class="text-lg font-black text-slate-100 mb-5">New Category</h3>
+                        <h3 class="text-lg font-black text-slate-100 mb-5">{{ catEditingId ? 'Edit Category' : 'New Category' }}</h3>
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Name (EN)</label>
@@ -251,7 +255,7 @@ export default {
                         <div v-if="modalError" class="mt-4 p-3 rounded-lg bg-harissa/10 border border-harissa/30 text-harissa text-sm">{{ modalError }}</div>
                         <div class="flex gap-3 mt-6">
                             <button @click="showAddCategory = false" class="btn btn-ghost flex-1">Cancel</button>
-                            <button @click="saveCategory" id="cat-save-btn" class="btn btn-saffron flex-1">Create</button>
+                            <button @click="saveCategory" id="cat-save-btn" class="btn btn-saffron flex-1">{{ catEditingId ? 'Save Changes' : 'Create' }}</button>
                         </div>
                     </div>
                 </div>
@@ -261,7 +265,7 @@ export default {
             <template v-if="showAddItem">
                 <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div class="card-dark w-full max-w-md max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
-                        <h3 class="text-lg font-black text-slate-100 mb-5">New Menu Item</h3>
+                        <h3 class="text-lg font-black text-slate-100 mb-5">{{ itemEditingId ? 'Edit Menu Item' : 'New Menu Item' }}</h3>
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Name (EN)</label>
@@ -304,7 +308,7 @@ export default {
                         <div v-if="modalError" class="mt-4 p-3 rounded-lg bg-harissa/10 border border-harissa/30 text-harissa text-sm">{{ modalError }}</div>
                         <div class="flex gap-3 mt-6">
                             <button @click="showAddItem = false" class="btn btn-ghost flex-1">Cancel</button>
-                            <button @click="saveItem" id="item-save-btn" class="btn btn-saffron flex-1">Add Item</button>
+                            <button @click="saveItem" id="item-save-btn" class="btn btn-saffron flex-1">{{ itemEditingId ? 'Save Changes' : 'Add Item' }}</button>
                         </div>
                     </div>
                 </div>
@@ -318,7 +322,7 @@ export default {
                         <div class="px-6 py-4 border-b border-white/[0.05] flex justify-between items-center bg-surface/50 shrink-0">
                             <div>
                                 <h3 class="text-lg font-black text-slate-100">
-                                    {{ modifierContextType === 'category' ? 'Category Modifiers' : 'Item Modifiers' }}
+                                    Item Modifiers
                                 </h3>
                                 <p class="text-sm text-slate-400 font-semibold mt-0.5">
                                     {{ modifierContextEntity.name_en }}
@@ -330,7 +334,23 @@ export default {
                         </div>
                         
                         <!-- Scrollable Body -->
-                        <div class="flex-1 overflow-y-auto p-6 space-y-8 bg-slate-900/50">
+                        <div class="flex-1 overflow-y-auto p-0 space-y-0 bg-slate-900/50">
+                            
+                            <!-- Copy from another item -->
+                            <div class="bg-surface/30 p-6 border-b border-white/[0.05] flex gap-3 items-end">
+                                <div class="flex-1">
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Copy from existing item</label>
+                                    <select v-model="copySourceItemId" class="input-dark w-full text-sm h-10">
+                                        <option value="">Select an item in this category...</option>
+                                        <option v-for="i in getOtherItemsInCategory()" :key="i.id" :value="i.id">{{ i.name_en }}</option>
+                                    </select>
+                                </div>
+                                <button @click="copyModifiers" :disabled="!copySourceItemId" class="btn btn-saffron h-10 px-6 shrink-0 disabled:opacity-50">
+                                    Clone Modifiers
+                                </button>
+                            </div>
+                            
+                            <div class="p-6 space-y-8">
                             
                             <div v-if="!modifierContextEntity.modifier_groups || modifierContextEntity.modifier_groups.length === 0" class="text-center py-10">
                                 <p class="text-slate-500 italic mb-4">No modifier groups yet.</p>
@@ -340,7 +360,7 @@ export default {
                             <div v-for="group in modifierContextEntity.modifier_groups" :key="group.id" class="border border-white/[0.1] rounded-xl overflow-hidden">
                                 <div class="bg-surface px-5 py-4 flex justify-between items-start">
                                     <div>
-                                        <h4 class="font-bold text-slate-200 text-base">{{ group.name_en }} <span class="text-xs text-slate-500 font-normal ml-2">Min: {{group.min_selection}} / Max: {{group.max_selection}}</span></h4>
+                                        <h4 class="font-bold text-slate-200 text-base">{{ group.name_en }} <span class="text-xs text-slate-500 font-normal ml-2">Type: {{ group.group_type }} (Min: {{group.min_selection}} / Max: {{group.max_selection}})</span></h4>
                                         <p class="text-xs text-slate-500 mt-1">{{ group.name_fr }} / <span dir="auto" class="font-cairo">{{ group.name_ar }}</span></p>
                                     </div>
                                     <button @click="deleteModifierGroup(group.id)" class="text-xs font-bold text-harissa/70 hover:text-harissa">Delete Group</button>
@@ -355,7 +375,10 @@ export default {
                                         </div>
                                         <div class="flex items-center gap-4">
                                             <span class="text-saffron font-bold font-mono">+{{ opt.price_override }} MAD</span>
-                                            <button @click="deleteModifierOption(group, opt.id)" class="text-[10px] ml-3 text-harissa hover:text-harissa-light">✕</button>
+                                            <button @click="toggleModifierOption(group, opt)" class="badge text-[10px] cursor-pointer" :class="opt.is_available ? 'badge-emerald' : 'badge-harissa'">
+                                                {{ opt.is_available ? 'In Stock' : 'Out' }}
+                                            </button>
+                                            <button @click="deleteModifierOption(group, opt.id)" class="text-[10px] ml-1 text-harissa hover:text-harissa-light">✕</button>
                                         </div>
                                     </div>
                                     
@@ -397,6 +420,14 @@ export default {
                                     <label class="block text-[10px] font-bold text-slate-500 mb-1">Name (AR)</label>
                                     <input v-model="newGroupForm.name_ar" type="text" dir="rtl" class="input-dark font-cairo text-sm" placeholder="إختر الصلصة">
                                 </div>
+                                <div class="flex-1 min-w-[120px]">
+                                    <label class="block text-[10px] font-bold text-slate-500 mb-1">Type</label>
+                                    <select v-model="newGroupForm.group_type" class="input-dark text-sm w-full h-10">
+                                        <option value="optional">Optional Extras</option>
+                                        <option value="mandatory">Mandatory</option>
+                                        <option value="exclusion">Exclusion</option>
+                                    </select>
+                                </div>
                                 <div class="w-16">
                                     <label class="block text-[10px] font-bold text-slate-500 mb-1">Min</label>
                                     <input v-model.number="newGroupForm.min_selection" type="number" class="input-dark text-sm" placeholder="0">
@@ -430,6 +461,8 @@ export default {
         const showAddCategory = ref(false);
         const showAddItem     = ref(false);
         const addItemCatId    = ref(null);
+        const catEditingId    = ref(null);
+        const itemEditingId   = ref(null);
         const modalError      = ref('');
 
         const catForm  = ref({ name_en: '', name_fr: '', name_ar: '', image_url: '' });
@@ -457,24 +490,24 @@ export default {
 
         // Modifier Modal State
         const showModifiers = ref(false);
-        const modifierContextType = ref('item'); // 'item' or 'category'
         const modifierContextEntity = ref({});
+        const copySourceItemId = ref('');
         
-        const newGroupForm = ref({ name_en: '', name_fr: '', name_ar: '', min_selection: 0, max_selection: 1 });
+        const newGroupForm = ref({ name_en: '', name_fr: '', name_ar: '', min_selection: 0, max_selection: 1, group_type: 'optional' });
         const newOptionForms = ref({}); // keyed by group id
 
-        const openModifiersModal = (type, entity) => {
-            modifierContextType.value = type;
-            modifierContextEntity.value = entity;
-            if (!entity.modifier_groups) entity.modifier_groups = [];
+        const openModifiersModal = (item, catId) => {
+            modifierContextEntity.value = item;
+            copySourceItemId.value = '';
+            if (!item.modifier_groups) item.modifier_groups = [];
             
             // Initialize option forms for existing groups
             newOptionForms.value = {};
-            entity.modifier_groups.forEach(g => {
+            item.modifier_groups.forEach(g => {
                 newOptionForms.value[g.id] = { name_en: '', name_fr: '', name_ar: '', price_override: 0 };
             });
             
-            newGroupForm.value = { name_en: '', name_fr: '', name_ar: '', min_selection: 0, max_selection: 1 };
+            newGroupForm.value = { name_en: '', name_fr: '', name_ar: '', min_selection: 0, max_selection: 1, group_type: 'optional' };
             showModifiers.value = true;
         };
         
@@ -482,13 +515,32 @@ export default {
             showModifiers.value = false;
         };
 
+        const getOtherItemsInCategory = () => {
+            const currentItem = modifierContextEntity.value;
+            if (!currentItem || !currentItem.category_id) return [];
+            const cat = categories.value.find(c => c.id === currentItem.category_id);
+            if (!cat) return [];
+            return cat.items.filter(i => i.id !== currentItem.id);
+        };
+
+        const copyModifiers = async () => {
+            if (!copySourceItemId.value) return;
+            try {
+                await api.post(`/admin/menu/items/${modifierContextEntity.value.id}/copy-modifiers/${copySourceItemId.value}`);
+                await loadMenu();
+                showModifiers.value = false;
+            } catch (err) {
+                console.error(err);
+                alert("Failed to copy modifiers: " + (err.response?.data?.detail || err.message));
+            }
+        };
+
         const addModifierGroup = async () => {
             if (!newGroupForm.value.name_en) return;
-            const payload = { ...newGroupForm.value };
-            if (modifierContextType.value === 'category') {
-                payload.category_id = modifierContextEntity.value.id;
-            } else {
-                payload.menu_item_id = modifierContextEntity.value.id;
+            const payload = { ...newGroupForm.value, menu_item_id: modifierContextEntity.value.id };
+            
+            if (payload.group_type === 'mandatory' && payload.min_selection < 1) {
+                payload.min_selection = 1;
             }
             
             try {
@@ -496,7 +548,7 @@ export default {
                 const newGroup = { ...res.data, options: [] };
                 modifierContextEntity.value.modifier_groups.push(newGroup);
                 newOptionForms.value[newGroup.id] = { name_en: '', name_fr: '', name_ar: '', price_override: 0 };
-                newGroupForm.value = { name_en: '', name_fr: '', name_ar: '', min_selection: 0, max_selection: 1 };
+                newGroupForm.value = { name_en: '', name_fr: '', name_ar: '', min_selection: 0, max_selection: 1, group_type: 'optional' };
             } catch (err) {
                 console.error(err);
                 alert("Failed to add modifier group: " + (err.response?.data?.detail || err.message));
@@ -535,6 +587,17 @@ export default {
             } catch (err) {
                 console.error(err);
                 alert("Failed to delete option: " + (err.response?.data?.detail || err.message));
+            }
+        };
+
+        const toggleModifierOption = async (group, option) => {
+            const newAvail = !option.is_available;
+            try {
+                await api.put(`/admin/menu/modifiers/options/${option.id}`, { is_available: newAvail });
+                option.is_available = newAvail;
+            } catch (err) {
+                console.error(err);
+                alert("Failed to toggle option: " + (err.response?.data?.detail || err.message));
             }
         };
 
@@ -587,7 +650,14 @@ export default {
 
         // ── Category CRUD ───────────────────────────────────────────────────
         const openAddCategoryModal = () => {
+            catEditingId.value = null;
             catForm.value = { name_en: '', name_fr: '', name_ar: '', image_url: '' };
+            modalError.value = '';
+            showAddCategory.value = true;
+        };
+        const openEditCategoryModal = (cat) => {
+            catEditingId.value = cat.id;
+            catForm.value = { ...cat };
             modalError.value = '';
             showAddCategory.value = true;
         };
@@ -595,14 +665,18 @@ export default {
             modalError.value = '';
             if (!catForm.value.name_en.trim()) { modalError.value = 'English name is required.'; return; }
             try {
-                await api.post('/admin/menu/categories', {
-                    ...catForm.value,
-                    restaurant_id: props.user.restaurant_id
-                });
+                if (catEditingId.value) {
+                    await api.put('/admin/menu/categories/' + catEditingId.value, catForm.value);
+                } else {
+                    await api.post('/admin/menu/categories', {
+                        ...catForm.value,
+                        restaurant_id: props.user.restaurant_id
+                    });
+                }
                 showAddCategory.value = false;
                 await loadMenu();
             } catch (err) {
-                modalError.value = err.response?.data?.detail || 'Failed to create category.';
+                modalError.value = err.response?.data?.detail || 'Failed to save category.';
             }
         };
         const deleteCategory = async (id) => {
@@ -615,10 +689,18 @@ export default {
 
         // ── Item CRUD ────────────────────────────────────────────────────────
         const openAddItemModal = (catId) => {
+            itemEditingId.value = null;
             addItemCatId.value = catId;
             itemForm.value     = { name_en: '', name_fr: '', name_ar: '', price: 0, item_details: '', image_url: '', inherit_image: false, is_available: true };
             modalError.value   = '';
             showAddItem.value  = true;
+        };
+        const openEditItemModal = (item, catId) => {
+            itemEditingId.value = item.id;
+            addItemCatId.value = catId;
+            itemForm.value = { ...item, inherit_image: !item.image_url };
+            modalError.value = '';
+            showAddItem.value = true;
         };
         const saveItem = async () => {
             modalError.value = '';
@@ -631,15 +713,19 @@ export default {
             delete payload.inherit_image;
             
             try {
-                await api.post('/admin/menu/items', {
-                    ...payload,
-                    category_id: addItemCatId.value,
-                    restaurant_id: props.user.restaurant_id,
-                });
+                if (itemEditingId.value) {
+                    await api.put('/admin/menu/items/' + itemEditingId.value, payload);
+                } else {
+                    await api.post('/admin/menu/items', {
+                        ...payload,
+                        category_id: addItemCatId.value,
+                        restaurant_id: props.user.restaurant_id,
+                    });
+                }
                 showAddItem.value = false;
                 await loadMenu();
             } catch (err) {
-                modalError.value = err.response?.data?.detail || 'Failed to create item.';
+                modalError.value = err.response?.data?.detail || 'Failed to save item.';
             }
         };
         const deleteItem = async (id) => {
@@ -656,11 +742,11 @@ export default {
             categories, loading, activeCategory, filteredCategories,
             editingPriceId, editingPriceValue, startEditPrice, savePrice,
             stockConfirmItem, promptStockToggle, confirmStockToggle,
-            showAddCategory, catForm, openAddCategoryModal, saveCategory, deleteCategory,
-            showAddItem, itemForm, openAddItemModal, saveItem, deleteItem,
+            showAddCategory, catForm, openAddCategoryModal, openEditCategoryModal, saveCategory, deleteCategory, catEditingId,
+            showAddItem, itemForm, openAddItemModal, openEditItemModal, saveItem, deleteItem, itemEditingId,
 
-            showModifiers, modifierContextType, modifierContextEntity, newGroupForm, newOptionForms,
-            openModifiersModal, closeModifiersModal, addModifierGroup, addModifierOption, deleteModifierGroup, deleteModifierOption,
+            showModifiers, modifierContextEntity, newGroupForm, newOptionForms, copySourceItemId, getOtherItemsInCategory, copyModifiers,
+            openModifiersModal, closeModifiersModal, addModifierGroup, addModifierOption, deleteModifierGroup, deleteModifierOption, toggleModifierOption,
             modalError,
             handleImageSelected
         };
