@@ -67,11 +67,11 @@ Customer (WhatsApp) → Meta Cloud API → webhook.py
 | `/api/v1/dashboard` | `dashboard.py` | Orders REST + WebSocket KDS feed. |
 | `/api/v1/flow` | `flow_handler.py` | Meta Flow (Driver PIN verification ONLY). |
 | `/api/v1/admin` | `admin.py` | Login, analytics, restaurants, staff, billing APIs. |
-| `/api/v1/admin/menu` | `menu.py` | Categories, items, modifiers. |
+| `/api/v1/admin/menu` | `menu.py` | Categories, items, modifiers. Contains `upload_image_to_cloud` utility. |
 | `/api/v1/admin/drivers`| `drivers.py` | Delivery driver CRUD. |
 | `/api/v1/auth` | `auth.py` | Password reset / setup / force-change. |
 | `/api/v1/public` | `beta.py` | Public beta signup (1-Click Onboarding). |
-| `/api/v1/public/menu` | `public_menu.py` | PWA: Fetch restaurant menu data. |
+| `/api/v1/public/menu` | `public_menu.py` | PWA: Fetch restaurant menu data. Returns inherited category images. |
 | `/api/v1/public/orders`| `public_orders.py` | PWA: Submit orders (server-side pricing + Haversine geo-math). |
 
 ### `app/core/`
@@ -139,7 +139,7 @@ static/
       Overview.js
       KitchenMonitor.js   # KDS — full-screen for kitchen_staff
       OrdersManager.js
-      MenuManager.js
+      MenuManager.js      # Base64 File Uploads & "Inherit Category Image" UI
       StaffManager.js
       DriversManager.js   # UI text renamed to 'Delivery Agents'
       RestaurantsAdmin.js # Includes "Adjust Wallet" / Credit capabilities
@@ -174,8 +174,9 @@ static/
 Next.js 15 App Router app serving the customer-facing ordering funnel via Magic Links. Features the "$100M Native App" Aesthetic ("Appetite" design system).
 
 - **Trigger:** Customer messages WhatsApp bot → Bot replies with `https://menu.mygeqo.com/?session=JWT`.
-- **Usage:** Customers browse trilingual menu, customize items, and checkout.
+- **Usage:** Customers browse trilingual menu, customize items, and checkout. Caching is disabled (`force-dynamic` via `layout.tsx`) for real-time menu updates.
   - **Native UI/UX:** Uses `vaul` for bottom sheets (Modifier Sheet) and `framer-motion` for micro-interactions (bouncing Cart Pill), providing a Glovo/Talabat-tier native app feel in the browser. 
+  - **Image Inheritance:** Items intelligently fall back to their parent Category's image if none is provided.
   - **Modifiers (Talabat-Style):** Strict enforcement of `min_selection`/`max_selection`. Uses radios for `max=1` and checkboxes for `max>1`. Dynamically hides modifier UI if none exist.
   - **Map UX (Checkout):** Implements Leaflet pin-drop confirmation ("Is this your exact location?") to prevent fat-finger mistakes. Features a robust GPS fallback to Casablanca `[33.5731, -7.5898]` if `navigator.geolocation` crashes (e.g., `kCLErrorLocationUnknown`).
   - **Checkout Payload:** Sends Cart Payload, `customer_name` (via controlled React input), and confirmed map coordinates.
