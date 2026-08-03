@@ -173,13 +173,13 @@ static/
 
 Next.js 15 App Router app serving the customer-facing ordering funnel via Magic Links. Features the "$100M Native App" Aesthetic ("Appetite" design system).
 
-- **Trigger:** Customer messages WhatsApp bot → Bot replies with `https://menu.mygeqo.com/?session=JWT`.
+- **Trigger:** Customer messages WhatsApp bot → Bot replies with `https://menu.mygeqo.com/menu/[id]?session=JWT`.
 - **Usage:** Customers browse trilingual menu, customize items, and checkout. Caching is disabled (`force-dynamic` via `layout.tsx`) for real-time menu updates.
-  - **Native UI/UX:** Uses `vaul` for bottom sheets (Modifier Sheet) and `framer-motion` for micro-interactions (bouncing Cart Pill), providing a Glovo/Talabat-tier native app feel in the browser. 
-  - **Image Inheritance:** Items intelligently fall back to their parent Category's image if none is provided.
-  - **Modifiers (Talabat-Style):** Strict enforcement of `min_selection`/`max_selection`. Uses radios for `max=1` and checkboxes for `max>1`. Dynamically hides modifier UI if none exist.
-  - **Map UX (Checkout):** Implements Leaflet pin-drop confirmation ("Is this your exact location?") to prevent fat-finger mistakes. Features a robust GPS fallback to Casablanca `[33.5731, -7.5898]` if `navigator.geolocation` crashes (e.g., `kCLErrorLocationUnknown`).
-  - **Checkout Payload:** Sends Cart Payload, `customer_name` (via controlled React input), and confirmed map coordinates.
+  - **Native UI/UX:** Uses `vaul` for bottom sheets (Modifier Sheet). The menu layout uses a "$100M App" Horizontal Aesthetic, featuring a "Marhba" greeting, horizontal "Best Seller" cards, and vertical category sections that house native horizontal scroll-snapping item cards. The top category filter pill bar acts as a sticky anchor-nav, powered by an `IntersectionObserver`.
+  - **Image Inheritance & Fallbacks:** Items intelligently fall back to their parent Category's image if none is provided, or a Tailwind gradient if no image exists.
+  - **Modifiers (Talabat-Style):** Strict enforcement of `min_selection`/`max_selection`. Uses radios for `max=1` and checkboxes for `max>1`. The "Add to Cart" button stays greyed out and unclickable until all required conditions (e.g., "Choose your sauce") are met, and instantly updates its price via `price_override` math.
+  - **Map UX (Checkout):** Implements Leaflet pin-drop confirmation to prevent fat-finger mistakes. Features a robust GPS fallback to Casablanca `[33.5731, -7.5898]` if geolocation fails. Failed API submissions now safely alert the backend error message instead of failing silently.
+  - **Checkout Payload:** Sends Cart Payload, `customer_name` (via controlled React input), and confirmed map coordinates. Upon success, redirects the user to WhatsApp.
 - **Backend Sync:** Submits cart to `POST /api/v1/public/orders/checkout` where server recalculates totals and validates distances using Haversine geo-math against the restaurant's `max_delivery_radius_km`.
 
 ---
