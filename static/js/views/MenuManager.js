@@ -407,6 +407,7 @@ export default {
                                 </div>
                             </div>
                         </div>
+                        </div>
                         
                         <!-- Footer / Add Group Form -->
                         <div class="px-6 py-5 border-t border-white/[0.05] bg-surface shrink-0">
