@@ -32,6 +32,12 @@ export default {
                                           :class="walletBadgeClass">
                                         {{ liveWalletBalance.toFixed(2) }} MAD
                                     </span>
+                                    <button v-if="['restaurant_owner', 'cashier'].includes(user.role)"
+                                            @click="toggleStoreStatus"
+                                            class="text-[10px] font-bold px-2.5 py-1 rounded-full mt-0.5 whitespace-nowrap border transition-all shadow-sm"
+                                            :class="isAcceptingOrders ? 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'">
+                                        {{ isAcceptingOrders ? '🟢 STORE OPEN' : '🔴 STORE PAUSED' }}
+                                    </button>
                                 </div>
                             </div>
                             <div class="w-px h-8 bg-slate-200 hidden sm:block"></div>
@@ -159,13 +165,26 @@ export default {
 
         // Live wallet balance — fetched from API on mount, not from stale localStorage
         const liveWalletBalance = ref(props.user.wallet_balance || 0);
+        const isAcceptingOrders = ref(props.user.is_accepting_orders ?? true);
 
         const fetchLiveBalance = async () => {
             try {
                 const res = await api.get('/admin/me');
                 liveWalletBalance.value = res.data.wallet_balance || 0;
+                isAcceptingOrders.value = res.data.is_accepting_orders ?? true;
             } catch (err) {
                 console.warn('[Dashboard] Failed to fetch live wallet balance', err);
+            }
+        };
+
+        const toggleStoreStatus = async () => {
+            try {
+                const newValue = !isAcceptingOrders.value;
+                await api.put('/dashboard/restaurant/status', { is_accepting_orders: newValue });
+                isAcceptingOrders.value = newValue;
+            } catch (err) {
+                console.error('[Dashboard] Failed to toggle store status', err);
+                alert('Failed to update store status. Please try again.');
             }
         };
 
@@ -212,7 +231,9 @@ export default {
             currentComponent,
             formatRole,
             liveWalletBalance,
-            walletBadgeClass
+            walletBadgeClass,
+            isAcceptingOrders,
+            toggleStoreStatus
         };
     }
 }

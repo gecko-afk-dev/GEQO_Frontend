@@ -96,7 +96,6 @@ export default {
                                 <th>Contact</th>
                                 <th>Wallet Balance</th>
                                 <th>Vol. (30d)</th>
-                                <th>Billing Tier</th>
                                 <th>Status</th>
                                 <th class="text-right">Actions</th>
                             </tr>
@@ -120,9 +119,6 @@ export default {
                                     </span>
                                 </td>
                                 <td class="text-slate-500 text-sm font-semibold">{{ r.orders_30d ?? '—' }}</td>
-                                <td>
-                                    <span class="badge" :class="billingBadge(r.commission_rate)">{{ billingTier(r.commission_rate) }}</span>
-                                </td>
                                 <td>
                                     <span class="badge" :class="r.status === 'active' ? 'badge-emerald' : 'badge-harissa'">
                                         {{ r.status === 'active' ? '● Active' : '✕ Suspended' }}
@@ -324,11 +320,7 @@ export default {
                                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Owner WhatsApp ID (manager notifications)</label>
                                     <input v-model="form.owner_wa_id" id="form-owner-wa" type="text" class="input-dark" placeholder="212611223344">
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Commission Rate (0–1)</label>
-                                    <input v-model.number="form.commission_rate" id="form-commission" type="number" step="0.01" min="0" max="1" class="input-dark">
-                                </div>
-                                <div>
+                                <div class="col-span-2">
                                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Cuisine Type</label>
                                     <input v-model="form.cuisine_type" id="form-cuisine" type="text" class="input-dark" placeholder="Fast Food">
                                 </div>
@@ -481,7 +473,7 @@ export default {
         const emptyForm = () => ({
             name: '', wa_phone_number: '', api_token: '', phone_number_id: '',
             owner_wa_id: '', cuisine_type: '', contact_email: '',
-            city: '', commission_rate: 0.20,
+            city: '',
         });
 
         const form      = ref(emptyForm());
@@ -601,7 +593,6 @@ export default {
                 api_token: r.api_token || '',    phone_number_id: r.phone_number_id || '',
                 owner_wa_id: r.owner_wa_id || '', cuisine_type: r.cuisine_type || '',
                 contact_email: r.contact_email || '', city: r.city || '',
-                commission_rate: r.commission_rate || 0.20,
             };
             error.value      = '';
             showCreate.value = true;
