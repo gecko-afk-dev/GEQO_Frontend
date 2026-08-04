@@ -13,6 +13,10 @@
 import { ref, computed, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 import { api } from '../api.js';
 
+// CEO: PASTE YOUR IMGBB API KEY HERE
+const IMGBB_API_KEY = "c165abbc4884f654c13541e5967d6c3a";
+
+
 export default {
     name: 'MenuManager',
     template: `
@@ -446,12 +450,12 @@ export default {
     `,
     props: ['user'],
     setup(props) {
-        const categories    = ref([]);
-        const loading       = ref(true);
+        const categories = ref([]);
+        const loading = ref(true);
         const activeCategory = ref(null);
 
         // Inline price editor state
-        const editingPriceId    = ref(null);
+        const editingPriceId = ref(null);
         const editingPriceValue = ref(0);
 
         // Stock toggle confirmation
@@ -459,26 +463,41 @@ export default {
 
         // Modal state
         const showAddCategory = ref(false);
-        const showAddItem     = ref(false);
-        const addItemCatId    = ref(null);
-        const catEditingId    = ref(null);
-        const itemEditingId   = ref(null);
-        const modalError      = ref('');
+        const showAddItem = ref(false);
+        const addItemCatId = ref(null);
+        const catEditingId = ref(null);
+        const itemEditingId = ref(null);
+        const modalError = ref('');
 
-        const catForm  = ref({ name_en: '', name_fr: '', name_ar: '', image_url: '' });
+        const catForm = ref({ name_en: '', name_fr: '', name_ar: '', image_url: '' });
         const itemForm = ref({
             name_en: '', name_fr: '', name_ar: '',
             price: 0, item_details: '', image_url: '', inherit_image: false, is_available: true
         });
 
-        const handleImageSelected = (e, formRef) => {
+        const handleImageSelected = async (e, formRef) => {
             const file = e.target.files[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                formRef.image_url = evt.target.result;
-            };
-            reader.readAsDataURL(file);
+
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data && data.success) {
+                    formRef.image_url = data.data.url;
+                } else {
+                    alert('Image upload failed: ' + (data.error?.message || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Image upload failed. Check console for details.');
+            }
         };
 
         // ── Filtered categories based on tab ───────────────────────────────
@@ -492,7 +511,7 @@ export default {
         const showModifiers = ref(false);
         const modifierContextEntity = ref({});
         const copySourceItemId = ref('');
-        
+
         const newGroupForm = ref({ name_en: '', name_fr: '', name_ar: '', min_selection: 0, max_selection: 1, group_type: 'optional' });
         const newOptionForms = ref({}); // keyed by group id
 
@@ -500,17 +519,17 @@ export default {
             modifierContextEntity.value = item;
             copySourceItemId.value = '';
             if (!item.modifier_groups) item.modifier_groups = [];
-            
+
             // Initialize option forms for existing groups
             newOptionForms.value = {};
             item.modifier_groups.forEach(g => {
                 newOptionForms.value[g.id] = { name_en: '', name_fr: '', name_ar: '', price_override: 0 };
             });
-            
+
             newGroupForm.value = { name_en: '', name_fr: '', name_ar: '', min_selection: 0, max_selection: 1, group_type: 'optional' };
             showModifiers.value = true;
         };
-        
+
         const closeModifiersModal = () => {
             showModifiers.value = false;
         };
@@ -544,11 +563,11 @@ export default {
         const addModifierGroup = async () => {
             if (!newGroupForm.value.name_en) return;
             const payload = { ...newGroupForm.value, menu_item_id: modifierContextEntity.value.id };
-            
+
             if (payload.group_type === 'mandatory' && payload.min_selection < 1) {
                 payload.min_selection = 1;
             }
-            
+
             try {
                 const res = await api.post('/admin/menu/modifiers/groups', payload);
                 const newGroup = { ...res.data, options: [] };
@@ -624,7 +643,7 @@ export default {
 
         // ── Inline price edit ───────────────────────────────────────────────
         const startEditPrice = (item) => {
-            editingPriceId.value    = item.id;
+            editingPriceId.value = item.id;
             editingPriceValue.value = item.price;
         };
         const savePrice = async (item) => {
@@ -697,9 +716,9 @@ export default {
         const openAddItemModal = (catId) => {
             itemEditingId.value = null;
             addItemCatId.value = catId;
-            itemForm.value     = { name_en: '', name_fr: '', name_ar: '', price: 0, item_details: '', image_url: '', inherit_image: false, is_available: true };
-            modalError.value   = '';
-            showAddItem.value  = true;
+            itemForm.value = { name_en: '', name_fr: '', name_ar: '', price: 0, item_details: '', image_url: '', inherit_image: false, is_available: true };
+            modalError.value = '';
+            showAddItem.value = true;
         };
         const openEditItemModal = (item, catId) => {
             itemEditingId.value = item.id;
@@ -711,13 +730,13 @@ export default {
         const saveItem = async () => {
             modalError.value = '';
             if (!itemForm.value.name_en.trim()) { modalError.value = 'English name is required.'; return; }
-            if (itemForm.value.price <= 0)       { modalError.value = 'Price must be greater than 0.'; return; }
+            if (itemForm.value.price <= 0) { modalError.value = 'Price must be greater than 0.'; return; }
             const payload = { ...itemForm.value };
             if (payload.inherit_image) {
                 payload.image_url = null;
             }
             delete payload.inherit_image;
-            
+
             try {
                 if (itemEditingId.value) {
                     await api.put('/admin/menu/items/' + itemEditingId.value, payload);
