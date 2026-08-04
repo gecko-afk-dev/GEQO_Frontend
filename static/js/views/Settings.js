@@ -107,6 +107,10 @@ export default {
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Max Radius (KM)</label>
                         <input type="number" step="0.5" v-model.number="deliveryForm.max_delivery_radius_km" @input="updateCircle" class="input-dark w-full font-mono" placeholder="10.0">
                     </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">City</label>
+                        <input type="text" v-model="deliveryForm.city" class="input-dark w-full font-mono" placeholder="Casablanca">
+                    </div>
                 </div>
 
                 <div>
@@ -117,8 +121,26 @@ export default {
                 <div class="pt-4 border-t border-white/[0.06]">
                     <div class="mb-4">
                         <h3 class="text-base font-bold text-slate-200 mb-1">Operating Hours</h3>
-                        <p class="text-xs text-slate-500 mb-3">Define the store's normal operating hours (e.g. 11:00 - 23:30).</p>
-                        <input type="text" v-model="deliveryForm.operating_hours" class="input-dark w-full md:w-1/2 font-mono" placeholder="11:00 - 23:30">
+                        <p class="text-xs text-slate-500 mb-4">Set your opening hours for the week.</p>
+                        
+                        <div class="space-y-2 w-full max-w-2xl">
+                            <div v-for="(day, idx) in weeklyHours" :key="idx" 
+                                 class="flex items-center gap-4 bg-white/[0.02] border border-white/[0.05] p-3 rounded-xl">
+                                <div class="w-24 shrink-0 font-bold text-sm" :class="day.isOpen ? 'text-slate-200' : 'text-slate-500'">
+                                    {{ day.day }}
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                    <input type="checkbox" v-model="day.isOpen" class="sr-only peer">
+                                    <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald"></div>
+                                </label>
+                                <div v-if="day.isOpen" class="flex items-center gap-2 flex-1">
+                                    <input type="time" v-model="day.open" class="input-dark w-32 text-sm">
+                                    <span class="text-slate-500 text-sm">to</span>
+                                    <input type="time" v-model="day.close" class="input-dark w-32 text-sm">
+                                </div>
+                                <div v-else class="text-sm text-slate-500 italic flex-1">Closed</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -134,6 +156,16 @@ export default {
     `,
     setup() {
         const activeTab = ref('profile');
+        
+        const weeklyHours = ref([
+            { day: 'Monday', isOpen: true, open: '11:00', close: '23:30' },
+            { day: 'Tuesday', isOpen: true, open: '11:00', close: '23:30' },
+            { day: 'Wednesday', isOpen: true, open: '11:00', close: '23:30' },
+            { day: 'Thursday', isOpen: true, open: '11:00', close: '23:30' },
+            { day: 'Friday', isOpen: true, open: '11:00', close: '23:30' },
+            { day: 'Saturday', isOpen: true, open: '11:00', close: '23:30' },
+            { day: 'Sunday', isOpen: true, open: '11:00', close: '23:30' },
+        ]);
         const profile = ref({});
         const form = ref({ full_name: '', contact_phone: '', old_password: '', password: '' });
         const loading = ref(false);
@@ -147,7 +179,8 @@ export default {
             max_delivery_radius_km: 10,
             base_delivery_fee: 10,
             per_km_delivery_fee: 2,
-            operating_hours: ''
+            operating_hours: '',
+            city: ''
         });
         const loadingDelivery = ref(false);
         const deliverySuccessMsg = ref('');
@@ -266,7 +299,8 @@ export default {
                     max_delivery_radius_km: deliveryForm.value.max_delivery_radius_km,
                     base_delivery_fee: deliveryForm.value.base_delivery_fee,
                     per_km_delivery_fee: deliveryForm.value.per_km_delivery_fee,
-                    operating_hours: deliveryForm.value.operating_hours
+                    operating_hours: JSON.stringify(weeklyHours.value),
+                    city: deliveryForm.value.city
                 });
                 deliverySuccessMsg.value = 'Delivery settings updated successfully!';
             } catch (err) {
@@ -303,14 +337,29 @@ export default {
                     deliveryForm.value.max_delivery_radius_km = r.max_delivery_radius_km || 10;
                     deliveryForm.value.base_delivery_fee = r.base_delivery_fee || 10;
                     deliveryForm.value.per_km_delivery_fee = r.per_km_delivery_fee || 2;
-                    deliveryForm.value.operating_hours = r.operating_hours || '';
+                    deliveryForm.value.city = r.city || '';
+                    
+                    let savedHours = r.operating_hours;
+                    if (savedHours) {
+                        if (savedHours.startsWith('[')) {
+                            try { weeklyHours.value = JSON.parse(savedHours); } catch(e) {}
+                        } else {
+                            let parts = savedHours.split('-');
+                            if(parts.length === 2) {
+                                let open = parts[0].trim();
+                                let close = parts[1].trim();
+                                weeklyHours.value.forEach(d => { d.isOpen = true; d.open = open; d.close = close; });
+                            }
+                        }
+                    }
                 }
             } catch(e) {}
         });
 
         return { 
             activeTab, profile, form, loading, loadingForgot, successMsg, errorMsg, saveProfile, forgotPassword,
-            deliveryForm, loadingDelivery, deliverySuccessMsg, deliveryErrorMsg, saveDeliverySettings, initMap, updateCircle
+            deliveryForm, loadingDelivery, deliverySuccessMsg, deliveryErrorMsg, saveDeliverySettings, initMap, updateCircle,
+            weeklyHours
         };
     }
 };

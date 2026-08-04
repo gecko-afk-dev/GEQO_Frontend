@@ -17,6 +17,35 @@ export default {
             <!-- Content -->
             <div v-else class="space-y-6">
                 
+                <!-- ADMIN VIEW -->
+                <template v-if="user.role === 'admin'">
+                    <div class="card-dark p-6 border border-white/[0.05]">
+                        <h3 class="text-xl font-bold text-slate-100 mb-4">Restaurant Wallet Balances</h3>
+                        <div class="overflow-x-auto rounded-xl border border-white/[0.05]">
+                            <table class="table-dark w-full text-left" style="background: var(--superadmin-bg)">
+                                <thead>
+                                    <tr>
+                                        <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Restaurant</th>
+                                        <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">WhatsApp</th>
+                                        <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Wallet Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="r in adminRestaurants" :key="r.id" class="border-b border-white/[0.05]">
+                                        <td class="p-4 text-sm font-bold text-slate-200">{{ r.name }}</td>
+                                        <td class="p-4 text-sm font-mono text-slate-400">{{ r.wa_phone_number }}</td>
+                                        <td class="p-4 text-right font-mono text-sm" :class="r.wallet_balance < 0 ? 'text-harissa font-bold' : 'text-emerald'">
+                                            {{ (r.wallet_balance || 0).toFixed(2) }} MAD
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- OWNER VIEW -->
+                <template v-else>
                 <!-- Red Warning for Negative Balance -->
                 <div v-if="balance < 0" class="p-4 bg-harissa/10 border border-harissa/30 rounded-xl flex items-start gap-3">
                     <svg class="w-6 h-6 text-harissa mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,6 +150,7 @@ export default {
                         </table>
                     </div>
                 </div>
+                </template>
             </div>
 
             
@@ -133,15 +163,20 @@ export default {
         const loading = ref(true);
         
 
+        const adminRestaurants = ref([]);
+
         onMounted(async () => {
             try {
-                // Fetch the current restaurant's dashboard which includes the wallet_balance
-                const res = await api.get('/admin/restaurant/dashboard');
-                balance.value = res.data.restaurant.wallet_balance || 0;
-                
-                // Fetch transactions
-                const txRes = await api.get('/admin/billing/transactions');
-                transactions.value = txRes.data;
+                if (props.user.role === 'admin') {
+                    const res = await api.get('/admin/restaurants');
+                    adminRestaurants.value = res.data;
+                } else {
+                    const res = await api.get('/admin/restaurant/dashboard');
+                    balance.value = res.data.restaurant.wallet_balance || 0;
+                    
+                    const txRes = await api.get('/admin/billing/transactions');
+                    transactions.value = txRes.data;
+                }
             } catch (err) {
                 console.error('[Billing] error loading balance or transactions', err);
             } finally {
@@ -155,6 +190,6 @@ export default {
             return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         };
 
-        return { balance, transactions, loading,  formatDate };
+        return { balance, transactions, loading, adminRestaurants, formatDate };
     }
 };
