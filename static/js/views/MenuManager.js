@@ -528,7 +528,13 @@ export default {
             try {
                 await api.post(`/admin/menu/items/${modifierContextEntity.value.id}/copy-modifiers/${copySourceItemId.value}`);
                 await loadMenu();
-                showModifiers.value = false;
+                const cat = categories.value.find(c => c.id === modifierContextEntity.value.category_id);
+                if (cat) {
+                    const updatedItem = cat.items.find(i => i.id === modifierContextEntity.value.id);
+                    if (updatedItem) {
+                        openModifiersModal(updatedItem, cat.id);
+                    }
+                }
             } catch (err) {
                 console.error(err);
                 alert("Failed to copy modifiers: " + (err.response?.data?.detail || err.message));
