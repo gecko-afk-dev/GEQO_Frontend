@@ -209,7 +209,7 @@ export default {
                     <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-5"></div>
                     <h3 class="text-lg font-black text-slate-100 mb-1">Confirm Action</h3>
                     <p class="text-sm text-slate-400 mb-6">
-                        Move <span class="text-saffron font-bold">Order #{{ pendingTransition.order.id }}</span>
+                        Move <span class="text-saffron font-bold">Order #{{ pendingTransition.order.tracking_code || pendingTransition.order.id }}</span>
                         to <span class="font-bold" :class="transitionColor">{{ pendingTransitionLabel }}</span>?
                     </p>
                     <div class="flex gap-3">
@@ -317,10 +317,10 @@ export default {
                         </span>
                         <div class="flex-1 min-w-0">
                             <div dir="auto" class="font-bold text-slate-100 text-sm leading-snug font-cairo">
-                                ${item.name_en || item.name_fr || 'Item #' + item.menu_item_id}
+                                ${item.name_fr || item.name_en || item.name_ar || 'Item #' + item.menu_item_id}
                             </div>
-                            ${item.name_fr && item.name_fr !== item.name_en
-                                ? `<div class="text-xs text-slate-500 mt-0.5">${item.name_fr}</div>` : ''}
+                            ${item.name_en && item.name_en !== item.name_fr
+                                ? `<div class="text-xs text-slate-500 mt-0.5">${item.name_en}</div>` : ''}
                             <div class="flex flex-wrap gap-1 mt-1.5">${modsHtml}${exclusionsHtml}</div>
                         </div>
                     </div>`;
@@ -330,7 +330,7 @@ export default {
                 <div class="px-4 pt-4 pb-3 border-b ${headerAccentClass} border-b border-white/[0.06] flex justify-between items-start">
                     <div>
                         <span class="text-[10px] font-black text-slate-600 uppercase tracking-widest block">Order</span>
-                        <span class="text-2xl font-black text-white">#${order.id}</span>
+                        <span class="text-2xl font-black text-white">#${order.tracking_code || order.id}</span>
                     </div>
                     <div class="text-right flex flex-col items-end gap-1.5">
                         ${fulfillBadge}

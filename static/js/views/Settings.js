@@ -114,6 +114,19 @@ export default {
                     <div id="delivery-map" class="w-full h-[400px] rounded-xl border border-white/[0.06] overflow-hidden relative z-0"></div>
                 </div>
 
+                <div class="pt-4 border-t border-white/[0.06]">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-200">Store Status</h3>
+                            <p class="text-xs text-slate-500">Toggle whether your store is currently accepting orders.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" v-model="deliveryForm.is_accepting_orders" @change="toggleStoreStatus" class="sr-only peer">
+                            <div class="w-11 h-6 bg-harissa/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+                </div>
+
                 <div class="pt-4 flex justify-end">
                     <button @click="saveDeliverySettings" :disabled="loadingDelivery" class="btn btn-saffron px-8 flex items-center gap-2">
                         <span v-if="loadingDelivery" class="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></span>
@@ -138,7 +151,8 @@ export default {
             longitude: -7.5898,
             max_delivery_radius_km: 10,
             base_delivery_fee: 10,
-            per_km_delivery_fee: 2
+            per_km_delivery_fee: 2,
+            is_accepting_orders: true
         });
         const loadingDelivery = ref(false);
         const deliverySuccessMsg = ref('');
@@ -251,13 +265,32 @@ export default {
             deliverySuccessMsg.value = '';
             deliveryErrorMsg.value = '';
             try {
-                await api.put('/dashboard/restaurant/delivery-settings', deliveryForm.value);
+                await api.put('/dashboard/restaurant/delivery-settings', {
+                    latitude: deliveryForm.value.latitude,
+                    longitude: deliveryForm.value.longitude,
+                    max_delivery_radius_km: deliveryForm.value.max_delivery_radius_km,
+                    base_delivery_fee: deliveryForm.value.base_delivery_fee,
+                    per_km_delivery_fee: deliveryForm.value.per_km_delivery_fee
+                });
                 deliverySuccessMsg.value = 'Delivery settings updated successfully!';
             } catch (err) {
                 deliveryErrorMsg.value = err.response?.data?.detail || 'Failed to update delivery settings.';
             } finally {
                 loadingDelivery.value = false;
                 setTimeout(() => deliverySuccessMsg.value = '', 5000);
+            }
+        };
+
+        const toggleStoreStatus = async () => {
+            try {
+                const payload = { is_accepting_orders: deliveryForm.value.is_accepting_orders };
+                await api.put('/dashboard/restaurant/status', payload);
+                deliverySuccessMsg.value = deliveryForm.value.is_accepting_orders ? 'Store is now OPEN.' : 'Store is now CLOSED.';
+                setTimeout(() => deliverySuccessMsg.value = '', 3000);
+            } catch (err) {
+                deliveryForm.value.is_accepting_orders = !deliveryForm.value.is_accepting_orders; // revert
+                deliveryErrorMsg.value = err.response?.data?.detail || 'Failed to update store status.';
+                setTimeout(() => deliveryErrorMsg.value = '', 3000);
             }
         };
 
@@ -287,13 +320,14 @@ export default {
                     deliveryForm.value.max_delivery_radius_km = r.max_delivery_radius_km || 10;
                     deliveryForm.value.base_delivery_fee = r.base_delivery_fee || 10;
                     deliveryForm.value.per_km_delivery_fee = r.per_km_delivery_fee || 2;
+                    deliveryForm.value.is_accepting_orders = r.is_accepting_orders ?? true;
                 }
             } catch(e) {}
         });
 
         return { 
             activeTab, profile, form, loading, loadingForgot, successMsg, errorMsg, saveProfile, forgotPassword,
-            deliveryForm, loadingDelivery, deliverySuccessMsg, deliveryErrorMsg, saveDeliverySettings, initMap, updateCircle
+            deliveryForm, loadingDelivery, deliverySuccessMsg, deliveryErrorMsg, saveDeliverySettings, toggleStoreStatus, initMap, updateCircle
         };
     }
 };

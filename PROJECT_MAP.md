@@ -86,7 +86,7 @@ Customer (WhatsApp) → Meta Cloud API → webhook.py
 
 **Enums:** `OrderStatus`, `FulfillmentMethod`, `UserRole`, `RestaurantStatus`, `PaymentStatus`, `BetaCardStatus`, `TransactionType`
 
-**Tables:** `User`, `Restaurant` (Geo-fencing: `latitude`, `longitude`, `max_delivery_radius_km`; Financial: `wallet_balance`), `Customer`, `Category` (`image_url`), `MenuItem` (`image_url`), `ModifierGroup` (V2 Menu Architecture: Strict Item-level modifiers, `group_type` enum), `ModifierOption` (`is_available` toggle), `Order` (`delivery_fee`, `customer_notes`, `customer_name`), `OrderItem`, `OrderItemExclusion`, `OrderItemModifier`, `Driver`, `Cart`, `CartItem`, `CartItemExclusion`, `CartItemModifier`, `DailyAnalytics`, `AuditLog` (`detail` as `JSONB`), `BetaCard`, `BetaSignup`, `WalletTransaction`
+**Tables:** `User`, `Restaurant` (Geo-fencing: `latitude`, `longitude`, `max_delivery_radius_km`; Financial: `wallet_balance`; `is_accepting_orders`), `Customer`, `Category` (`image_url`), `MenuItem` (`image_url`), `ModifierGroup` (V2 Menu Architecture: Strict Item-level modifiers, `group_type` enum), `ModifierOption` (`is_available` toggle), `Order` (`tracking_code`, `delivery_fee`, `customer_notes`, `customer_name`), `OrderItem`, `OrderItemExclusion`, `OrderItemModifier`, `Driver`, `Cart`, `CartItem`, `CartItemExclusion`, `CartItemModifier`, `DailyAnalytics`, `AuditLog` (`detail` as `JSONB`), `BetaCard`, `BetaSignup`, `WalletTransaction`
 
 ### `app/api/` — Endpoints (summary)
 

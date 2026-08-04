@@ -20,13 +20,43 @@ export default {
                 <p class="text-slate-500 font-medium text-lg">No active orders right now.</p>
                 <p class="text-slate-400 text-sm mt-1">New orders will appear here automatically.</p>
             </div>
+            <div v-else class="mb-6 overflow-x-auto pb-2 scrollbar-hide">
+                <div class="flex gap-2 min-w-max">
+                    <button @click="activeFilter = 'all'" 
+                            class="px-4 py-2 rounded-full text-xs font-bold transition-all"
+                            :class="activeFilter === 'all' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                        All Active ({{ orders.length }})
+                    </button>
+                    <button @click="activeFilter = 'received'" 
+                            class="px-4 py-2 rounded-full text-xs font-bold transition-all"
+                            :class="activeFilter === 'received' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                        New ({{ filterCounts['received'] || 0 }})
+                    </button>
+                    <button @click="activeFilter = 'accepted'" 
+                            class="px-4 py-2 rounded-full text-xs font-bold transition-all"
+                            :class="activeFilter === 'accepted' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                        Accepted ({{ filterCounts['accepted'] || 0 }})
+                    </button>
+                    <button @click="activeFilter = 'preparing'" 
+                            class="px-4 py-2 rounded-full text-xs font-bold transition-all"
+                            :class="activeFilter === 'preparing' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                        Preparing ({{ filterCounts['preparing'] || 0 }})
+                    </button>
+                    <button @click="activeFilter = 'ready'" 
+                            class="px-4 py-2 rounded-full text-xs font-bold transition-all"
+                            :class="activeFilter === 'ready' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
+                        Ready ({{ filterCounts['ready'] || 0 }})
+                    </button>
+                </div>
+            </div>
 
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div v-if="!loading && orders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div v-for="order in sortedOrders" :key="order.id" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col card-hover">
                     <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center" :class="statusBgColor(order.status)">
                         <div>
-                            <span class="font-bold text-slate-800">#{{ order.id }}</span>
+                            <span class="font-bold text-slate-800">#{{ order.tracking_code || order.id }}</span>
                             <span class="text-xs font-medium ml-2 px-2 py-0.5 rounded-full bg-white text-slate-700 shadow-sm uppercase tracking-wide">{{ order.fulfillment_method }}</span>
+                            <span class="text-xs text-slate-500 block mt-1">{{ timeAgo(order.created_at) }}</span>
                         </div>
                         <span class="text-sm font-bold text-slate-800">{{ order.total_price }} MAD</span>
                     </div>
@@ -35,7 +65,7 @@ export default {
                             <li v-for="item in order.items" :key="item.id" class="text-sm flex justify-between">
                                 <span class="text-slate-700">
                                     <span class="font-semibold">{{ item.quantity }}x</span> 
-                                    {{ item.name_en || 'Item #' + item.menu_item_id }}
+                                    {{ item.name_fr || item.name_en || item.name_ar || 'Item #' + item.menu_item_id }}
                                 </span>
                                 <span class="text-slate-500">{{ item.unit_price * item.quantity }} MAD</span>
                             </li>
@@ -71,6 +101,7 @@ export default {
         const orders = ref([]);
         const loading = ref(true);
         const wsConnected = ref(false);
+        const activeFilter = ref('all');
         let ws = null;
         let wsRetryCount = 0;
         const WS_MAX_RETRIES = 5;
@@ -153,16 +184,47 @@ export default {
             };
         };
 
+        const filterCounts = computed(() => {
+            const counts = {};
+            orders.value.forEach(o => {
+                counts[o.status] = (counts[o.status] || 0) + 1;
+            });
+            return counts;
+        });
+
         const sortedOrders = computed(() => {
+            // Filter by activeFilter
+            let filtered = orders.value;
+            if (activeFilter.value !== 'all') {
+                filtered = filtered.filter(o => o.status === activeFilter.value);
+            }
+            
             // Sort by status priority then ID
             const statusWeights = { 'received': 1, 'accepted': 2, 'preparing': 3, 'ready': 4 };
-            return [...orders.value].sort((a, b) => {
+            return [...filtered].sort((a, b) => {
                 const wa = statusWeights[a.status] || 99;
                 const wb = statusWeights[b.status] || 99;
                 if (wa !== wb) return wa - wb;
                 return b.id - a.id;
             });
         });
+
+        const timeAgo = (dateStr) => {
+            if (!dateStr) return '';
+            // Ensure UTC parsing by appending Z if missing
+            const utcStr = dateStr.endsWith('Z') ? dateStr : dateStr + 'Z';
+            const date = new Date(utcStr);
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) return 'Just now';
+            const diffInMinutes = Math.floor(diffInSeconds / 60);
+            if (diffInMinutes < 60) return diffInMinutes + 'm ago';
+            const diffInHours = Math.floor(diffInMinutes / 60);
+            if (diffInHours < 24) return diffInHours + 'h ' + (diffInMinutes % 60) + 'm ago';
+            const diffInDays = Math.floor(diffInHours / 24);
+            return diffInDays + 'd ago';
+        };
 
         const statusBgColor = (status) => {
             const colors = {
@@ -183,6 +245,9 @@ export default {
             if (ws) ws.close();
         });
 
-        return { orders, loading, wsConnected, loadOrders, updateStatus, sortedOrders, statusBgColor };
+        return { 
+            orders, loading, wsConnected, activeFilter, filterCounts, 
+            loadOrders, updateStatus, sortedOrders, statusBgColor, timeAgo 
+        };
     }
 }
