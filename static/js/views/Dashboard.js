@@ -1,4 +1,4 @@
-import { ref, computed, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
+import { ref, computed, onMounted, provide } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 import { api } from '../api.js';
 import Overview from './Overview.js';
 import RestaurantsAdmin from './RestaurantsAdmin.js';
@@ -10,6 +10,42 @@ import KitchenMonitor from './KitchenMonitor.js';
 import AuditLog from './AuditLog.js';
 import Settings from './Settings.js';
 import Billing from './Billing.js';
+
+const translations = {
+    'en': {
+        'Overview': 'Overview',
+        'Active Orders': 'Active Orders',
+        'Restaurants Admin': 'Restaurants Admin',
+        'Menu Management': 'Menu Management',
+        'Staff Management': 'Staff Management',
+        'Delivery Agents': 'Delivery Agents',
+        'Audit Logs': 'Audit Logs',
+        '💳 Billing': '💳 Billing',
+        'Sign Out': 'Sign Out'
+    },
+    'fr': {
+        'Overview': 'Aperçu',
+        'Active Orders': 'Commandes Actives',
+        'Restaurants Admin': 'Admin Restaurants',
+        'Menu Management': 'Gestion Menu',
+        'Staff Management': 'Gestion Personnel',
+        'Delivery Agents': 'Livreurs',
+        'Audit Logs': 'Journaux d\'Audit',
+        '💳 Billing': '💳 Facturation',
+        'Sign Out': 'Déconnexion'
+    },
+    'ar': {
+        'Overview': 'نظرة عامة',
+        'Active Orders': 'الطلبات النشطة',
+        'Restaurants Admin': 'إدارة المطاعم',
+        'Menu Management': 'إدارة القائمة',
+        'Staff Management': 'إدارة الموظفين',
+        'Delivery Agents': 'عمال التوصيل',
+        'Audit Logs': 'سجلات التدقيق',
+        '💳 Billing': '💳 الفواتير',
+        'Sign Out': 'تسجيل الخروج'
+    }
+};
 
 export default {
     template: `
@@ -47,7 +83,7 @@ export default {
                             </div>
                             <div class="w-px h-8 bg-slate-200 hidden sm:block"></div>
                             <button @click="$emit('logout')" class="text-sm font-semibold text-slate-500 hover:text-red-600 transition-colors px-2.5 py-1 rounded-lg hover:bg-slate-100">
-                                Sign Out
+                                {{ t('Sign Out') }}
                             </button>
                         </div>
                     </div>
@@ -57,13 +93,13 @@ export default {
             <!-- Navigation (Hidden for Kitchen Monitor) -->
             <nav v-if="user.role !== 'kitchen_staff'" class="bg-white border-b border-slate-200 shadow-sm shrink-0">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex space-x-1 py-3 overflow-x-auto hide-scrollbar">
+                    <div class="flex space-x-1 py-3 overflow-x-auto hide-scrollbar" :dir="currentLang === 'ar' ? 'rtl' : 'ltr'">
                         <!-- Overview: Admin, Owner, Cashier -->
                         <button v-if="['admin', 'restaurant_owner', 'cashier'].includes(user.role)"
                                 @click="currentView = 'overview'"
                                 :class="currentView === 'overview' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
-                            Overview
+                            {{ t('Overview') }}
                         </button>
 
                         <!-- Active Orders: Owner, Cashier -->
@@ -71,7 +107,7 @@ export default {
                                 @click="currentView = 'orders'"
                                 :class="currentView === 'orders' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap relative">
-                            Active Orders
+                            {{ t('Active Orders') }}
                             <span class="absolute top-2 right-1.5 flex h-2 w-2">
                                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                 <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -83,7 +119,7 @@ export default {
                                 @click="currentView = 'restaurants'"
                                 :class="currentView === 'restaurants' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
-                            Restaurants Admin
+                            {{ t('Restaurants Admin') }}
                         </button>
 
                         <!-- Menu Management: Owner, Cashier -->
@@ -91,7 +127,7 @@ export default {
                                 @click="currentView = 'menu'"
                                 :class="currentView === 'menu' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
-                            Menu Management
+                            {{ t('Menu Management') }}
                         </button>
 
                         <!-- Staff Management: Owner only -->
@@ -99,7 +135,7 @@ export default {
                                 @click="currentView = 'staff'"
                                 :class="currentView === 'staff' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
-                            Staff Management
+                            {{ t('Staff Management') }}
                         </button>
 
                         <!-- Delivery Agents: Owner, Cashier -->
@@ -107,7 +143,7 @@ export default {
                                 @click="currentView = 'drivers'"
                                 :class="currentView === 'drivers' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
-                            Delivery Agents
+                            {{ t('Delivery Agents') }}
                         </button>
 
                         <!-- Audit Logs: Admin, Owner -->
@@ -115,7 +151,7 @@ export default {
                                 @click="currentView = 'audit-log'"
                                 :class="currentView === 'audit-log' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
-                            Audit Logs
+                            {{ t('Audit Logs') }}
                         </button>
 
                         <!-- Billing: Owner ONLY -->
@@ -123,7 +159,7 @@ export default {
                                 @click="currentView = 'billing'"
                                 :class="currentView === 'billing' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
-                            💳 Billing
+                            {{ t('💳 Billing') }}
                         </button>
                     </div>
                 </div>
@@ -131,7 +167,7 @@ export default {
 
             <!-- Content Area -->
             <main :class="user.role === 'kitchen_staff' ? 'flex-1 flex flex-col h-screen min-h-0 bg-[#0A0A0A] p-0 m-0' : 'flex-1 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 w-full'">
-                <component :is="currentComponent" :user="user" :lang="currentLang" @logout="$emit('logout')"></component>
+                <component :is="currentComponent" :user="user" :lang="currentLang" :t="t" @logout="$emit('logout')"></component>
             </main>
 
             <!-- Floating Settings Button (Bottom Left) -->
@@ -176,6 +212,17 @@ export default {
             document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
             document.documentElement.lang = lang;
         };
+
+        const t = (key) => {
+            const lang = currentLang.value;
+            if (translations[lang] && translations[lang][key]) {
+                return translations[lang][key];
+            }
+            return key;
+        };
+
+        provide('t', t);
+        provide('currentLang', currentLang);
 
         // Live wallet balance — fetched from API on mount, not from stale localStorage
         const liveWalletBalance = ref(props.user.wallet_balance || 0);
@@ -250,7 +297,8 @@ export default {
             isAcceptingOrders,
             toggleStoreStatus,
             currentLang,
-            setLanguage
+            setLanguage,
+            t
         };
     }
 }

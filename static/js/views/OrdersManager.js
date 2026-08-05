@@ -217,18 +217,18 @@ export default {
         const getItemName = (item) => {
             if (!item) return 'Article Inconnu';
             const lang = props.lang || 'fr';
-            if (typeof item.name === 'object' && item.name !== null) {
-                return item.name[lang] || item.name['fr'] || item.name['en'] || Object.values(item.name)[0] || 'Article';
+            if (item.menu_item) {
+                if (lang === 'fr' && item.menu_item.name_fr) return item.menu_item.name_fr;
+                if (lang === 'ar' && item.menu_item.name_ar) return item.menu_item.name_ar;
+                if (item.menu_item.name_en) return item.menu_item.name_en;
+                if (item.menu_item.name) return item.menu_item.name;
             }
-            if (item.menu_item && item.menu_item.name) {
-                if (typeof item.menu_item.name === 'object') {
-                    return item.menu_item.name[lang] || item.menu_item.name['fr'] || item.menu_item.name['en'];
-                }
-                return item.menu_item.name;
-            }
+            if (lang === 'fr' && item.name_fr) return item.name_fr;
+            if (lang === 'ar' && item.name_ar) return item.name_ar;
+            if (item.name_en) return item.name_en;
+            if (item.menu_item_name) return item.menu_item_name;
+            if (item.item_name) return item.item_name;
             if (typeof item.name === 'string' && item.name.trim() !== '') return item.name;
-            const fallbackStr = item[`name_${lang}`] || item.name_fr || item.name_en;
-            if (fallbackStr) return fallbackStr;
             return `Article #${item.id || item.menu_item_id || '1'}`;
         };
 

@@ -20,7 +20,7 @@ const IMGBB_API_KEY = "c165abbc4884f654c13541e5967d6c3a";
 export default {
     name: 'MenuManager',
     template: `
-        <div class="h-[calc(100vh-120px)] flex flex-col font-sans select-none overflow-hidden">
+        <div class="flex flex-col font-sans select-none">
 
             <!-- ════════ LOADING ════════ -->
             <div v-if="loading" class="flex-1 flex items-center justify-center">
@@ -28,10 +28,10 @@ export default {
             </div>
 
             <!-- ════════ MAIN SPLIT GRID ════════ -->
-            <div v-else class="flex-1 grid grid-cols-1 lg:grid-cols-16 gap-6 min-h-0">
+            <div v-else class="flex-1 grid grid-cols-1 lg:grid-cols-16 gap-6">
                 
                 <!-- LEFT PANEL: CATEGORIES (5 cols) -->
-                <div class="lg:col-span-5 bg-[#141414] border border-neutral-800 flex flex-col overflow-hidden">
+                <div class="lg:col-span-5 bg-[#141414] border border-neutral-800 flex flex-col">
                     <div class="p-4 border-b border-neutral-800 bg-[#0A0A0A] flex justify-between items-center shrink-0">
                         <span class="text-xs font-mono font-bold text-neutral-500 tracking-widest uppercase">CATEGORIES</span>
                         <button @click="openAddCategoryModal" id="menu-add-category-btn"
@@ -43,7 +43,7 @@ export default {
                     <div v-if="categories.length === 0" class="p-6 text-center text-neutral-600 font-mono text-[10px] tracking-widest">
                         NO CATEGORIES FOUND
                     </div>
-                    <div v-else class="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide">
+                    <div v-else class="flex-1 p-4 space-y-3 scrollbar-hide">
                         <button @click="activeCategory = null"
                                 class="w-full text-left p-3 border font-mono text-[11px] font-black tracking-widest uppercase transition-all"
                                 :class="activeCategory === null ? 'bg-amber-500/10 border-amber-500 text-amber-500' : 'bg-[#1A1A1A] border-neutral-800 text-neutral-400 hover:bg-[#262626]'">
@@ -53,7 +53,12 @@ export default {
                             <button @click="activeCategory = cat.id"
                                     class="flex-1 text-left p-3 border font-mono text-[11px] font-black tracking-widest uppercase transition-all flex justify-between items-center"
                                     :class="activeCategory === cat.id ? 'bg-amber-500/10 border-amber-500 text-amber-500' : 'bg-[#1A1A1A] border-neutral-800 text-neutral-400 hover:bg-[#262626]'">
-                                <span dir="auto" class="truncate">{{ cat.name_en }}</span>
+                                <div class="flex items-center gap-2 overflow-hidden">
+                                    <div v-if="cat.image_url" class="w-5 h-5 rounded bg-neutral-800 shrink-0 overflow-hidden">
+                                        <img :src="cat.image_url" class="w-full h-full object-cover opacity-80" />
+                                    </div>
+                                    <span dir="auto" class="truncate">{{ cat.name_en }}</span>
+                                </div>
                                 <span class="bg-[#0A0A0A] text-[9px] px-2 py-0.5 ml-2 border border-neutral-800">{{ cat.items?.length || 0 }}</span>
                             </button>
                             <button @click="openEditCategoryModal(cat)" class="px-3 border font-mono text-[10px] font-black tracking-widest text-blue-400 hover:bg-blue-400/10 transition-colors" :class="activeCategory === cat.id ? 'border-amber-500/50 bg-amber-500/5' : 'border-neutral-800 bg-[#1A1A1A]'">EDIT</button>
@@ -63,8 +68,8 @@ export default {
                 </div>
 
                 <!-- RIGHT PANEL: ITEMS (11 cols) -->
-                <div class="lg:col-span-11 bg-[#141414] border border-neutral-800 flex flex-col overflow-hidden relative">
-                    <div class="flex-1 overflow-y-auto scrollbar-hide">
+                <div class="lg:col-span-11 bg-[#141414] border border-neutral-800 flex flex-col relative">
+                    <div class="flex-1 scrollbar-hide">
                         <div v-if="filteredCategories.length === 0" class="flex-1 flex items-center justify-center p-10 h-full text-center text-[10px] font-mono tracking-widest uppercase text-neutral-600">
                             SELECT OR CREATE A CATEGORY
                         </div>
@@ -96,8 +101,16 @@ export default {
                                         </tr>
                                         <tr v-for="item in cat.items" :key="item.id" class="group hover:bg-white/[0.02] transition-colors" :class="!item.is_available ? 'opacity-50' : ''">
                                             <td class="py-4 px-2">
-                                                <div class="font-bold text-neutral-200 text-sm font-sans" dir="auto">{{ item.name_en }}</div>
-                                                <div class="text-xs text-neutral-500 mt-0.5">{{ item.name_fr }}</div>
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-10 h-10 rounded bg-neutral-800 shrink-0 overflow-hidden border border-neutral-700">
+                                                        <img v-if="item.image_url || cat.image_url" :src="item.image_url || cat.image_url" class="w-full h-full object-cover opacity-80" />
+                                                        <div v-else class="w-full h-full flex items-center justify-center text-[10px] font-bold text-neutral-600">{{ item.name_en?.charAt(0) || '?' }}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div class="font-bold text-neutral-200 text-sm font-sans" dir="auto">{{ item.name_en }}</div>
+                                                        <div class="text-xs text-neutral-500 mt-0.5">{{ item.name_fr }}</div>
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td class="py-4 px-2">
                                                 <div v-if="editingPriceId === item.id" class="flex items-center gap-2">

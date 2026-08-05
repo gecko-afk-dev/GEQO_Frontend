@@ -140,7 +140,7 @@ export default {
                                             {{ t.type }}
                                         </span>
                                     </td>
-                                    <td class="py-4 px-4 text-xs text-neutral-300 font-mono">{{ t.description || '—' }}</td>
+                                    <td class="py-4 px-4 text-xs text-neutral-300 font-mono">{{ getTransactionReference(t) }}</td>
                                     <td class="py-4 px-4 text-right font-mono font-black text-xs" :class="t.amount > 0 ? 'text-emerald-400' : 'text-neutral-200'">
                                         {{ t.amount > 0 ? '+' : '' }}{{ t.amount.toFixed(2) }} MAD
                                     </td>
@@ -187,6 +187,26 @@ export default {
             return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         };
 
-        return { balance, transactions, loading, adminRestaurants, formatDate };
+        const getTransactionReference = (tx) => {
+            if (tx.type === 'CREDIT' || tx.transaction_type === 'CREDIT' || tx.amount > 0) {
+                return tx.description || 'Recharge Portefeuille';
+            }
+            if (tx.order && tx.order.tracking_code) {
+                return `#${tx.order.tracking_code}`;
+            }
+            if (tx.order_tracking_code || tx.tracking_code) {
+                return `#${tx.order_tracking_code || tx.tracking_code}`;
+            }
+            if (tx.description && tx.description.includes('#')) {
+                const match = tx.description.match(/#[A-Za-z0-9-]+/);
+                if (match) return match[0];
+            }
+            if (tx.order_id) {
+                return `#${tx.order_id.slice(-6).toUpperCase()}`;
+            }
+            return tx.description || 'Déduction Commande';
+        };
+
+        return { balance, transactions, loading, adminRestaurants, formatDate, getTransactionReference };
     }
 };
