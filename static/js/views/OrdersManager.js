@@ -344,7 +344,7 @@ export default {
 
         const orderSummary = (order) => {
             if (!order.items || order.items.length === 0) return 'No items';
-            return order.items.map(i => \`\${i.quantity}x \${getItemName(i)}\`).join(', ');
+            return order.items.map(i => `${i.quantity}x ${getItemName(i)}`).join(', ');
         };
 
         const timeAgo = (dateStr) => {

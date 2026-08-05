@@ -339,8 +339,7 @@ export default {
                 if (to === 'dispatched' && order.fulfillment_method === 'pickup') {
                     payload.new_status = 'delivered';
                 }
-                
-                await api.post(\`/dashboard/orders/\${order.id}/status\`, payload);
+                await api.post(`/dashboard/orders/${order.id}/status`, payload);
                 await loadOrders();
             } catch (err) {
                 console.error('[KDS] status update failed', err);
