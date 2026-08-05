@@ -40,6 +40,11 @@ export default {
                                     </button>
                                 </div>
                             </div>
+                            <div class="hidden sm:flex items-center bg-slate-100 rounded-lg p-1 ml-2">
+                                <button @click="setLanguage('en')" :class="currentLang === 'en' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'" class="px-2 py-1 rounded text-[10px] font-bold transition-colors">EN</button>
+                                <button @click="setLanguage('fr')" :class="currentLang === 'fr' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'" class="px-2 py-1 rounded text-[10px] font-bold transition-colors">FR</button>
+                                <button @click="setLanguage('ar')" :class="currentLang === 'ar' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'" class="px-2 py-1 rounded text-[10px] font-bold transition-colors">AR</button>
+                            </div>
                             <div class="w-px h-8 bg-slate-200 hidden sm:block"></div>
                             <button @click="$emit('logout')" class="text-sm font-semibold text-slate-500 hover:text-red-600 transition-colors px-2.5 py-1 rounded-lg hover:bg-slate-100">
                                 Sign Out
@@ -125,8 +130,8 @@ export default {
             </nav>
 
             <!-- Content Area -->
-            <main :class="user.role === 'kitchen_staff' ? 'flex-1 flex flex-col h-screen min-h-0 bg-slate-950 p-0 m-0' : 'flex-1 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 w-full'">
-                <component :is="currentComponent" :user="user" @logout="$emit('logout')"></component>
+            <main :class="user.role === 'kitchen_staff' ? 'flex-1 flex flex-col h-screen min-h-0 bg-[#0A0A0A] p-0 m-0' : 'flex-1 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 w-full'">
+                <component :is="currentComponent" :user="user" :lang="currentLang" @logout="$emit('logout')"></component>
             </main>
 
             <!-- Floating Settings Button (Bottom Left) -->
@@ -163,6 +168,15 @@ export default {
             : 'overview';
         const currentView = ref(defaultView);
 
+        // Language Switcher (Trilingual)
+        const currentLang = ref(localStorage.getItem('geqo_admin_lang') || 'fr');
+        const setLanguage = (lang) => {
+            currentLang.value = lang;
+            localStorage.setItem('geqo_admin_lang', lang);
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+            document.documentElement.lang = lang;
+        };
+
         // Live wallet balance — fetched from API on mount, not from stale localStorage
         const liveWalletBalance = ref(props.user.wallet_balance || 0);
         const isAcceptingOrders = ref(props.user.is_accepting_orders ?? true);
@@ -189,6 +203,7 @@ export default {
         };
 
         onMounted(() => {
+            setLanguage(currentLang.value);
             if (['restaurant_owner', 'admin'].includes(props.user.role)) {
                 fetchLiveBalance();
             }
@@ -233,7 +248,9 @@ export default {
             liveWalletBalance,
             walletBadgeClass,
             isAcceptingOrders,
-            toggleStoreStatus
+            toggleStoreStatus,
+            currentLang,
+            setLanguage
         };
     }
 }

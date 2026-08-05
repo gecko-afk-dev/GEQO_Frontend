@@ -1,110 +1,243 @@
-import { ref, onMounted, onUnmounted, computed } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
+import { ref, onMounted, onUnmounted, computed, watch } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 import { api } from '../api.js';
 
 export default {
     template: `
-        <div>
-            <div class="flex justify-between items-center mb-6">
-                <!-- h2 brutally removed -->
-                <button @click="loadOrders" class="text-sm font-medium text-emerald-600 hover:text-blue-800">
-                    Refresh
+        <div class="h-[calc(100vh-140px)] flex flex-col font-sans select-none">
+            
+            <!-- Filters -->
+            <div class="flex gap-2 min-w-max mb-6">
+                <button @click="activeFilter = 'all'" 
+                        class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
+                        :class="activeFilter === 'all' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
+                    All ({{ orders.length }})
+                </button>
+                <button @click="activeFilter = 'received'" 
+                        class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
+                        :class="activeFilter === 'received' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
+                    New ({{ filterCounts['received'] || 0 }})
+                </button>
+                <button @click="activeFilter = 'accepted'" 
+                        class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
+                        :class="activeFilter === 'accepted' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
+                    Accepted ({{ filterCounts['accepted'] || 0 }})
+                </button>
+                <button @click="activeFilter = 'preparing'" 
+                        class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
+                        :class="activeFilter === 'preparing' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
+                    Preparing ({{ filterCounts['preparing'] || 0 }})
+                </button>
+                <button @click="activeFilter = 'ready'" 
+                        class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
+                        :class="activeFilter === 'ready' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
+                    Ready ({{ filterCounts['ready'] || 0 }})
                 </button>
             </div>
 
-            <div v-if="loading" class="text-center py-10 text-slate-500 animate-pulse">Loading orders...</div>
-
-            <div v-else-if="orders.length === 0" class="bg-white rounded-xl shadow-sm border border-slate-200 p-10 text-center">
-                <svg class="mx-auto h-12 w-12 text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                </svg>
-                <p class="text-slate-500 font-medium text-lg">No active orders right now.</p>
-                <p class="text-slate-400 text-sm mt-1">New orders will appear here automatically.</p>
+            <div v-if="loading" class="flex-1 flex items-center justify-center text-neutral-500 animate-pulse font-mono text-sm">
+                SYNCING LEDGER...
             </div>
-            <div v-else class="mb-6 overflow-x-auto pb-2 scrollbar-hide">
-                <div class="flex gap-2 min-w-max">
-                    <button @click="activeFilter = 'all'" 
-                            class="px-4 py-2 rounded-full text-xs font-bold transition-all"
-                            :class="activeFilter === 'all' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                        All Active ({{ orders.length }})
-                    </button>
-                    <button @click="activeFilter = 'received'" 
-                            class="px-4 py-2 rounded-full text-xs font-bold transition-all"
-                            :class="activeFilter === 'received' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                        New ({{ filterCounts['received'] || 0 }})
-                    </button>
-                    <button @click="activeFilter = 'accepted'" 
-                            class="px-4 py-2 rounded-full text-xs font-bold transition-all"
-                            :class="activeFilter === 'accepted' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                        Accepted ({{ filterCounts['accepted'] || 0 }})
-                    </button>
-                    <button @click="activeFilter = 'preparing'" 
-                            class="px-4 py-2 rounded-full text-xs font-bold transition-all"
-                            :class="activeFilter === 'preparing' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                        Preparing ({{ filterCounts['preparing'] || 0 }})
-                    </button>
-                    <button @click="activeFilter = 'ready'" 
-                            class="px-4 py-2 rounded-full text-xs font-bold transition-all"
-                            :class="activeFilter === 'ready' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'">
-                        Ready ({{ filterCounts['ready'] || 0 }})
-                    </button>
-                </div>
+            
+            <div v-else-if="orders.length === 0" class="flex-1 border border-neutral-800 bg-[#141414] flex flex-col items-center justify-center p-10 text-center">
+                <p class="text-neutral-500 font-bold font-mono tracking-widest uppercase text-lg">NO ACTIVE ORDERS</p>
+                <p class="text-neutral-600 text-xs mt-2 font-mono">AWAITING INBOUND TRANSMISSIONS</p>
             </div>
 
-            <div v-if="!loading && orders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div v-for="order in sortedOrders" :key="order.id" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col card-hover">
-                    <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center" :class="statusBgColor(order.status)">
-                        <div>
-                            <span class="font-bold text-slate-800">#{{ order.tracking_code || order.id }}</span>
-                            <span class="text-xs font-medium ml-2 px-2 py-0.5 rounded-full bg-white text-slate-700 shadow-sm uppercase tracking-wide">{{ order.fulfillment_method }}</span>
-                            <span class="text-xs text-slate-500 block mt-1">{{ timeAgo(order.created_at) }}</span>
-                        </div>
-                        <span class="text-sm font-bold text-slate-800">{{ order.total_price }} MAD</span>
+            <div v-else class="flex-1 grid grid-cols-1 lg:grid-cols-16 gap-6 min-h-0">
+                
+                <!-- Left Panel: Order Ledger (10 cols) -->
+                <div class="lg:col-span-10 flex flex-col bg-[#141414] border border-neutral-800 overflow-hidden relative">
+                    <div class="overflow-y-auto flex-1 scrollbar-hide">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="sticky top-0 bg-[#0A0A0A] border-b border-neutral-800 z-10">
+                                <tr>
+                                    <th class="py-3 px-4 text-[10px] font-mono text-neutral-500 uppercase tracking-widest w-24">Order ID</th>
+                                    <th class="py-3 px-4 text-[10px] font-mono text-neutral-500 uppercase tracking-widest">Summary</th>
+                                    <th class="py-3 px-4 text-[10px] font-mono text-neutral-500 uppercase tracking-widest w-28 text-right">Total</th>
+                                    <th class="py-3 px-4 text-[10px] font-mono text-neutral-500 uppercase tracking-widest w-32">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-neutral-800/50">
+                                <tr v-for="order in sortedOrders" :key="order.id" 
+                                    @click="selectOrder(order)"
+                                    class="group cursor-pointer transition-colors"
+                                    :class="selectedOrderId === order.id ? 'bg-[#1A1A1A]' : 'hover:bg-white/[0.02]'">
+                                    
+                                    <td class="py-4 px-4 font-mono font-bold text-sm" :class="selectedOrderId === order.id ? 'text-amber-500' : 'text-neutral-300'">
+                                        #{{ order.tracking_code || order.id }}
+                                    </td>
+                                    
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="px-1.5 py-0.5 border border-neutral-700 bg-neutral-800/50 text-[9px] font-bold tracking-wider uppercase text-neutral-400">
+                                                {{ order.fulfillment_method }}
+                                            </span>
+                                            <span class="text-xs text-neutral-500 font-mono">{{ timeAgo(order.created_at) }}</span>
+                                        </div>
+                                        <div class="text-sm font-semibold text-neutral-200 line-clamp-1" dir="auto">
+                                            {{ orderSummary(order) }}
+                                        </div>
+                                    </td>
+                                    
+                                    <td class="py-4 px-4 font-mono font-bold text-neutral-300 text-right">
+                                        {{ order.total_price }} MAD
+                                    </td>
+                                    
+                                    <td class="py-4 px-4">
+                                        <span class="inline-block px-2 py-1 text-[10px] font-black uppercase tracking-widest" :class="statusPillClass(order.status)">
+                                            {{ order.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="p-5 flex-1">
-                        <ul class="space-y-3 mb-4">
-                            <li v-for="item in order.items" :key="item.id" class="text-sm flex justify-between">
-                                <span class="text-slate-700">
-                                    <span class="font-semibold">{{ item.quantity }}x</span> 
-                                    {{ item.name_fr || item.name_en || item.name_ar || 'Item #' + item.menu_item_id }}
+                </div>
+
+                <!-- Right Panel: Active Order Detail Drawer (6 cols) -->
+                <div class="lg:col-span-6 bg-[#141414] border border-neutral-800 flex flex-col overflow-hidden relative">
+                    <div v-if="selectedOrder" class="flex flex-col h-full">
+                        <div class="p-6 border-b border-neutral-800 bg-[#1A1A1A] shrink-0">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <p class="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">ACTIVE TICKET</p>
+                                    <h2 class="text-3xl font-black font-mono text-amber-500 mt-1">#{{ selectedOrder.tracking_code || selectedOrder.id }}</h2>
+                                </div>
+                                <span class="px-3 py-1.5 text-xs font-black uppercase tracking-widest border" :class="statusPillClass(selectedOrder.status)">
+                                    {{ selectedOrder.status }}
                                 </span>
-                                <span class="text-slate-500">{{ item.unit_price * item.quantity }} MAD</span>
-                            </li>
-                        </ul>
-                        <div class="mt-4 pt-4 border-t border-slate-100">
-                            <p class="text-xs text-slate-500 mb-2">Current Status: <strong class="uppercase text-slate-700">{{ order.status }}</strong></p>
+                            </div>
+                            <div class="flex justify-between text-sm font-mono text-neutral-400">
+                                <span>{{ selectedOrder.fulfillment_method.toUpperCase() }}</span>
+                                <span>{{ timeAgo(selectedOrder.created_at) }}</span>
+                            </div>
+                        </div>
+
+                        <div class="p-6 flex-1 overflow-y-auto space-y-6">
+                            <!-- Items List -->
+                            <div>
+                                <h3 class="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-800 pb-2">MANIFEST</h3>
+                                <ul class="space-y-4">
+                                    <li v-for="item in selectedOrder.items" :key="item.id" class="flex justify-between text-sm">
+                                        <div class="flex-1 pr-4">
+                                            <span class="font-mono text-amber-500 font-bold mr-2">{{ item.quantity }}x</span>
+                                            <span class="font-bold text-neutral-200" dir="auto">{{ getItemName(item) }}</span>
+                                            
+                                            <!-- Modifiers render if present -->
+                                            <div v-if="item.modifiers && item.modifiers.length" class="mt-1 pl-6">
+                                                <div v-for="mod in item.modifiers" class="text-xs text-amber-400/80 font-medium">
+                                                    + {{ mod.name_fr || mod.name_en }}
+                                                </div>
+                                            </div>
+                                            <!-- Exclusions render if present -->
+                                            <div v-if="item.exclusions && item.exclusions.length" class="mt-1 pl-6">
+                                                <div v-for="exc in item.exclusions" class="text-xs text-red-400/80 font-medium">
+                                                    - SANS {{ exc.ingredient_name.toUpperCase() }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span class="font-mono text-neutral-400">{{ (item.unit_price * item.quantity).toFixed(2) }} MAD</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- Customer Notes -->
+                            <div v-if="selectedOrder.customer_notes" class="bg-amber-500/10 border border-amber-500/30 p-4">
+                                <h3 class="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-2">CUSTOMER NOTES</h3>
+                                <p class="text-sm text-neutral-200 italic">"{{ selectedOrder.customer_notes }}"</p>
+                            </div>
                             
-                            <!-- Actions based on status -->
-                            <div class="flex space-x-2 mt-3">
-                                <template v-if="order.status === 'received'">
-                                    <button @click="updateStatus(order.id, 'accepted')" class="flex-1 btn-primary text-xs py-2 bg-emerald-600 hover:bg-blue-700">Accept</button>
-                                    <button @click="updateStatus(order.id, 'cancelled')" class="flex-1 btn-primary text-xs py-2 bg-red-600 hover:bg-red-700">Reject</button>
+                            <!-- Location Link -->
+                            <div v-if="selectedOrder.latitude && selectedOrder.longitude" class="flex gap-2 items-center">
+                                <a :href="'https://maps.google.com/?q=' + selectedOrder.latitude + ',' + selectedOrder.longitude"
+                                   target="_blank" rel="noopener"
+                                   class="text-xs font-mono font-bold text-blue-400 hover:text-blue-300 underline underline-offset-2">
+                                   [+] OPEN GEO-LOCATION
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Actions Footer -->
+                        <div class="p-6 border-t border-neutral-800 bg-[#0A0A0A] shrink-0">
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-xs font-mono font-bold text-neutral-500 uppercase tracking-widest">TOTAL</span>
+                                <span class="text-xl font-black font-mono text-white">{{ selectedOrder.total_price.toFixed(2) }} MAD</span>
+                            </div>
+                            
+                            <!-- State Machine Actions -->
+                            <div class="flex gap-3">
+                                <template v-if="selectedOrder.status === 'received'">
+                                    <button @click="updateStatus(selectedOrder.id, 'cancelled')" class="flex-1 py-3 border border-red-500/30 bg-red-500/10 text-red-500 hover:bg-red-500/20 text-xs font-black uppercase tracking-widest transition-colors">Reject</button>
+                                    <button @click="updateStatus(selectedOrder.id, 'accepted')" class="flex-1 py-3 border border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 text-xs font-black uppercase tracking-widest transition-colors">Accept</button>
                                 </template>
-                                <template v-else-if="order.status === 'accepted'">
-                                    <button @click="updateStatus(order.id, 'preparing')" class="flex-1 btn-primary text-xs py-2 bg-amber-500 hover:bg-amber-600">Start Preparing</button>
+                                <template v-else-if="selectedOrder.status === 'accepted'">
+                                    <button @click="updateStatus(selectedOrder.id, 'preparing')" class="flex-1 py-3 border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 text-xs font-black uppercase tracking-widest transition-colors">Start Prep</button>
                                 </template>
-                                <template v-else-if="order.status === 'preparing'">
-                                    <button v-if="order.fulfillment_method === 'pickup'" @click="updateStatus(order.id, 'ready')" class="flex-1 btn-primary text-xs py-2 bg-emerald-500 hover:bg-emerald-600">Mark Ready</button>
-                                    <button v-else @click="updateStatus(order.id, 'ready')" class="flex-1 btn-primary text-xs py-2 bg-emerald-500 hover:bg-emerald-600">Ready for Driver</button>
+                                <template v-else-if="selectedOrder.status === 'preparing'">
+                                    <button @click="updateStatus(selectedOrder.id, 'ready')" class="flex-1 py-3 border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-xs font-black uppercase tracking-widest transition-colors">Mark Ready</button>
                                 </template>
-                                <template v-else-if="order.status === 'ready'">
-                                    <p class="text-xs text-slate-400 italic">Waiting for pickup/dispatch</p>
+                                <template v-else-if="selectedOrder.status === 'ready' && selectedOrder.fulfillment_method === 'delivery'">
+                                    <div class="flex-1 flex flex-col gap-2">
+                                        <select v-model="selectedDriverId" class="w-full bg-[#1A1A1A] border border-neutral-700 text-neutral-200 text-xs px-3 py-2 font-mono h-10 outline-none focus:border-amber-500">
+                                            <option value="">— Broadcast to Fleet —</option>
+                                            <option v-for="d in drivers" :key="d.id" :value="d.id">{{ d.name }}</option>
+                                        </select>
+                                        <button @click="dispatchOrder(selectedOrder.id)" class="w-full py-3 border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 text-xs font-black uppercase tracking-widest transition-colors">
+                                            {{ selectedDriverId ? 'Assign Driver' : 'Broadcast' }}
+                                        </button>
+                                    </div>
+                                </template>
+                                <template v-else-if="selectedOrder.status === 'ready' && selectedOrder.fulfillment_method === 'pickup'">
+                                    <button @click="updateStatus(selectedOrder.id, 'delivered')" class="flex-1 py-3 border border-neutral-500/30 bg-neutral-800 text-neutral-300 hover:bg-neutral-700 text-xs font-black uppercase tracking-widest transition-colors">Handed to Customer</button>
+                                </template>
+                                <template v-else>
+                                    <p class="w-full text-center text-xs font-mono text-neutral-500 py-3 border border-neutral-800 bg-[#1A1A1A]">NO ACTIONS AVAILABLE</p>
                                 </template>
                             </div>
                         </div>
+                    </div>
+                    <div v-else class="flex-1 flex items-center justify-center text-neutral-600 font-mono text-xs text-center p-10">
+                        SELECT AN ORDER FROM THE LEDGER<br>TO VIEW MANIFEST
                     </div>
                 </div>
             </div>
         </div>
     `,
-    props: ['user'],
+    props: ['user', 'lang'],
     setup(props) {
         const orders = ref([]);
+        const drivers = ref([]);
         const loading = ref(true);
-        const wsConnected = ref(false);
         const activeFilter = ref('all');
+        const selectedOrderId = ref(null);
+        const selectedDriverId = ref('');
         let ws = null;
         let wsRetryCount = 0;
-        const WS_MAX_RETRIES = 5;
+
+        const getItemName = (item) => {
+            if (!item) return 'Article Inconnu';
+            const lang = props.lang || 'fr';
+            if (typeof item.name === 'object' && item.name !== null) {
+                return item.name[lang] || item.name['fr'] || item.name['en'] || Object.values(item.name)[0] || 'Article';
+            }
+            if (item.menu_item && item.menu_item.name) {
+                if (typeof item.menu_item.name === 'object') {
+                    return item.menu_item.name[lang] || item.menu_item.name['fr'] || item.menu_item.name['en'];
+                }
+                return item.menu_item.name;
+            }
+            if (typeof item.name === 'string' && item.name.trim() !== '') return item.name;
+            const fallbackStr = item[`name_${lang}`] || item.name_fr || item.name_en;
+            if (fallbackStr) return fallbackStr;
+            return `Article #${item.id || item.menu_item_id || '1'}`;
+        };
+
+        const scheduleReconnect = () => {
+            wsRetryCount++;
+            const delay = Math.min(30000, Math.pow(2, wsRetryCount) * 1000 + Math.random() * 1000);
+            console.warn(`[OrdersManager] WebSocket disconnected. Reconnecting in ${Math.round(delay / 1000)}s...`);
+            setTimeout(initWebSocket, delay);
+        };
 
         const loadOrders = async () => {
             if (!props.user || !props.user.restaurant_id) return;
@@ -118,88 +251,79 @@ export default {
                 loading.value = false;
             }
         };
+        
+        const loadDrivers = async () => {
+            if (!props.user || !props.user.restaurant_id) return;
+            try {
+                const res = await api.get('/admin/drivers');
+                drivers.value = res.data || [];
+            } catch (err) {
+                console.warn('[OrdersManager] drivers load skipped', err);
+            }
+        };
 
         const updateStatus = async (id, newStatus) => {
             try {
                 await api.post('/dashboard/orders/' + id + '/status', { new_status: newStatus });
-                // Optimistically update
                 const order = orders.value.find(o => o.id === id);
                 if (order) order.status = newStatus;
-                // If it goes to terminal state we might remove it or keep it until reload
                 if (newStatus === 'cancelled' || newStatus === 'delivered') {
                     orders.value = orders.value.filter(o => o.id !== id);
+                    if (selectedOrderId.value === id) selectedOrderId.value = null;
                 }
             } catch (err) {
                 console.error(err);
                 alert("Failed to update status");
             }
         };
+        
+        const dispatchOrder = async (id) => {
+            try {
+                const payload = { new_status: 'dispatched' };
+                if (selectedDriverId.value) payload.driver_id = selectedDriverId.value;
+                await api.post('/dashboard/orders/' + id + '/status', payload);
+                orders.value = orders.value.filter(o => o.id !== id);
+                if (selectedOrderId.value === id) selectedOrderId.value = null;
+            } catch (err) {
+                console.error(err);
+                alert("Failed to dispatch order");
+            }
+        };
 
         const initWebSocket = () => {
             if (!props.user || !props.user.restaurant_id) return;
-            
             const token = localStorage.getItem('token');
-            // If there's no usable token yet (e.g. pre-login render), abort.
-            // The cookie path will handle auth in production; the sentinel
-            // value 'cookie' signals we should let the server try cookie auth.
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
             const protocol = isLocal ? 'ws:' : 'wss:';
             const wsHost = isLocal ? 'localhost:8000' : 'api.mygeqo.com';
             const wsUrl = `${protocol}//${wsHost}/api/v1/dashboard/ws/${props.user.restaurant_id}`;
-
-            // Use subprotocol when we have a real JWT; otherwise open without
-            // one and let the server use the httpOnly cookie (production path).
             const isRealToken = token && token !== 'cookie';
-            ws = isRealToken
-                ? new WebSocket(wsUrl, [`bearer.${token}`])
-                : new WebSocket(wsUrl);
+            ws = isRealToken ? new WebSocket(wsUrl, [`bearer.${token}`]) : new WebSocket(wsUrl);
 
-            ws.onopen = () => {
-                wsConnected.value = true;
-                wsRetryCount = 0;  // reset on successful connection
-            };
-
+            ws.onopen = () => { wsRetryCount = 0; };
             ws.onclose = (event) => {
-                wsConnected.value = false;
-                // Auth failures — retrying would just loop forever.
-                // 4001 = missing/invalid token, 4003 = tenant mismatch.
-                if (event.code === 4001 || event.code === 4003) {
-                    console.error('[OrdersManager] WebSocket auth rejected (code', event.code, '). Not retrying.');
-                    return;
-                }
-                // Generic disconnect — retry with backoff, but cap attempts.
-                if (wsRetryCount >= WS_MAX_RETRIES) {
-                    console.warn('[OrdersManager] WebSocket: max retries reached. Giving up.');
-                    return;
-                }
-                wsRetryCount++;
-                setTimeout(initWebSocket, 3000);
+                if (event.code === 4001 || event.code === 4003) return;
+                scheduleReconnect();
             };
-
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 if (data.event === 'NEW_ORDER' || data.event === 'ORDER_STATUS_UPDATED') {
-                    loadOrders(); // Re-fetch the orders to get fresh data
+                    loadOrders();
                 }
             };
         };
 
         const filterCounts = computed(() => {
             const counts = {};
-            orders.value.forEach(o => {
-                counts[o.status] = (counts[o.status] || 0) + 1;
-            });
+            orders.value.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
             return counts;
         });
 
         const sortedOrders = computed(() => {
-            // Filter by activeFilter
             let filtered = orders.value;
             if (activeFilter.value !== 'all') {
                 filtered = filtered.filter(o => o.status === activeFilter.value);
             }
-            
-            // Sort by status priority then ID
             const statusWeights = { 'received': 1, 'accepted': 2, 'preparing': 3, 'ready': 4 };
             return [...filtered].sort((a, b) => {
                 const wa = statusWeights[a.status] || 99;
@@ -208,46 +332,56 @@ export default {
                 return b.id - a.id;
             });
         });
+        
+        const selectedOrder = computed(() => {
+            return orders.value.find(o => o.id === selectedOrderId.value) || null;
+        });
+        
+        const selectOrder = (order) => {
+            selectedOrderId.value = order.id;
+            selectedDriverId.value = '';
+        };
+
+        const orderSummary = (order) => {
+            if (!order.items || order.items.length === 0) return 'No items';
+            return order.items.map(i => \`\${i.quantity}x \${getItemName(i)}\`).join(', ');
+        };
 
         const timeAgo = (dateStr) => {
             if (!dateStr) return '';
-            // Ensure UTC parsing by appending Z if missing
             const utcStr = dateStr.endsWith('Z') ? dateStr : dateStr + 'Z';
-            const date = new Date(utcStr);
-            const now = new Date();
-            const diffInSeconds = Math.floor((now - date) / 1000);
-            
-            if (diffInSeconds < 60) return 'Just now';
+            const diffInSeconds = Math.floor((new Date() - new Date(utcStr)) / 1000);
+            if (diffInSeconds < 60) return 'NOW';
             const diffInMinutes = Math.floor(diffInSeconds / 60);
-            if (diffInMinutes < 60) return diffInMinutes + 'm ago';
+            if (diffInMinutes < 60) return diffInMinutes + 'M';
             const diffInHours = Math.floor(diffInMinutes / 60);
-            if (diffInHours < 24) return diffInHours + 'h ' + (diffInMinutes % 60) + 'm ago';
-            const diffInDays = Math.floor(diffInHours / 24);
-            return diffInDays + 'd ago';
+            if (diffInHours < 24) return diffInHours + 'H ' + (diffInMinutes % 60) + 'M';
+            return Math.floor(diffInHours / 24) + 'D';
         };
 
-        const statusBgColor = (status) => {
+        const statusPillClass = (status) => {
             const colors = {
-                'received': 'bg-emerald-50 border-b-blue-100',
-                'accepted': 'bg-amber-50 border-b-amber-100',
-                'preparing': 'bg-purple-50 border-b-purple-100',
-                'ready': 'bg-emerald-50 border-b-emerald-100',
+                'received': 'status-pending',
+                'accepted': 'status-pending',
+                'preparing': 'status-preparing',
+                'ready': 'status-ready',
             };
-            return colors[status] || 'bg-slate-50 border-b-slate-100';
+            return colors[status] || 'status-delivered';
         };
 
         onMounted(() => {
             loadOrders();
+            loadDrivers();
             initWebSocket();
         });
 
-        onUnmounted(() => {
-            if (ws) ws.close();
-        });
+        onUnmounted(() => { if (ws) ws.close(); });
 
         return { 
-            orders, loading, wsConnected, activeFilter, filterCounts, 
-            loadOrders, updateStatus, sortedOrders, statusBgColor, timeAgo 
+            orders, drivers, loading, activeFilter, filterCounts, 
+            selectedOrderId, selectedOrder, selectedDriverId, selectOrder,
+            updateStatus, dispatchOrder,
+            sortedOrders, statusPillClass, timeAgo, orderSummary, getItemName
         };
     }
 }

@@ -1,14 +1,3 @@
-/**
- * KitchenMonitor.js — Direction B redesign
- *
- * Layout B1 (Tablet/Desktop): 3-column Kanban — INCOMING | PREPARING | READY/DISPATCH
- * Layout B2 (Mobile):         single-column list with sticky tab filter (INC | PREP | RDY)
- *
- * Heuristic #1: Flashing saffron urgency border + beep for tickets >10 min in INCOMING
- * Heuristic #5: Confirmation bottom-sheet for critical status transitions
- * Mixed-script: item names wrapped in <div dir="auto"> with font-cairo
- * Driver dispatch: inline fleet selector in card header
- */
 import {
     ref, computed, onMounted, onUnmounted, watch
 } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
@@ -18,160 +7,148 @@ import { createDashboardSocket } from '../ws.js';
 export default {
     name: 'KitchenMonitor',
     template: `
-        <div class="min-h-screen bg-canvas text-slate-100 flex flex-col font-sans select-none overflow-hidden relative">
+        <div class="h-[calc(100vh-80px)] bg-[#0A0A0A] text-slate-100 flex flex-col font-sans select-none overflow-hidden relative">
 
             <!-- Screen-flash alert overlay (new order or urgency trigger) -->
             <div :class="flashScreen ? 'opacity-100' : 'opacity-0 pointer-events-none'"
-                 class="absolute inset-0 bg-saffron/10 z-50 transition-opacity duration-300 pointer-events-none">
+                 class="absolute inset-0 bg-amber-500/10 z-50 transition-opacity duration-300 pointer-events-none">
             </div>
 
             <!-- ════════════════ HEADER ════════════════ -->
-            <header class="bg-surface border-b border-white/[0.07] px-5 py-3.5 flex justify-between items-center z-10 shrink-0">
-                <div class="flex items-center gap-3">
-                    <div class="h-3.5 w-3.5 rounded-full transition-colors duration-500"
-                         :class="wsConnected ? 'bg-emerald shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-harissa'">
+            <header class="bg-[#141414] border-b border-neutral-800 px-5 py-3.5 flex justify-between items-center z-10 shrink-0">
+                <div class="flex items-center gap-4">
+                    <div v-if="wsStatus === 'CONNECTED'" class="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded">
+                        <div class="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
+                        <span class="text-[10px] font-black text-emerald-400 font-mono tracking-widest uppercase">LIVE</span>
                     </div>
-                    <span class="text-xs font-extrabold tracking-[0.2em] text-slate-400 uppercase">GEQO KDS</span>
-                    <span class="text-sm text-slate-500">·</span>
-                    <h1 class="text-base font-black text-slate-200 tracking-wide">KITCHEN MONITOR</h1>
+                    <div v-else-if="wsStatus === 'FALLBACK'" class="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded">
+                        <div class="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></div>
+                        <span class="text-[10px] font-black text-amber-400 font-mono tracking-widest uppercase">SYNCING</span>
+                    </div>
+                    <div v-else class="flex items-center gap-2 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded">
+                        <div class="h-2 w-2 rounded-full bg-red-500"></div>
+                        <span class="text-[10px] font-black text-red-500 font-mono tracking-widest uppercase">OFFLINE</span>
+                    </div>
+                    <span class="text-xs font-black font-mono tracking-[0.2em] text-neutral-500 uppercase">MATRIX KDS</span>
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <div class="hidden sm:flex items-center gap-2 text-xs text-slate-500 font-semibold">
-                        <span class="w-2 h-2 rounded-full bg-saffron inline-block"></span>
-                        INCOMING: <span class="text-saffron font-black">{{ incomingOrders.length }}</span>
-                        <span class="w-2 h-2 rounded-full bg-berry inline-block ml-2"></span>
-                        PREP: <span class="text-berry font-black">{{ preparingOrders.length }}</span>
-                        <span class="w-2 h-2 rounded-full bg-emerald inline-block ml-2"></span>
-                        READY: <span class="text-emerald font-black">{{ readyOrders.length }}</span>
+                    <div class="hidden sm:flex items-center gap-3 text-[10px] text-neutral-500 font-bold font-mono tracking-widest">
+                        <span>PENDING: <span class="text-amber-500">{{ pendingOrders.length }}</span></span>
+                        <span>PREP: <span class="text-blue-400">{{ preparingOrders.length }}</span></span>
+                        <span>READY: <span class="text-emerald-400">{{ readyOrders.length }}</span></span>
                     </div>
 
-                    <button @click="toggleSound" id="kds-sound-toggle"
-                            class="px-3 py-1.5 rounded-lg border border-white/10 bg-surface hover:bg-white/5 text-xs font-semibold text-slate-400 transition-all flex items-center gap-1.5">
-                        <span v-if="soundEnabled">🔊</span>
-                        <span v-else>🔇</span>
+                    <button @click="toggleSound"
+                            class="px-3 py-1.5 border border-neutral-800 bg-[#1A1A1A] hover:bg-neutral-800 text-xs font-mono text-neutral-400 transition-all">
+                        <span v-if="soundEnabled">🔊</span><span v-else>🔇</span>
                     </button>
-
-                    <button @click="$emit('logout')" id="kds-logout-btn"
-                            class="px-3 py-1.5 rounded-lg bg-harissa/10 hover:bg-harissa/20 text-xs font-bold text-harissa transition-all border border-harissa/20">
-                        Exit
+                    <button @click="$emit('logout')"
+                            class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-[10px] font-black text-red-500 font-mono tracking-widest uppercase transition-all border border-red-500/20">
+                        EXIT
                     </button>
                 </div>
             </header>
 
             <!-- ════════════════ MOBILE TAB FILTER ════════════════ -->
-            <div class="sm:hidden sticky top-0 z-20 bg-canvas border-b border-white/[0.07] flex">
+            <div class="sm:hidden sticky top-0 z-20 bg-[#0A0A0A] border-b border-neutral-800 flex">
                 <button v-for="tab in mobileTabs" :key="tab.key"
                         @click="activeTab = tab.key"
-                        :id="'kds-tab-' + tab.key"
-                        class="flex-1 py-4 text-xs font-extrabold tracking-[0.12em] uppercase transition-all"
+                        class="flex-1 py-4 text-[10px] font-black font-mono tracking-widest uppercase transition-all"
                         :class="activeTab === tab.key
-                            ? 'text-' + tab.color + ' border-b-2 border-' + tab.color + ' bg-white/[0.04]'
-                            : 'text-slate-600 border-b-2 border-transparent'">
-                    {{ tab.label }} <span v-if="tab.count > 0" class="ml-1 opacity-80">({{ tab.count }})</span>
+                            ? 'text-' + tab.color + ' border-b-2 border-' + tab.color + ' bg-white/[0.02]'
+                            : 'text-neutral-600 border-b-2 border-transparent'">
+                    {{ tab.label }}
                 </button>
             </div>
 
             <!-- ════════════════ MAIN AREA ════════════════ -->
             <main class="flex-1 overflow-hidden min-h-0">
-
-                <!-- Loading state -->
-                <div v-if="loading" class="h-full flex flex-col items-center justify-center gap-4 p-8">
-                    <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-saffron"></div>
-                    <span class="text-sm text-slate-500 font-semibold tracking-wide">Syncing kitchen queue…</span>
+                <div v-if="loading" class="h-full flex flex-col items-center justify-center gap-4">
+                    <div class="text-[10px] font-mono tracking-widest text-neutral-500 animate-pulse">SYNCING MATRIX QUEUE...</div>
+                </div>
+                <div v-else-if="orders.length === 0" class="h-full flex flex-col items-center justify-center gap-4 text-center">
+                    <h2 class="text-3xl font-black font-mono text-neutral-700 tracking-widest">QUEUE CLEAR</h2>
                 </div>
 
-                <!-- Empty state -->
-                <div v-else-if="orders.length === 0"
-                     class="h-full flex flex-col items-center justify-center gap-4 p-8 text-center">
-                    <div class="w-20 h-20 rounded-3xl bg-surface flex items-center justify-center border border-white/[0.07] mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-9 w-9 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                    </div>
-                    <h2 class="text-2xl font-black text-slate-500 tracking-widest">ALL CLEAR</h2>
-                    <p class="text-sm text-slate-700 font-medium">No active kitchen tickets. Enjoy the break!</p>
-                </div>
+                <!-- ── DESKTOP: 16-Column 4-Col Matrix Kanban ── -->
+                <div v-else class="hidden sm:grid sm:grid-cols-16 gap-4 p-4 h-full">
 
-                <!-- ── TABLET/DESKTOP: 3-column Kanban ── -->
-                <div v-else class="hidden sm:grid sm:grid-cols-3 gap-0 h-full divide-x divide-white/[0.05]">
-
-                    <!-- INCOMING column -->
-                    <div class="flex flex-col overflow-hidden">
-                        <div class="kds-col-incoming px-5 py-3 flex items-center gap-2 bg-surface/40 shrink-0">
-                            <span class="text-xs font-extrabold text-saffron tracking-[0.15em] uppercase">Incoming</span>
-                            <span class="ml-auto bg-saffron/15 text-saffron text-xs font-black px-2 py-0.5 rounded-full">{{ incomingOrders.length }}</span>
+                    <!-- PENDING (col-span-4) -->
+                    <div class="col-span-4 flex flex-col overflow-hidden bg-[#141414] border border-neutral-800">
+                        <div class="border-t-4 border-amber-500 px-4 py-3 flex items-center justify-between bg-[#1A1A1A] shrink-0">
+                            <span class="text-[10px] font-black text-amber-500 font-mono tracking-widest uppercase">PENDING</span>
+                            <span class="bg-amber-500/10 text-amber-500 text-xs font-mono px-2 py-0.5">{{ pendingOrders.length }}</span>
                         </div>
-                        <div class="flex-1 overflow-y-auto p-3 space-y-3">
-                            <div v-if="incomingOrders.length === 0" class="py-10 text-center text-slate-700 text-xs font-semibold uppercase tracking-wider">Empty</div>
-                            <div v-for="order in incomingOrders" :key="order.id"
-                                 class="kds-ticket hover-glow-saffron cursor-default"
-                                 :class="isUrgent(order) ? 'kds-ticket-urgent' : ''">
-                                <div v-html="renderTicket(order, 'incoming')"></div>
-                                <div class="px-4 pb-4">
-                                    <button @click="promptTransition(order, 'preparing')"
-                                            :id="'kds-accept-' + order.id"
-                                            class="kds-action-btn w-full bg-saffron/10 hover:bg-saffron/20 text-saffron border border-saffron/30 rounded-lg text-sm font-bold mt-2">
-                                        ✓ Accept & Start Preparing
+                        <div class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+                            <div v-for="order in pendingOrders" :key="order.id" class="bg-[#1A1A1A] border transition-colors hover:border-amber-500/50 flex flex-col" :class="isUrgent(order) ? 'border-amber-500 animate-[urgencyPulse_1s_ease-in-out_infinite]' : 'border-neutral-800'">
+                                <div v-html="renderTicketHeader(order, 'amber-500')"></div>
+                                <div class="px-4 py-3 space-y-3 flex-1" v-html="renderTicketItems(order)"></div>
+                                <div class="px-4 pb-4 shrink-0">
+                                    <button @click="promptTransition(order, 'preparing')" class="w-full py-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 font-black font-mono text-xs tracking-widest uppercase">
+                                        ACCEPTER
                                     </button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- PREPARING column -->
-                    <div class="flex flex-col overflow-hidden">
-                        <div class="kds-col-preparing px-5 py-3 flex items-center gap-2 bg-surface/40 shrink-0">
-                            <span class="text-xs font-extrabold text-berry tracking-[0.15em] uppercase">Preparing</span>
-                            <span class="ml-auto bg-berry/15 text-berry text-xs font-black px-2 py-0.5 rounded-full">{{ preparingOrders.length }}</span>
+                    <!-- PREPARING (col-span-4) -->
+                    <div class="col-span-4 flex flex-col overflow-hidden bg-[#141414] border border-neutral-800">
+                        <div class="border-t-4 border-blue-500 px-4 py-3 flex items-center justify-between bg-[#1A1A1A] shrink-0">
+                            <span class="text-[10px] font-black text-blue-400 font-mono tracking-widest uppercase">PREPARING</span>
+                            <span class="bg-blue-500/10 text-blue-400 text-xs font-mono px-2 py-0.5">{{ preparingOrders.length }}</span>
                         </div>
-                        <div class="flex-1 overflow-y-auto p-3 space-y-3">
-                            <div v-if="preparingOrders.length === 0" class="py-10 text-center text-slate-700 text-xs font-semibold uppercase tracking-wider">Empty</div>
-                            <div v-for="order in preparingOrders" :key="order.id"
-                                 class="kds-ticket hover-glow-berry cursor-default">
-                                <div v-html="renderTicket(order, 'preparing')"></div>
-                                <div class="px-4 pb-4">
-                                    <button @click="promptTransition(order, 'ready')"
-                                            :id="'kds-ready-' + order.id"
-                                            class="kds-action-btn w-full bg-berry/10 hover:bg-berry/20 text-berry border border-berry/30 rounded-lg text-sm font-bold mt-2">
-                                        ✓ Mark Ready
+                        <div class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+                            <div v-for="order in preparingOrders" :key="order.id" class="bg-[#1A1A1A] border border-neutral-800 transition-colors hover:border-blue-500/50 flex flex-col">
+                                <div v-html="renderTicketHeader(order, 'blue-400')"></div>
+                                <div class="px-4 py-3 space-y-3 flex-1" v-html="renderTicketItems(order)"></div>
+                                <div class="px-4 pb-4 shrink-0">
+                                    <button @click="promptTransition(order, 'ready')" class="w-full py-3 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 font-black font-mono text-xs tracking-widest uppercase">
+                                        PRÊT
                                     </button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- READY/DISPATCH column -->
-                    <div class="flex flex-col overflow-hidden">
-                        <div class="kds-col-ready px-5 py-3 flex items-center gap-2 bg-surface/40 shrink-0">
-                            <span class="text-xs font-extrabold text-emerald tracking-[0.15em] uppercase">Ready / Dispatch</span>
-                            <span class="ml-auto bg-emerald/15 text-emerald text-xs font-black px-2 py-0.5 rounded-full">{{ readyOrders.length }}</span>
+                    <!-- READY (col-span-4) -->
+                    <div class="col-span-4 flex flex-col overflow-hidden bg-[#141414] border border-neutral-800">
+                        <div class="border-t-4 border-emerald-500 px-4 py-3 flex items-center justify-between bg-[#1A1A1A] shrink-0">
+                            <span class="text-[10px] font-black text-emerald-400 font-mono tracking-widest uppercase">READY</span>
+                            <span class="bg-emerald-500/10 text-emerald-400 text-xs font-mono px-2 py-0.5">{{ readyOrders.length }}</span>
                         </div>
-                        <div class="flex-1 overflow-y-auto p-3 space-y-3">
-                            <div v-if="readyOrders.length === 0" class="py-10 text-center text-slate-700 text-xs font-semibold uppercase tracking-wider">Empty</div>
-                            <div v-for="order in readyOrders" :key="order.id"
-                                 class="kds-ticket hover-glow-emerald cursor-default">
-                                <div v-html="renderTicket(order, 'ready')"></div>
-                                <!-- Driver dispatch selector -->
-                                <div v-if="order.fulfillment_method === 'delivery'" class="px-4 pb-4">
-                                    <select :id="'kds-driver-' + order.id"
-                                            v-model="selectedDrivers[order.id]"
-                                            class="w-full bg-canvas border border-white/10 text-slate-300 rounded-lg px-3 py-2 text-xs font-semibold mb-2 focus:border-emerald outline-none">
+                        <div class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+                            <div v-for="order in readyOrders" :key="order.id" class="bg-[#1A1A1A] border border-neutral-800 transition-colors hover:border-emerald-500/50 flex flex-col">
+                                <div v-html="renderTicketHeader(order, 'emerald-400')"></div>
+                                <div class="px-4 py-3 space-y-3 flex-1" v-html="renderTicketItems(order)"></div>
+                                <div class="px-4 pb-4 shrink-0 space-y-2">
+                                    <select v-if="order.fulfillment_method === 'delivery'" v-model="selectedDrivers[order.id]" class="w-full bg-[#0A0A0A] border border-neutral-800 text-neutral-300 font-mono text-xs px-2 py-2 outline-none">
                                         <option value="">— Broadcast to Fleet —</option>
                                         <option v-for="d in drivers" :key="d.id" :value="d.id">{{ d.name }}</option>
                                     </select>
-                                    <button @click="promptTransition(order, 'dispatched')"
-                                            :id="'kds-dispatch-' + order.id"
-                                            class="kds-action-btn w-full bg-emerald/10 hover:bg-emerald/20 text-emerald border border-emerald/30 rounded-lg text-sm font-bold">
-                                        {{ selectedDrivers[order.id] ? '🚚 Assign Driver' : '📡 Broadcast' }}
+                                    <button @click="promptTransition(order, 'dispatched')" class="w-full py-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-black font-mono text-xs tracking-widest uppercase">
+                                        {{ order.fulfillment_method === 'delivery' ? (selectedDrivers[order.id] ? 'LIVRER (ASSIGN)' : 'LIVRER (BROADCAST)') : 'LIVRÉ (PICKUP)' }}
                                     </button>
                                 </div>
-                                <div v-else class="px-4 pb-4">
-                                    <button @click="promptTransition(order, 'delivered')"
-                                            :id="'kds-pickup-done-' + order.id"
-                                            class="kds-action-btn w-full bg-emerald/10 hover:bg-emerald/20 text-emerald border border-emerald/30 rounded-lg text-sm font-bold">
-                                        ✓ Picked Up
-                                    </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DELIVERED (col-span-4) -->
+                    <div class="col-span-4 flex flex-col overflow-hidden bg-[#141414] border border-neutral-800">
+                        <div class="border-t-4 border-neutral-600 px-4 py-3 flex items-center justify-between bg-[#1A1A1A] shrink-0">
+                            <span class="text-[10px] font-black text-neutral-400 font-mono tracking-widest uppercase">DELIVERED/DISPATCHED</span>
+                            <span class="bg-neutral-800/50 text-neutral-400 text-xs font-mono px-2 py-0.5">{{ deliveredOrders.length }}</span>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+                            <div v-for="order in deliveredOrders" :key="order.id" class="bg-[#1A1A1A] border border-neutral-800 flex flex-col opacity-70">
+                                <div v-html="renderTicketHeader(order, 'neutral-400')"></div>
+                                <div class="px-4 py-3 space-y-3 flex-1" v-html="renderTicketItems(order)"></div>
+                                <div class="px-4 pb-4 shrink-0">
+                                    <div class="w-full py-3 bg-neutral-800/50 text-neutral-400 text-center font-black font-mono text-xs tracking-widest uppercase">
+                                        {{ order.status }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -179,69 +156,76 @@ export default {
                 </div>
 
                 <!-- ── MOBILE: single-column filtered list ── -->
-                <div v-if="!loading && orders.length > 0" class="sm:hidden h-full overflow-y-auto p-3 space-y-3">
+                <div v-if="!loading && orders.length > 0" class="sm:hidden h-full overflow-y-auto p-4 space-y-4">
                     <template v-for="order in mobileVisibleOrders" :key="order.id">
-                        <div class="kds-ticket" :class="isUrgent(order) ? 'kds-ticket-urgent' : ''">
-                            <div v-html="renderTicket(order, mobileColFor(order.status))"></div>
-                            <div class="px-4 pb-4 space-y-2">
-                                <button v-if="order.status === 'received'"
-                                        @click="promptTransition(order, 'preparing')"
-                                        class="kds-action-btn w-full bg-saffron/10 text-saffron border border-saffron/30 rounded-lg text-sm font-bold">
-                                    ✓ Accept
-                                </button>
-                                <button v-if="order.status === 'accepted' || order.status === 'preparing'"
-                                        @click="promptTransition(order, 'ready')"
-                                        class="kds-action-btn w-full bg-berry/10 text-berry border border-berry/30 rounded-lg text-sm font-bold">
-                                    ✓ Ready
-                                </button>
+                        <div class="bg-[#141414] border border-neutral-800">
+                            <div v-html="renderTicketHeader(order, mobileColor(order.status))"></div>
+                            <div class="px-4 py-3" v-html="renderTicketItems(order)"></div>
+                            <div class="px-4 pb-4">
+                                <button v-if="['received','accepted'].includes(order.status)" @click="promptTransition(order, 'preparing')" class="w-full py-3 bg-amber-500/10 text-amber-500 border border-amber-500/30 font-black font-mono text-xs tracking-widest uppercase">ACCEPTER</button>
+                                <button v-else-if="order.status === 'preparing'" @click="promptTransition(order, 'ready')" class="w-full py-3 bg-blue-500/10 text-blue-400 border border-blue-500/30 font-black font-mono text-xs tracking-widest uppercase">PRÊT</button>
+                                <button v-else-if="order.status === 'ready'" @click="promptTransition(order, 'dispatched')" class="w-full py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-black font-mono text-xs tracking-widest uppercase">LIVRÉ</button>
                             </div>
                         </div>
                     </template>
-                    <div v-if="mobileVisibleOrders.length === 0" class="py-12 text-center text-slate-700 text-xs uppercase font-bold tracking-widest">No tickets here</div>
                 </div>
             </main>
 
             <!-- ════════════════ CONFIRMATION BOTTOM SHEET ════════════════ -->
-            <!-- Heuristic #5: Accidental tap prevention for critical transitions -->
             <template v-if="pendingTransition">
-                <div class="bottom-sheet-backdrop" @click="pendingTransition = null"></div>
-                <div class="bottom-sheet">
-                    <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-5"></div>
-                    <h3 class="text-lg font-black text-slate-100 mb-1">Confirm Action</h3>
-                    <p class="text-sm text-slate-400 mb-6">
-                        Move <span class="text-saffron font-bold">Order #{{ pendingTransition.order.tracking_code || pendingTransition.order.id }}</span>
-                        to <span class="font-bold" :class="transitionColor">{{ pendingTransitionLabel }}</span>?
+                <div class="absolute inset-0 bg-black/80 z-40" @click="pendingTransition = null"></div>
+                <div class="absolute bottom-0 left-0 right-0 bg-[#1A1A1A] border-t border-neutral-800 p-6 z-50">
+                    <h3 class="text-sm font-black font-mono text-neutral-200 tracking-widest uppercase mb-4">Confirm Matrix State Transfer</h3>
+                    <p class="text-sm text-neutral-400 mb-6 font-mono">
+                        Transfer TICKET #{{ pendingTransition.order.tracking_code || pendingTransition.order.id }}
+                        to STATE: <span :class="'text-' + transitionColor" class="font-black">[{{ pendingTransitionLabel }}]</span>?
                     </p>
                     <div class="flex gap-3">
-                        <button @click="pendingTransition = null" id="kds-confirm-cancel"
-                                class="btn btn-ghost flex-1 text-sm">Cancel</button>
-                        <button @click="executeTransition" id="kds-confirm-ok"
-                                class="btn btn-saffron flex-1 text-sm">Confirm</button>
+                        <button @click="pendingTransition = null" class="flex-1 py-3 border border-neutral-700 font-mono text-xs font-black tracking-widest uppercase hover:bg-neutral-800">Cancel</button>
+                        <button @click="executeTransition" class="flex-1 py-3 border border-amber-500/30 bg-amber-500/10 text-amber-500 font-mono text-xs font-black tracking-widest uppercase hover:bg-amber-500/20">Confirm</button>
                     </div>
                 </div>
             </template>
         </div>
     `,
-    props: ['user'],
+    props: ['user', 'lang'],
     emits: ['logout'],
 
     setup(props) {
         const orders        = ref([]);
         const drivers       = ref([]);
         const loading       = ref(true);
-        const wsConnected   = ref(false);
+        const wsStatus      = ref('DISCONNECTED');
         const soundEnabled  = ref(true);
         const flashScreen   = ref(false);
         const now           = ref(new Date());
-        const activeTab     = ref('incoming');
+        const activeTab     = ref('pending');
         const selectedDrivers = ref({});
         const pendingTransition = ref(null);
 
         let ws    = null;
         let timer = null;
+        let pollingTimer = null;
+        
+        const getItemName = (item) => {
+            if (!item) return 'Article Inconnu';
+            const lang = props.lang || 'fr';
+            if (typeof item.name === 'object' && item.name !== null) {
+                return item.name[lang] || item.name['fr'] || item.name['en'] || Object.values(item.name)[0] || 'Article';
+            }
+            if (item.menu_item && item.menu_item.name) {
+                if (typeof item.menu_item.name === 'object') {
+                    return item.menu_item.name[lang] || item.menu_item.name['fr'] || item.menu_item.name['en'];
+                }
+                return item.menu_item.name;
+            }
+            if (typeof item.name === 'string' && item.name.trim() !== '') return item.name;
+            const fallbackStr = item[`name_${lang}`] || item.name_fr || item.name_en;
+            if (fallbackStr) return fallbackStr;
+            return `Article #${item.id || item.menu_item_id || '1'}`;
+        };
 
-        // ── Computed columns ───────────────────────────────────────────────
-        const incomingOrders = computed(() =>
+        const pendingOrders = computed(() =>
             [...orders.value.filter(o => ['received', 'accepted'].includes(o.status))]
                 .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
         );
@@ -250,26 +234,31 @@ export default {
                 .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
         );
         const readyOrders = computed(() =>
-            [...orders.value.filter(o => ['ready', 'dispatched'].includes(o.status))]
+            [...orders.value.filter(o => o.status === 'ready')]
                 .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+        );
+        const deliveredOrders = computed(() =>
+            [...orders.value.filter(o => ['dispatched', 'delivered'].includes(o.status))]
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) // newest first
+                .slice(0, 10) // Limit to 10 in UI
         );
 
         const mobileTabs = computed(() => [
-            { key: 'incoming',  label: 'INC',  color: 'saffron', count: incomingOrders.value.length },
-            { key: 'preparing', label: 'PREP', color: 'berry',   count: preparingOrders.value.length },
-            { key: 'ready',     label: 'RDY',  color: 'emerald', count: readyOrders.value.length },
+            { key: 'pending',  label: 'PENDING',  color: 'amber-500' },
+            { key: 'preparing', label: 'PREP', color: 'blue-400' },
+            { key: 'ready',     label: 'READY',  color: 'emerald-400' },
         ]);
 
         const mobileVisibleOrders = computed(() => {
-            if (activeTab.value === 'incoming')  return incomingOrders.value;
+            if (activeTab.value === 'pending')  return pendingOrders.value;
             if (activeTab.value === 'preparing') return preparingOrders.value;
             return readyOrders.value;
         });
 
-        const mobileColFor = (status) => {
-            if (['received','accepted'].includes(status)) return 'incoming';
-            if (status === 'preparing') return 'preparing';
-            return 'ready';
+        const mobileColor = (status) => {
+            if (['received','accepted'].includes(status)) return 'amber-500';
+            if (status === 'preparing') return 'blue-400';
+            return 'emerald-400';
         };
 
         const isUrgent = (order) => {
@@ -278,81 +267,59 @@ export default {
         };
 
         const getElapsedTime = (created_at) => {
-            const mins = Math.floor((now.value - new Date(created_at)) / 60000);
-            if (mins < 1) return 'Just now';
-            return `${mins}m ago`;
+            const utcStr = created_at.endsWith('Z') ? created_at : created_at + 'Z';
+            const mins = Math.floor((now.value - new Date(utcStr)) / 60000);
+            if (mins < 1) return '0 min';
+            return `${mins} min`;
         };
 
-        // ── Render ticket HTML (shared between desktop & mobile) ────────────
-        const renderTicket = (order, col) => {
-            const headerAccentClass = col === 'incoming'  ? 'border-saffron/40' :
-                                      col === 'preparing' ? 'border-berry/40'   : 'border-emerald/40';
-            const timeClass = isUrgent(order) ? 'text-saffron font-black animate-pulse' : 'text-slate-500';
+        const renderTicketHeader = (order, textColor) => {
             const elapsed = getElapsedTime(order.created_at);
-            const fulfillBadge = order.fulfillment_method === 'delivery'
-                ? '<span class="badge badge-saffron">🛵 Delivery</span>'
-                : '<span class="badge badge-slate">🥡 Pickup</span>';
-
-            // Location link if coordinates present
-            const locationHtml = (order.latitude && order.longitude)
-                ? `<a href="https://maps.google.com/?q=${order.latitude},${order.longitude}"
-                       target="_blank" rel="noopener"
-                       class="inline-flex items-center gap-1 text-xs text-saffron underline font-semibold mt-1">
-                       📍 Maps / Waze
-                   </a>`
-                : '';
-
-            const itemsHtml = (order.items || []).map(item => {
-                const modsHtml = (item.modifiers || []).map(m =>
-                    `<span class="kds-modifier-chip">${m.name_en || m.name_fr || ''}</span>`
-                ).join(' ');
-                const exclusionsHtml = (item.exclusions || []).map(e =>
-                    `<span class="kds-modifier-chip">SANS ${e.toUpperCase()}</span>`
-                ).join(' ');
-                return `
-                    <div class="flex items-start gap-2.5 py-1.5">
-                        <span class="shrink-0 min-w-[2rem] text-center font-extrabold text-lg text-blue-400
-                                     bg-blue-950/50 px-2 py-0.5 rounded border border-blue-900/30">
-                            ${item.quantity}×
-                        </span>
-                        <div class="flex-1 min-w-0">
-                            <div dir="auto" class="font-bold text-slate-100 text-sm leading-snug font-cairo">
-                                ${item.name_fr || item.name_en || item.name_ar || 'Item #' + item.menu_item_id}
-                            </div>
-                            ${item.name_en && item.name_en !== item.name_fr
-                                ? `<div class="text-xs text-slate-500 mt-0.5">${item.name_en}</div>` : ''}
-                            <div class="flex flex-wrap gap-1 mt-1.5">${modsHtml}${exclusionsHtml}</div>
-                        </div>
-                    </div>`;
-            }).join('');
-
+            const timeClass = isUrgent(order) ? 'text-red-500' : 'text-neutral-400';
+            const method = order.fulfillment_method === 'delivery' ? 'DELIVERY' : 'PICKUP';
             return `
-                <div class="px-4 pt-4 pb-3 border-b ${headerAccentClass} border-b border-white/[0.06] flex justify-between items-start">
+                <div class="px-4 py-3 border-b border-neutral-800 flex justify-between items-start bg-[#141414]">
                     <div>
-                        <span class="text-[10px] font-black text-slate-600 uppercase tracking-widest block">Order</span>
-                        <span class="text-2xl font-black text-white">#${order.tracking_code || order.id}</span>
+                        <span class="text-2xl font-black font-mono text-${textColor}">#${order.tracking_code || order.id}</span>
+                        <div class="text-[10px] font-mono tracking-widest text-neutral-500 mt-1">${method}</div>
                     </div>
-                    <div class="text-right flex flex-col items-end gap-1.5">
-                        ${fulfillBadge}
-                        <span class="text-xs font-bold ${timeClass}">${elapsed}</span>
-                        ${locationHtml}
+                    <div class="text-right">
+                        <span class="text-xs font-mono font-bold ${timeClass}">${elapsed}</span>
                     </div>
                 </div>
-                <div class="px-4 py-3 space-y-1">${itemsHtml}</div>
             `;
         };
 
-        // ── Pending transition (confirmation sheet) ────────────────────────
+        const renderTicketItems = (order) => {
+            return (order.items || []).map(item => {
+                const modsHtml = (item.modifiers || []).map(m =>
+                    `<div class="text-amber-400 font-medium text-sm pl-4">+ ${m.name_fr || m.name_en || ''}</div>`
+                ).join('');
+                const exclusionsHtml = (item.exclusions || []).map(e =>
+                    `<div class="text-red-400 font-medium text-sm pl-4">- SANS ${e.ingredient_name.toUpperCase()}</div>`
+                ).join('');
+                return `
+                    <div class="flex items-start gap-3">
+                        <span class="text-lg font-black font-mono text-neutral-500 shrink-0">${item.quantity}x</span>
+                        <div class="flex-1 min-w-0">
+                            <div dir="auto" class="text-lg font-bold text-neutral-50 leading-tight font-sans">
+                                ${getItemName(item)}
+                            </div>
+                            <div class="mt-1">${modsHtml}${exclusionsHtml}</div>
+                        </div>
+                    </div>`;
+            }).join('');
+        };
+
         const pendingTransitionLabel = computed(() => {
             if (!pendingTransition.value) return '';
-            const map = { preparing: 'Preparing', ready: 'Ready', dispatched: 'Dispatched', delivered: 'Delivered' };
-            return map[pendingTransition.value.to] || pendingTransition.value.to;
+            return pendingTransition.value.to.toUpperCase();
         });
 
         const transitionColor = computed(() => {
             if (!pendingTransition.value) return '';
-            const map = { preparing: 'text-berry', ready: 'text-emerald', dispatched: 'text-emerald', delivered: 'text-emerald' };
-            return map[pendingTransition.value.to] || 'text-saffron';
+            const map = { preparing: 'blue-400', ready: 'emerald-400', dispatched: 'emerald-400', delivered: 'neutral-400' };
+            return map[pendingTransition.value.to] || 'amber-500';
         });
 
         const promptTransition = (order, to) => {
@@ -365,25 +332,27 @@ export default {
             pendingTransition.value = null;
             try {
                 const payload = { new_status: to };
-                if (to === 'dispatched' && selectedDrivers.value[order.id]) {
+                if ((to === 'dispatched' || to === 'ready') && selectedDrivers.value[order.id]) {
                     payload.driver_id = selectedDrivers.value[order.id];
                 }
-                await api.post(`/dashboard/orders/${order.id}/status`, payload);
+                // If it's pickup and we're clicking dispatched, it should actually be delivered
+                if (to === 'dispatched' && order.fulfillment_method === 'pickup') {
+                    payload.new_status = 'delivered';
+                }
+                
+                await api.post(\`/dashboard/orders/\${order.id}/status\`, payload);
                 await loadOrders();
             } catch (err) {
                 console.error('[KDS] status update failed', err);
             }
         };
 
-        // ── Data loading ────────────────────────────────────────────────────
         const loadOrders = async () => {
             if (!props.user?.restaurant_id) return;
             try {
                 const res = await api.get('/dashboard/orders/' + props.user.restaurant_id);
                 const previousCount = orders.value.filter(o => ['received','accepted'].includes(o.status)).length;
-                orders.value = res.data.filter(o =>
-                    ['received','accepted','preparing','ready','dispatched'].includes(o.status)
-                );
+                orders.value = res.data;
                 const newCount = orders.value.filter(o => ['received','accepted'].includes(o.status)).length;
                 if (newCount > previousCount && !loading.value) triggerAlertEffect();
             } catch (err) {
@@ -399,40 +368,51 @@ export default {
                 const res = await api.get('/admin/drivers');
                 drivers.value = res.data || [];
             } catch (err) {
-                // Non-fatal: driver list is optional
                 console.warn('[KDS] drivers load skipped', err);
             }
         };
 
-        // ── WebSocket ───────────────────────────────────────────────────────
+        let reconnectAttempts = 0;
+        const scheduleReconnect = () => {
+            reconnectAttempts++;
+            if (reconnectAttempts > 1 && wsStatus.value !== 'FALLBACK') {
+                wsStatus.value = 'FALLBACK';
+                if (!pollingTimer) {
+                    pollingTimer = setInterval(() => loadOrders(), 10000);
+                }
+            } else if (wsStatus.value !== 'FALLBACK') {
+                wsStatus.value = 'DISCONNECTED';
+            }
+
+            const delay = Math.min(30000, Math.pow(2, reconnectAttempts) * 1000 + Math.random() * 1000);
+            setTimeout(initWebSocket, delay);
+        };
+
         const initWebSocket = () => {
             if (!props.user?.restaurant_id) return;
-
             ws = createDashboardSocket(props.user.restaurant_id);
-
-            ws.onopen = () => { wsConnected.value = true; };
-
-            ws.onclose = (event) => {
-                wsConnected.value = false;
-                // 4003 = tenant mismatch — retrying would loop, do not reconnect.
-                if (event.code === 4003) {
-                    console.error('[KDS] WebSocket: access denied for this restaurant');
-                    return;
+            ws.onopen = () => { 
+                wsStatus.value = 'CONNECTED'; 
+                reconnectAttempts = 0;
+                if (pollingTimer) {
+                    clearInterval(pollingTimer);
+                    pollingTimer = null;
                 }
-                setTimeout(initWebSocket, 3000);
             };
-
+            ws.onclose = (event) => {
+                if (wsStatus.value !== 'FALLBACK') wsStatus.value = 'DISCONNECTED';
+                if (event.code === 4003) return;
+                scheduleReconnect();
+            };
             ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
                     if (['NEW_ORDER','ORDER_STATUS_UPDATED'].includes(data.event)) loadOrders();
-                } catch { /* ignore malformed messages */ }
+                } catch { }
             };
         };
 
-        // ── Sound & Flash ───────────────────────────────────────────────────
         const toggleSound = () => { soundEnabled.value = !soundEnabled.value; };
-
         const playAlertSound = () => {
             if (!soundEnabled.value) return;
             try {
@@ -461,26 +441,25 @@ export default {
             setTimeout(() => { flashScreen.value = false; }, 800);
         };
 
-        // ── Lifecycle ───────────────────────────────────────────────────────
         onMounted(() => {
             loadOrders();
             loadDrivers();
             initWebSocket();
-            // Tick the clock every 30s for elapsed-time display
             timer = setInterval(() => { now.value = new Date(); }, 30000);
         });
 
         onUnmounted(() => {
-            if (ws)    ws.close();
+            if (ws) ws.close();
             if (timer) clearInterval(timer);
+            if (pollingTimer) clearInterval(pollingTimer);
         });
 
         return {
-            orders, drivers, loading, wsConnected, soundEnabled, flashScreen,
+            orders, drivers, loading, wsStatus, soundEnabled, flashScreen,
             activeTab, selectedDrivers, pendingTransition,
-            incomingOrders, preparingOrders, readyOrders,
-            mobileTabs, mobileVisibleOrders, mobileColFor,
-            isUrgent, renderTicket,
+            pendingOrders, preparingOrders, readyOrders, deliveredOrders,
+            mobileTabs, mobileVisibleOrders, mobileColor,
+            isUrgent, renderTicketHeader, renderTicketItems,
             pendingTransitionLabel, transitionColor,
             promptTransition, executeTransition, toggleSound,
         };

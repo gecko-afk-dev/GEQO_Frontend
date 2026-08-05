@@ -5,12 +5,12 @@
 
 /* ── 1. Design Tokens ──────────────────────────────────────── */
 :root {
-    /* Canvas */
-    --canvas-bg:        #121212;
-    --surface-card:     #1E1E1E;
-    --surface-raised:   #252525;
-    --border-subtle:    rgba(255,255,255,0.07);
-    --border-muted:     rgba(255,255,255,0.12);
+    /* Canvas - Swiss Industrial Matrix */
+    --canvas-bg:        #0A0A0A;
+    --surface-card:     #141414;
+    --surface-raised:   #1A1A1A;
+    --border-subtle:    rgba(255,255,255,0.05); /* neutral-800 equivalent is usually #262626 or rgba(255,255,255,0.1) */
+    --border-muted:     #262626;
 
     /* Brand */
     --electric-saffron: #F59E0B;
@@ -59,6 +59,10 @@ body {
     color: #e2e8f0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-align: left; /* Swiss typography left-aligned by default */
+}
+[dir="rtl"] body {
+    text-align: right; /* RTL support */
 }
 
 /* ── 3. Glassmorphism Utilities ────────────────────────────── */
@@ -78,14 +82,19 @@ body {
 /* ── 4. Surface Cards ──────────────────────────────────────── */
 .card-dark {
     background: var(--surface-card);
-    border: 1px solid var(--border-subtle);
+    border: 1px solid var(--border-muted); /* neutral-800 */
+    border-radius: 0px; /* Industrial sharp edges */
+}
+.card-dark-rounded {
+    background: var(--surface-card);
+    border: 1px solid var(--border-muted);
     border-radius: var(--radius-lg);
 }
 
 .card-raised {
     background: var(--surface-raised);
     border: 1px solid var(--border-muted);
-    border-radius: var(--radius-lg);
+    border-radius: 0px;
 }
 
 /* SuperAdmin specific card */
@@ -93,6 +102,36 @@ body {
     background: var(--superadmin-surface);
     border: 1px solid var(--superadmin-border);
     border-radius: var(--radius-lg);
+}
+
+/* Swiss Layout Grid Systems */
+.grid-cols-16 {
+    grid-template-columns: repeat(16, minmax(0, 1fr));
+}
+
+/* Status Accents */
+.status-pending {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #F59E0B; /* amber-500 */
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-preparing {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #60A5FA; /* blue-400 */
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.status-ready {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #34D399; /* emerald-400 */
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-delivered {
+    background-color: rgba(38, 38, 38, 0.5); /* neutral-800/50 */
+    color: #A3A3A3; /* neutral-400 */
+    border: 1px solid rgba(38, 38, 38, 1);
 }
 
 /* ── 5. Hover Glows ────────────────────────────────────────── */

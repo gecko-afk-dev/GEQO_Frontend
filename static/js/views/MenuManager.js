@@ -20,187 +20,114 @@ const IMGBB_API_KEY = "c165abbc4884f654c13541e5967d6c3a";
 export default {
     name: 'MenuManager',
     template: `
-        <div class="space-y-6 animate-fade-in">
-
-            <!-- ════════ PAGE HEADER ════════ -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <!-- H2 Removed -->
-                </div>
-                <button @click="openAddCategoryModal" id="menu-add-category-btn"
-                        class="btn btn-saffron text-sm px-5 h-10 shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    Add Category
-                </button>
-            </div>
-
-            <!-- ════════ CATEGORY FILTER TABS ════════ -->
-            <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                <button @click="activeCategory = null" id="menu-tab-all"
-                        class="shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all"
-                        :class="activeCategory === null
-                            ? 'bg-saffron text-black shadow-[0_0_12px_rgba(245,158,11,0.4)]'
-                            : 'bg-surface text-slate-400 hover:text-slate-200 border border-white/[0.07]'">
-                    ALL
-                </button>
-                <button v-for="cat in categories" :key="cat.id"
-                        @click="activeCategory = cat.id"
-                        :id="'menu-tab-cat-' + cat.id"
-                        class="shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all"
-                        :class="activeCategory === cat.id
-                            ? 'bg-saffron text-black shadow-[0_0_12px_rgba(245,158,11,0.4)]'
-                            : 'bg-surface text-slate-400 hover:text-slate-200 border border-white/[0.07]'">
-                    {{ cat.name_en }}
-                </button>
-            </div>
+        <div class="h-[calc(100vh-120px)] flex flex-col font-sans select-none overflow-hidden">
 
             <!-- ════════ LOADING ════════ -->
-            <div v-if="loading" class="space-y-3">
-                <div v-for="i in 3" :key="i" class="skeleton h-14 w-full rounded-xl"></div>
+            <div v-if="loading" class="flex-1 flex items-center justify-center">
+                <div class="text-[10px] font-mono tracking-widest text-neutral-500 animate-pulse">SYNCING MENU MATRIX...</div>
             </div>
 
-            <!-- ════════ EMPTY STATE ════════ -->
-            <div v-else-if="categories.length === 0"
-                 class="card-dark p-12 text-center">
-                <div class="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center mx-auto mb-4 border border-white/[0.07]">
-                    <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                    </svg>
+            <!-- ════════ MAIN SPLIT GRID ════════ -->
+            <div v-else class="flex-1 grid grid-cols-1 lg:grid-cols-16 gap-6 min-h-0">
+                
+                <!-- LEFT PANEL: CATEGORIES (5 cols) -->
+                <div class="lg:col-span-5 bg-[#141414] border border-neutral-800 flex flex-col overflow-hidden">
+                    <div class="p-4 border-b border-neutral-800 bg-[#0A0A0A] flex justify-between items-center shrink-0">
+                        <span class="text-xs font-mono font-bold text-neutral-500 tracking-widest uppercase">CATEGORIES</span>
+                        <button @click="openAddCategoryModal" id="menu-add-category-btn"
+                                class="text-[10px] font-mono font-black text-amber-500 hover:text-amber-400 uppercase tracking-widest transition-colors">
+                            [+ NEW CATEGORY]
+                        </button>
+                    </div>
+                    
+                    <div v-if="categories.length === 0" class="p-6 text-center text-neutral-600 font-mono text-[10px] tracking-widest">
+                        NO CATEGORIES FOUND
+                    </div>
+                    <div v-else class="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide">
+                        <button @click="activeCategory = null"
+                                class="w-full text-left p-3 border font-mono text-[11px] font-black tracking-widest uppercase transition-all"
+                                :class="activeCategory === null ? 'bg-amber-500/10 border-amber-500 text-amber-500' : 'bg-[#1A1A1A] border-neutral-800 text-neutral-400 hover:bg-[#262626]'">
+                            [ ALL ]
+                        </button>
+                        <div v-for="cat in categories" :key="cat.id" class="flex items-stretch gap-2">
+                            <button @click="activeCategory = cat.id"
+                                    class="flex-1 text-left p-3 border font-mono text-[11px] font-black tracking-widest uppercase transition-all flex justify-between items-center"
+                                    :class="activeCategory === cat.id ? 'bg-amber-500/10 border-amber-500 text-amber-500' : 'bg-[#1A1A1A] border-neutral-800 text-neutral-400 hover:bg-[#262626]'">
+                                <span dir="auto" class="truncate">{{ cat.name_en }}</span>
+                                <span class="bg-[#0A0A0A] text-[9px] px-2 py-0.5 ml-2 border border-neutral-800">{{ cat.items?.length || 0 }}</span>
+                            </button>
+                            <button @click="openEditCategoryModal(cat)" class="px-3 border font-mono text-[10px] font-black tracking-widest text-blue-400 hover:bg-blue-400/10 transition-colors" :class="activeCategory === cat.id ? 'border-amber-500/50 bg-amber-500/5' : 'border-neutral-800 bg-[#1A1A1A]'">EDIT</button>
+                            <button @click="deleteCategory(cat.id)" class="px-3 border font-mono text-[10px] font-black tracking-widest text-red-500 hover:bg-red-500/10 transition-colors" :class="activeCategory === cat.id ? 'border-amber-500/50 bg-amber-500/5' : 'border-neutral-800 bg-[#1A1A1A]'">DEL</button>
+                        </div>
+                    </div>
                 </div>
-                <p class="text-slate-500 font-semibold">Your menu is empty — add a category to get started.</p>
-            </div>
 
-            <!-- ════════ CATEGORY BLOCKS ════════ -->
-            <div v-else class="space-y-6">
-                <div v-for="cat in filteredCategories" :key="cat.id" class="card-dark overflow-hidden">
-
-                    <!-- Category header -->
-                    <div class="px-5 py-4 border-b border-white/[0.06] flex justify-between items-center bg-surface/40">
-                        <div class="flex items-center gap-3">
-                            <img v-if="cat.image_url" :src="cat.image_url" class="w-10 h-10 rounded-lg object-cover bg-slate-800" alt="">
-                            <div>
-                                <h3 class="text-base font-black text-slate-100">{{ cat.name_en }}</h3>
-                                <span class="text-xs text-slate-600 font-medium">{{ cat.name_fr }} / <span dir="auto" class="font-cairo">{{ cat.name_ar }}</span></span>
-                            </div>
+                <!-- RIGHT PANEL: ITEMS (11 cols) -->
+                <div class="lg:col-span-11 bg-[#141414] border border-neutral-800 flex flex-col overflow-hidden relative">
+                    <div class="flex-1 overflow-y-auto scrollbar-hide">
+                        <div v-if="filteredCategories.length === 0" class="flex-1 flex items-center justify-center p-10 h-full text-center text-[10px] font-mono tracking-widest uppercase text-neutral-600">
+                            SELECT OR CREATE A CATEGORY
                         </div>
-                        <div class="flex items-center gap-3">
-                            <button @click="openEditCategoryModal(cat)" class="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors">
-                                ✎ Edit
-                            </button>
-                            <button @click="openAddItemModal(cat.id)" :id="'menu-add-item-' + cat.id"
-                                    class="text-xs font-bold text-saffron hover:text-saffron-light transition-colors">
-                                + Add Item
-                            </button>
-                            <button @click="deleteCategory(cat.id)" :id="'menu-del-cat-' + cat.id"
-                                    class="text-xs font-bold text-harissa/70 hover:text-harissa transition-colors">
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- ── DESKTOP: dense table ── -->
-                    <div class="hidden md:block overflow-x-auto">
-                        <table class="table-dark">
-                            <thead>
-                                <tr>
-                                    <th>Item</th>
-                                    <th>Price (MAD)</th>
-                                    <th>Status</th>
-                                    <th class="text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-if="!cat.items || cat.items.length === 0">
-                                    <td colspan="4" class="text-center text-slate-700 italic text-xs py-6">No items — click "+ Add Item" to start.</td>
-                                </tr>
-                                <tr v-for="item in cat.items" :key="item.id"
-                                    :class="!item.is_available ? 'opacity-60' : ''"
-                                    class="group">
-                                    <!-- Name -->
-                                    <td class="flex items-center gap-3 py-3">
-                                        <img v-if="item.image_url" :src="item.image_url" class="w-8 h-8 rounded-md object-cover bg-slate-800" alt="">
-                                        <div>
-                                            <div dir="auto" class="font-semibold text-slate-200 font-cairo">{{ item.name_en }}</div>
-                                        <div class="text-xs text-slate-600">{{ item.name_fr }}</div>
-                                        </div>
-                                    </td>
-                                    <!-- Price — inline edit -->
-                                    <td class="w-32">
-                                        <div v-if="editingPriceId === item.id" class="flex items-center gap-1.5">
-                                            <input type="number" inputmode="decimal" pattern="[0-9]*"
-                                                   v-model.number="editingPriceValue"
-                                                   :id="'menu-price-input-' + item.id"
-                                                   class="input-dark w-24 py-1.5 px-2 text-sm"
-                                                   @keyup.enter="savePrice(item)"
-                                                   @keyup.esc="editingPriceId = null">
-                                            <button @click="savePrice(item)" class="text-saffron text-xs font-bold">✓</button>
-                                        </div>
-                                        <div v-else class="flex items-center gap-2">
-                                            <span class="text-slate-300 font-semibold text-sm">{{ item.price }}</span>
-                                            <button @click="startEditPrice(item)"
-                                                    :id="'menu-edit-price-' + item.id"
-                                                    class="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-saffron transition-all text-xs">
-                                                ✎
-                                            </button>
-                                        </div>
-                                    </td>
-                                    <!-- Availability toggle -->
-                                    <td class="w-28">
-                                        <button @click="promptStockToggle(item)"
-                                                :id="'menu-stock-toggle-' + item.id"
-                                                class="badge transition-all"
-                                                :class="item.is_available ? 'badge-emerald' : 'badge-harissa'">
-                                            {{ item.is_available ? '● In Stock' : '✕ Sold Out' }}
-                                        </button>
-                                    </td>
-                                    <!-- Delete -->
-                                    <td class="text-right whitespace-nowrap">
-                                        <button @click="openEditItemModal(item, cat.id)" class="text-blue-400 hover:text-blue-300 transition-colors text-xs font-bold mr-3 opacity-0 group-hover:opacity-100">
-                                            ✎ Edit
-                                        </button>
-                                        <button @click="openModifiersModal(item, cat.id)" class="text-blue-400 hover:text-blue-300 transition-colors text-xs font-bold mr-3 opacity-0 group-hover:opacity-100">
-                                            Mods
-                                        </button>
-                                        <button @click="deleteItem(item.id)"
-                                                :id="'menu-del-item-' + item.id"
-                                                class="text-slate-700 hover:text-harissa transition-colors opacity-0 group-hover:opacity-100 align-middle">
-                                            <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                            </svg>
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- ── MOBILE: card list ── -->
-                    <div class="md:hidden divide-y divide-white/[0.05]">
-                        <div v-if="!cat.items || cat.items.length === 0"
-                             class="px-5 py-4 text-sm text-slate-700 italic">No items.</div>
-                        <div v-for="item in cat.items" :key="item.id"
-                             class="px-5 py-4 flex items-center justify-between gap-3"
-                             :class="!item.is_available ? 'opacity-60' : ''">
-                            <img v-if="item.image_url" :src="item.image_url" class="w-12 h-12 rounded-md object-cover bg-slate-800 shrink-0" alt="">
-                            <div class="flex-1 min-w-0">
-                                <div dir="auto" class="font-semibold text-slate-200 text-sm truncate font-cairo">{{ item.name_en }}</div>
-                                <div class="text-xs text-slate-500">{{ item.price }} MAD</div>
+                        
+                        <div v-for="cat in filteredCategories" :key="cat.id" class="mb-8 last:mb-0">
+                            <div class="sticky top-0 bg-[#0A0A0A] border-b border-neutral-800 px-6 py-4 flex justify-between items-center z-10">
+                                <div>
+                                    <h3 class="text-sm font-black font-mono text-neutral-200 tracking-widest uppercase" dir="auto">{{ cat.name_en }}</h3>
+                                    <span class="text-[10px] font-mono text-neutral-500 mt-1 block">{{ cat.name_fr }} / <span dir="auto" class="font-sans font-semibold">{{ cat.name_ar }}</span></span>
+                                </div>
+                                <button @click="openAddItemModal(cat.id)" class="px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-[10px] font-black font-mono text-amber-500 tracking-widest uppercase transition-colors">
+                                    [+ ADD ITEM]
+                                </button>
                             </div>
-                            <div class="flex items-center gap-3 shrink-0">
-                                <button @click="promptStockToggle(item)"
-                                        class="badge text-xs"
-                                        :class="item.is_available ? 'badge-emerald' : 'badge-harissa'">
-                                    {{ item.is_available ? 'In Stock' : 'Out' }}
-                                </button>
-                                <button @click="openEditItemModal(item, cat.id)" class="text-blue-400 text-xs font-bold">✎</button>
-                                <button @click="openModifiersModal(item, cat.id)" class="text-blue-400 text-xs font-bold">Mods</button>
-                                <button @click="deleteItem(item.id)" class="text-slate-700 hover:text-harissa transition-colors">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                    </svg>
-                                </button>
+
+                            <div class="p-6">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-neutral-800">
+                                            <th class="py-3 px-2 text-[10px] font-mono text-neutral-500 uppercase tracking-widest">Item Name</th>
+                                            <th class="py-3 px-2 text-[10px] font-mono text-neutral-500 uppercase tracking-widest w-32">Price (MAD)</th>
+                                            <th class="py-3 px-2 text-[10px] font-mono text-neutral-500 uppercase tracking-widest w-28 text-center">Stock</th>
+                                            <th class="py-3 px-2 text-[10px] font-mono text-neutral-500 uppercase tracking-widest text-right w-48">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-neutral-800/50">
+                                        <tr v-if="!cat.items || cat.items.length === 0">
+                                            <td colspan="4" class="py-8 text-center text-[10px] font-mono text-neutral-600 tracking-widest uppercase">Empty Category</td>
+                                        </tr>
+                                        <tr v-for="item in cat.items" :key="item.id" class="group hover:bg-white/[0.02] transition-colors" :class="!item.is_available ? 'opacity-50' : ''">
+                                            <td class="py-4 px-2">
+                                                <div class="font-bold text-neutral-200 text-sm font-sans" dir="auto">{{ item.name_en }}</div>
+                                                <div class="text-xs text-neutral-500 mt-0.5">{{ item.name_fr }}</div>
+                                            </td>
+                                            <td class="py-4 px-2">
+                                                <div v-if="editingPriceId === item.id" class="flex items-center gap-2">
+                                                    <input type="number" inputmode="decimal" v-model.number="editingPriceValue"
+                                                           class="bg-[#0A0A0A] border border-neutral-700 text-neutral-200 text-xs px-2 py-1 w-20 font-mono outline-none focus:border-amber-500"
+                                                           @keyup.enter="savePrice(item)" @keyup.esc="editingPriceId = null">
+                                                    <button @click="savePrice(item)" class="text-amber-500 font-black text-sm">✓</button>
+                                                </div>
+                                                <div v-else class="flex items-center gap-2 group-hover:text-amber-500 transition-colors">
+                                                    <span class="font-mono text-sm font-bold text-neutral-300">{{ item.price }}</span>
+                                                    <button @click="startEditPrice(item)" class="opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-amber-500 text-xs">✎</button>
+                                                </div>
+                                            </td>
+                                            <td class="py-4 px-2 text-center">
+                                                <button @click="promptStockToggle(item)"
+                                                        class="px-2 py-1 text-[9px] font-black font-mono tracking-widest uppercase border transition-colors"
+                                                        :class="item.is_available ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20' : 'bg-red-500/10 text-red-500 border-red-500/30 hover:bg-red-500/20'">
+                                                    {{ item.is_available ? 'IN STOCK' : 'SOLD OUT' }}
+                                                </button>
+                                            </td>
+                                            <td class="py-4 px-2 text-right">
+                                                <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button @click="openModifiersModal(item, cat.id)" class="text-[10px] font-mono font-black tracking-widest uppercase text-blue-400 hover:text-blue-300 border-b border-blue-400/30">MODS</button>
+                                                    <button @click="openEditItemModal(item, cat.id)" class="text-[10px] font-mono font-black tracking-widest uppercase text-amber-500 hover:text-amber-400 border-b border-amber-500/30">EDIT</button>
+                                                    <button @click="deleteItem(item.id)" class="text-[10px] font-mono font-black tracking-widest uppercase text-red-500 hover:text-red-400 border-b border-red-500/30">DEL</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -209,22 +136,21 @@ export default {
 
             <!-- ════════ STOCK TOGGLE BOTTOM SHEET ════════ -->
             <template v-if="stockConfirmItem">
-                <div class="bottom-sheet-backdrop" @click="stockConfirmItem = null"></div>
-                <div class="bottom-sheet">
-                    <div class="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-5"></div>
-                    <h3 class="text-lg font-black text-slate-100 mb-1">
-                        {{ stockConfirmItem.is_available ? 'Mark as Sold Out?' : 'Mark as In Stock?' }}
+                <div class="absolute inset-0 bg-black/80 z-40" @click="stockConfirmItem = null"></div>
+                <div class="absolute bottom-0 left-0 right-0 bg-[#1A1A1A] border-t border-neutral-800 p-6 z-50">
+                    <h3 class="text-sm font-black font-mono text-neutral-200 tracking-widest uppercase mb-4">
+                        {{ stockConfirmItem.is_available ? 'MARK AS SOLD OUT?' : 'MARK AS IN STOCK?' }}
                     </h3>
-                    <p class="text-sm text-slate-400 mb-6">
-                        <span class="font-bold text-slate-200">{{ stockConfirmItem.name_en }}</span>
-                        will be {{ stockConfirmItem.is_available ? 'hidden from the WhatsApp Flow immediately.' : 'visible to customers again.' }}
+                    <p class="text-sm text-neutral-400 mb-6 font-sans">
+                        <span class="font-bold text-amber-500" dir="auto">{{ stockConfirmItem.name_en }}</span>
+                        will be {{ stockConfirmItem.is_available ? 'hidden from the catalog immediately.' : 'visible to customers again.' }}
                     </p>
                     <div class="flex gap-3">
-                        <button @click="stockConfirmItem = null" id="stock-cancel-btn" class="btn btn-ghost flex-1">Cancel</button>
-                        <button @click="confirmStockToggle" id="stock-confirm-btn"
-                                class="btn flex-1 font-bold"
-                                :class="stockConfirmItem.is_available ? 'btn-danger' : 'btn-saffron'">
-                            {{ stockConfirmItem.is_available ? 'Yes, Sell Out' : 'Yes, Restore' }}
+                        <button @click="stockConfirmItem = null" class="flex-1 py-3 border border-neutral-700 font-mono text-xs font-black tracking-widest uppercase hover:bg-neutral-800">Cancel</button>
+                        <button @click="confirmStockToggle"
+                                class="flex-1 py-3 border font-mono text-xs font-black tracking-widest uppercase"
+                                :class="stockConfirmItem.is_available ? 'border-red-500/30 bg-red-500/10 text-red-500 hover:bg-red-500/20' : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'">
+                            {{ stockConfirmItem.is_available ? 'CONFIRM' : 'CONFIRM' }}
                         </button>
                     </div>
                 </div>

@@ -4,37 +4,36 @@ import { api } from '../api.js';
 export default {
     name: 'Billing',
     template: `
-        <div class="space-y-6 animate-fade-in max-w-4xl">
-            <!-- Header -->
-            <div>
-                <!-- h2 removed -->
-                <p class="text-sm text-slate-500 mt-0.5">Manage your prepaid wallet balance to ensure smooth order processing.</p>
-            </div>
+        <div class="space-y-6 animate-fade-in max-w-5xl font-sans select-none">
 
             <!-- Loading -->
-            <div v-if="loading" class="skeleton h-32 rounded-2xl w-full"></div>
+            <div v-if="loading" class="flex items-center justify-center py-20">
+                <div class="text-[10px] font-mono tracking-widest text-neutral-500 animate-pulse uppercase">Syncing Financial Ledger...</div>
+            </div>
 
             <!-- Content -->
             <div v-else class="space-y-6">
                 
                 <!-- ADMIN VIEW -->
                 <template v-if="user.role === 'admin'">
-                    <div class="card-dark p-6 border border-white/[0.05]">
-                        <h3 class="text-xl font-bold text-slate-100 mb-4">Restaurant Wallet Balances</h3>
-                        <div class="overflow-x-auto rounded-xl border border-white/[0.05]">
-                            <table class="table-dark w-full text-left" style="background: var(--superadmin-bg)">
+                    <div class="bg-[#141414] border border-neutral-800">
+                        <div class="p-4 border-b border-neutral-800 bg-[#0A0A0A]">
+                            <h3 class="text-xs font-black font-mono tracking-widest uppercase text-neutral-400">Master Wallet Ledger</h3>
+                        </div>
+                        <div class="overflow-x-auto scrollbar-hide p-4">
+                            <table class="w-full text-left border-collapse">
                                 <thead>
-                                    <tr>
-                                        <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Restaurant</th>
-                                        <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">WhatsApp</th>
-                                        <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Wallet Balance</th>
+                                    <tr class="border-b border-neutral-800">
+                                        <th class="py-3 px-4 text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-widest">Restaurant</th>
+                                        <th class="py-3 px-4 text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-widest">WhatsApp</th>
+                                        <th class="py-3 px-4 text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-widest text-right">Wallet Balance</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr v-for="r in adminRestaurants" :key="r.id" class="border-b border-white/[0.05]">
-                                        <td class="p-4 text-sm font-bold text-slate-200">{{ r.name }}</td>
-                                        <td class="p-4 text-sm font-mono text-slate-400">{{ r.wa_phone_number }}</td>
-                                        <td class="p-4 text-right font-mono text-sm" :class="r.wallet_balance < 0 ? 'text-harissa font-bold' : 'text-emerald'">
+                                <tbody class="divide-y divide-neutral-800/50">
+                                    <tr v-for="r in adminRestaurants" :key="r.id" class="hover:bg-white/[0.02] transition-colors">
+                                        <td class="py-4 px-4 text-sm font-bold text-neutral-200">{{ r.name }}</td>
+                                        <td class="py-4 px-4 text-sm font-mono text-neutral-400">{{ r.wa_phone_number }}</td>
+                                        <td class="py-4 px-4 text-right font-mono font-black text-sm" :class="r.wallet_balance < 0 ? 'text-red-500' : 'text-emerald-400'">
                                             {{ (r.wallet_balance || 0).toFixed(2) }} MAD
                                         </td>
                                     </tr>
@@ -47,102 +46,102 @@ export default {
                 <!-- OWNER VIEW -->
                 <template v-else>
                 <!-- Red Warning for Negative Balance -->
-                <div v-if="balance < 0" class="p-4 bg-harissa/10 border border-harissa/30 rounded-xl flex items-start gap-3">
-                    <svg class="w-6 h-6 text-harissa mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                    </svg>
+                <div v-if="balance < 0" class="p-4 bg-red-500/10 border border-red-500/30 flex items-start gap-3">
+                    <span class="text-red-500 mt-0.5 text-lg font-black font-mono">!</span>
                     <div>
-                        <h4 class="text-harissa font-bold text-sm uppercase tracking-wider mb-1">Negative Balance Alert</h4>
-                        <p class="text-slate-300 text-sm">
-                            Your wallet balance has fallen below zero. Please top up your account immediately to prevent any potential service interruptions.
+                        <h4 class="text-red-500 font-black font-mono text-[10px] uppercase tracking-widest mb-1">Negative Balance Alert</h4>
+                        <p class="text-neutral-400 text-xs font-mono">
+                            Your wallet balance has fallen below zero. Please top up your account immediately to prevent any potential service interruptions once you hit the -75.0 MAD threshold.
                         </p>
                     </div>
                 </div>
 
-                <!-- Wallet Consumption Bar -->
-                <div class="card-dark p-6 border border-white/[0.05]">
-                    <div class="flex justify-between items-end mb-2">
-                        <span class="text-sm font-bold text-slate-400 uppercase tracking-wider">Real-Time Wallet Level</span>
-                        <span class="text-xs font-bold"
-                              :class="balance > 100 ? 'text-emerald' : (balance > 0 ? 'text-saffron' : 'text-harissa')">
-                            {{ balance > 100 ? 'Healthy' : (balance > 0 ? 'Low' : 'Depleted') }}
-                        </span>
-                    </div>
-                    <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
-                        <div class="h-full rounded-full transition-all duration-500"
-                             :class="balance > 100 ? 'bg-emerald' : (balance > 0 ? 'bg-saffron' : 'bg-harissa')"
-                             :style="{ width: Math.min(Math.max((balance / 500) * 100, 2), 100) + '%' }">
-                        </div>
-                    </div>
-                    <div class="flex justify-between text-[10px] text-slate-500 mt-2 font-mono">
-                        <span>0 MAD</span>
-                        <span>500+ MAD</span>
-                    </div>
-                </div>
-
-                                <!-- Wallet & Top Up Card -->
-                <div class="card-dark p-8 border border-white/[0.05] grid md:grid-cols-2 gap-8">
+                <!-- Wallet & Top Up Card -->
+                <div class="grid lg:grid-cols-2 gap-6">
                     <!-- Balance Section -->
-                    <div class="flex flex-col justify-center">
-                        <p class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Current Wallet Balance</p>
-                        <div class="text-5xl font-black tracking-tight font-mono flex items-baseline gap-2 mb-4"
-                             :class="balance < 0 ? 'text-harissa' : 'text-slate-100'">
-                            {{ balance.toFixed(2) }}
-                            <span class="text-2xl text-slate-500 font-sans">MAD</span>
+                    <div class="bg-[#141414] border border-neutral-800 flex flex-col justify-center p-8">
+                        <p class="text-[10px] font-black font-mono text-neutral-500 uppercase tracking-widest mb-2">Current Wallet Balance</p>
+                        <div class="text-5xl font-black font-mono mb-6"
+                             :class="balance < 0 ? 'text-red-500' : 'text-emerald-400'">
+                            {{ balance.toFixed(2) }} <span class="text-2xl text-neutral-600">MAD</span>
                         </div>
-                        <p class="text-xs text-slate-500">3.0 MAD is automatically deducted per successful order.</p>
+                        
+                        <!-- Consumption Bar -->
+                        <div class="mb-2 flex justify-between items-end">
+                            <span class="text-[10px] font-black font-mono text-neutral-500 uppercase tracking-widest">Grace Period Threshold (-75 MAD)</span>
+                        </div>
+                        <div class="w-full h-2 bg-neutral-900 overflow-hidden relative">
+                            <!-- Threshold line at exactly 0 MAD if scale goes from 500 to -75 -->
+                            <div class="absolute top-0 bottom-0 left-[13%] w-px bg-red-500/50 z-10"></div>
+                            
+                            <!-- The bar -->
+                            <div class="h-full transition-all duration-500 relative z-0"
+                                 :class="balance > 100 ? 'bg-emerald-400' : (balance > 0 ? 'bg-amber-500' : 'bg-red-500')"
+                                 :style="{ width: Math.min(Math.max(((balance + 75) / 575) * 100, 0), 100) + '%' }">
+                            </div>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-neutral-600 mt-2 font-mono font-bold">
+                            <span>-75.0 MAD (CUT-OFF)</span>
+                            <span>500+ MAD</span>
+                        </div>
+                        
+                        <p class="text-[10px] text-neutral-500 mt-8 font-mono border-t border-neutral-800 pt-4">3.0 MAD is automatically deducted per successful order.</p>
                     </div>
                     
                     <!-- Top Up Instructions -->
-                    <div class="bg-slate-900/50 rounded-2xl p-6 border border-white/[0.05]">
-                        <h4 class="text-base font-black text-slate-100 mb-4">Top Up Account</h4>
-                        <p class="text-sm text-slate-400 mb-4">
-                            Make a bank transfer using the details below. Send the transfer receipt (screenshot) to our WhatsApp Support. Your wallet will be credited within 2-4 hours.
-                        </p>
-                        <div class="bg-black/50 border border-white/[0.05] rounded-xl p-4 space-y-3 font-mono text-sm">
-                            <div class="flex justify-between">
-                                <span class="text-slate-500">Bank:</span>
-                                <span class="text-slate-200 font-bold">CIH Bank</span>
+                    <div class="bg-[#141414] border border-neutral-800 p-8 flex flex-col justify-between">
+                        <div>
+                            <h4 class="text-xs font-black font-mono text-amber-500 tracking-widest uppercase mb-4">Top Up Instructions</h4>
+                            <p class="text-xs text-neutral-400 mb-6 font-mono leading-relaxed">
+                                Make a bank transfer using the details below. Send the transfer receipt (screenshot) to our WhatsApp Support. Your wallet will be credited within 2-4 hours.
+                            </p>
+                        </div>
+                        <div class="bg-[#0A0A0A] border border-neutral-800 p-6 space-y-4 font-mono text-xs">
+                            <div class="flex justify-between border-b border-neutral-800 pb-2">
+                                <span class="text-neutral-500">Bank:</span>
+                                <span class="text-neutral-200 font-bold">CIH Bank</span>
                             </div>
-                            <div class="flex justify-between">
-                                <span class="text-slate-500">Name:</span>
-                                <span class="text-slate-200 font-bold">GEQO S.A.R.L</span>
+                            <div class="flex justify-between border-b border-neutral-800 pb-2">
+                                <span class="text-neutral-500">Name:</span>
+                                <span class="text-neutral-200 font-bold">GEQO S.A.R.L</span>
                             </div>
-                            <div class="flex justify-between">
-                                <span class="text-slate-500">RIB:</span>
-                                <span class="text-saffron font-bold text-right tracking-widest">230 780 000000000 0</span>
+                            <div class="flex justify-between pt-1">
+                                <span class="text-neutral-500">RIB:</span>
+                                <span class="text-amber-500 font-black tracking-widest text-sm">230 780 000000000 0</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Transactions Table -->
-                <div class="mt-8">
-                    <h3 class="text-xl font-bold text-slate-100 mb-4">Transaction History</h3>
-                    <div class="overflow-x-auto rounded-2xl border border-white/[0.05]">
-                        <table class="table-dark w-full text-left border-collapse" style="background: var(--superadmin-bg)">
+                <div class="bg-[#141414] border border-neutral-800 mt-6">
+                    <div class="p-4 border-b border-neutral-800 bg-[#0A0A0A]">
+                        <h3 class="text-xs font-black font-mono tracking-widest uppercase text-neutral-400">Transaction History</h3>
+                    </div>
+                    <div class="overflow-x-auto scrollbar-hide p-4">
+                        <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="border-b border-white/[0.05]">
-                                    <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                                    <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Type</th>
-                                    <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Description</th>
-                                    <th class="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Amount</th>
+                                <tr class="border-b border-neutral-800">
+                                    <th class="py-3 px-4 text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-widest">Date</th>
+                                    <th class="py-3 px-4 text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-widest">Type</th>
+                                    <th class="py-3 px-4 text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-widest">Description</th>
+                                    <th class="py-3 px-4 text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-widest text-right">Amount</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody class="divide-y divide-neutral-800/50">
                                 <tr v-if="transactions.length === 0">
-                                    <td colspan="4" class="p-8 text-center text-slate-500 italic text-sm">No transactions yet.</td>
+                                    <td colspan="4" class="py-8 text-center text-neutral-600 font-mono text-[10px] tracking-widest uppercase">No transactions found.</td>
                                 </tr>
-                                <tr v-for="t in transactions" :key="t.id" class="border-b border-white/[0.05] hover:bg-white/[0.02]">
-                                    <td class="p-4 text-sm text-slate-400">{{ formatDate(t.created_at) }}</td>
-                                    <td class="p-4">
-                                        <span class="px-2 py-1 text-xs rounded-lg uppercase tracking-wider font-bold"
-                                              :class="t.type === 'credit' ? 'bg-emerald/10 text-emerald' : (t.type === 'debit' ? 'bg-harissa/10 text-harissa' : 'bg-saffron/10 text-saffron')">
+                                <tr v-for="t in transactions" :key="t.id" class="hover:bg-white/[0.02] transition-colors">
+                                    <td class="py-4 px-4 text-xs font-mono text-neutral-400">{{ formatDate(t.created_at) }}</td>
+                                    <td class="py-4 px-4">
+                                        <span class="px-2 py-1 text-[9px] font-black font-mono tracking-widest uppercase border"
+                                              :class="t.type === 'credit' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : (t.type === 'debit' ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-amber-500/10 text-amber-500 border-amber-500/30')">
                                             {{ t.type }}
                                         </span>
                                     </td>
-                                    <td class="p-4 text-sm text-slate-300">{{ t.description || '—' }}</td>
-                                    <td class="p-4 text-right font-mono text-sm" :class="t.amount > 0 ? 'text-emerald' : 'text-slate-100'">
+                                    <td class="py-4 px-4 text-xs text-neutral-300 font-mono">{{ t.description || '—' }}</td>
+                                    <td class="py-4 px-4 text-right font-mono font-black text-xs" :class="t.amount > 0 ? 'text-emerald-400' : 'text-neutral-200'">
                                         {{ t.amount > 0 ? '+' : '' }}{{ t.amount.toFixed(2) }} MAD
                                     </td>
                                 </tr>
@@ -152,10 +151,8 @@ export default {
                 </div>
                 </template>
             </div>
-
-            
         </div>
-    `,
+    `,`,
     props: ['user'],
     setup(props) {
         const balance = ref(0);
