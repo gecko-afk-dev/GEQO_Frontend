@@ -152,7 +152,7 @@ export default {
                 </template>
             </div>
         </div>
-    `,`,
+    `,
     props: ['user'],
     setup(props) {
         const balance = ref(0);
