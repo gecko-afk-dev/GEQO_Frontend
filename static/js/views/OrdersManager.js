@@ -124,11 +124,11 @@ export default {
                                             <span class="font-bold text-neutral-200" dir="auto">{{ getItemName(item) }}</span>
                                             
                                             <!-- Modifiers render if present -->
-                                            <div v-if="item.modifiers && item.modifiers.length" class="mt-1 pl-6">
-                                                <div v-for="mod in item.modifiers" class="text-xs text-amber-400/80 font-medium">
-                                                    + {{ mod.name_fr || mod.name_en }}
+                                            <template v-if="item.modifiers && item.modifiers.length">
+                                                <div v-for="mod in item.modifiers" :key="mod.id" class="text-amber-500 font-mono text-xs pl-4 border-l border-amber-500/20">
+                                                + {{ mod.modifier_option ? (mod.modifier_option['name_' + lang] || mod.modifier_option.name_fr || mod.modifier_option.name_en) : (mod['name_' + lang] || mod.name_fr || mod.name_en) }}
                                                 </div>
-                                            </div>
+                                            </template>
                                             <!-- Exclusions render if present -->
                                             <div v-if="item.exclusions && item.exclusions.length" class="mt-1 pl-6">
                                                 <div v-for="exc in item.exclusions" class="text-xs text-red-400/80 font-medium">

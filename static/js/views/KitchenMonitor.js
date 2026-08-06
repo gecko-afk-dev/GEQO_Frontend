@@ -292,9 +292,11 @@ export default {
 
         const renderTicketItems = (order) => {
             return (order.items || []).map(item => {
-                const modsHtml = (item.modifiers || []).map(m =>
-                    `<div class="text-amber-400 font-medium text-sm pl-4">+ ${m.name_fr || m.name_en || ''}</div>`
-                ).join('');
+                const modsHtml = (item.modifiers || []).map(m => {
+                    const obj = m.modifier_option || m;
+                    const modName = obj['name_' + (props.lang || 'fr')] || obj.name_fr || obj.name_en || '';
+                    return `<div class="text-amber-400 font-medium text-sm pl-4">+ ${modName}</div>`
+                }).join('');
                 const exclusionsHtml = (item.exclusions || []).map(e =>
                     `<div class="text-red-400 font-medium text-sm pl-4">- SANS ${e.ingredient_name.toUpperCase()}</div>`
                 ).join('');
