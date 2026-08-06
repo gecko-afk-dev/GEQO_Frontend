@@ -71,8 +71,16 @@ export default {
                                     <button v-if="['restaurant_owner', 'cashier'].includes(user.role)"
                                             @click="toggleStoreStatus"
                                             class="text-[10px] font-bold px-2.5 py-1 rounded-full mt-0.5 whitespace-nowrap border transition-all shadow-sm"
-                                            :class="isAcceptingOrders ? 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'">
-                                        {{ isAcceptingOrders ? '🟢 STORE OPEN' : '🔴 STORE PAUSED' }}
+                                            :class="
+                                                !isAcceptingOrders
+                                                    ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                                                    : !isOpenBySchedule
+                                                        ? 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200'
+                                                        : 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200'
+                                            ">
+                                        <template v-if="!isAcceptingOrders">🔴 STORE PAUSED</template>
+                                        <template v-else-if="!isOpenBySchedule">🟡 AUTO-CLOSED</template>
+                                        <template v-else>🟢 STORE OPEN</template>
                                     </button>
                                 </div>
                             </div>
@@ -233,6 +241,7 @@ export default {
         // Live wallet balance — fetched from API on mount, not from stale localStorage
         const liveWalletBalance = ref(props.user.wallet_balance || 0);
         const isAcceptingOrders = ref(props.user.is_accepting_orders ?? true);
+        const isOpenBySchedule = ref(true); // Computed from backend is_open field
 
         const fetchLiveBalance = async () => {
             try {
@@ -242,6 +251,15 @@ export default {
             } catch (err) {
                 console.warn('[Dashboard] Failed to fetch live wallet balance', err);
             }
+            // Also poll is_open (operating hours) via the dashboard endpoint
+            try {
+                const dashRes = await api.get('/admin/restaurant/dashboard');
+                const r = dashRes.data?.restaurant;
+                if (r !== undefined) {
+                    // is_open is the computed field (manual toggle + hours check)
+                    isOpenBySchedule.value = r.is_open !== false;
+                }
+            } catch (err) { /* non-blocking */ }
         };
 
         const toggleStoreStatus = async () => {
@@ -391,6 +409,7 @@ export default {
             liveWalletBalance,
             walletBadgeClass,
             isAcceptingOrders,
+            isOpenBySchedule,
             toggleStoreStatus,
             currentLang,
             setLanguage,
