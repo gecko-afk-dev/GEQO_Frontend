@@ -1,4 +1,4 @@
-import { ref, computed, onMounted, provide } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
+import { ref, computed, onMounted, onUnmounted, provide } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 import { api } from '../api.js';
 import Overview from './Overview.js';
 import RestaurantsAdmin from './RestaurantsAdmin.js';
@@ -104,11 +104,17 @@ export default {
 
                         <!-- Active Orders: Owner, Cashier -->
                         <button v-if="['restaurant_owner', 'cashier'].includes(user.role)"
-                                @click="currentView = 'orders'"
+                                @click="navigateToOrders"
                                 :class="currentView === 'orders' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap relative">
                             {{ t('Active Orders') }}
-                            <span class="absolute top-2 right-1.5 flex h-2 w-2">
+                            <!-- Saffron unread badge -->
+                            <span v-if="unreadOrderCount > 0"
+                                  class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[9px] font-black flex items-center justify-center animate-pulse shadow-lg shadow-amber-500/40">
+                                {{ unreadOrderCount }}
+                            </span>
+                            <!-- Static live dot when no unread -->
+                            <span v-else class="absolute top-2 right-1.5 flex h-2 w-2">
                                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                 <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                             </span>
@@ -254,6 +260,15 @@ export default {
             if (['restaurant_owner', 'admin'].includes(props.user.role)) {
                 fetchLiveBalance();
             }
+            // Boot global WebSocket for real-time order alerts
+            if (['restaurant_owner', 'cashier'].includes(props.user.role)) {
+                initGlobalWebSocket();
+            }
+        });
+
+        onUnmounted(() => {
+            if (_globalWs) _globalWs.close();
+            if (_audioCtx) _audioCtx.close();
         });
 
         const walletBadgeClass = computed(() => {
@@ -261,6 +276,87 @@ export default {
             if (liveWalletBalance.value >= 0) return 'bg-amber-100 text-amber-800';
             return 'bg-red-100 text-red-800';
         });
+
+        // ─── Global WebSocket + Audio (tab-persistent) ──────────────────────
+        const unreadOrderCount = ref(0);
+        let _globalWs = null;
+        let _globalWsRetry = 0;
+        let _audioCtx = null;
+        let _audioUnlocked = false;
+
+        // Unlock AudioContext on first user interaction (browser autoplay policy)
+        const unlockAudio = () => {
+            if (_audioUnlocked) return;
+            _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (_audioCtx.state === 'suspended') _audioCtx.resume();
+            _audioUnlocked = true;
+            document.body.removeEventListener('click', unlockAudio);
+            document.body.removeEventListener('touchstart', unlockAudio);
+        };
+        document.body.addEventListener('click', unlockAudio, { once: true });
+        document.body.addEventListener('touchstart', unlockAudio, { once: true });
+
+        const playAlertSound = () => {
+            try {
+                if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (_audioCtx.state === 'suspended') _audioCtx.resume();
+                const beep = (freq, startTime, duration) => {
+                    const osc = _audioCtx.createOscillator();
+                    const gain = _audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(_audioCtx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.2, startTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                    osc.start(startTime);
+                    osc.stop(startTime + duration);
+                };
+                const t = _audioCtx.currentTime;
+                beep(880, t, 0.12);
+                beep(1100, t + 0.15, 0.12);
+                beep(880, t + 0.30, 0.14);
+            } catch (e) {
+                console.warn('[Dashboard] Audio alert failed:', e);
+            }
+        };
+
+        const initGlobalWebSocket = () => {
+            if (!props.user?.restaurant_id) return;
+            const token = localStorage.getItem('token');
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const proto = isLocal ? 'ws:' : 'wss:';
+            const host = isLocal ? 'localhost:8000' : 'api.mygeqo.com';
+            const url = `${proto}//${host}/api/v1/dashboard/ws/${props.user.restaurant_id}`;
+            const isRealToken = token && token !== 'cookie';
+            _globalWs = isRealToken ? new WebSocket(url, [`bearer.${token}`]) : new WebSocket(url);
+
+            _globalWs.onopen = () => { _globalWsRetry = 0; };
+            _globalWs.onclose = (ev) => {
+                if (ev.code === 4001 || ev.code === 4003) return;
+                _globalWsRetry++;
+                const delay = Math.min(30000, Math.pow(2, _globalWsRetry) * 1000 + Math.random() * 800);
+                setTimeout(initGlobalWebSocket, delay);
+            };
+            _globalWs.onmessage = (ev) => {
+                try {
+                    const data = JSON.parse(ev.data);
+                    if (data.event === 'NEW_ORDER') {
+                        // Only increment badge if user is NOT already on orders tab
+                        if (currentView.value !== 'orders') {
+                            unreadOrderCount.value++;
+                        }
+                        playAlertSound();
+                    }
+                } catch { }
+            };
+        };
+
+        const navigateToOrders = () => {
+            currentView.value = 'orders';
+            unreadOrderCount.value = 0;
+        };
+        // ────────────────────────────────────────────────────────────────────
 
         const currentComponent = computed(() => {
             const role = props.user.role;
@@ -298,7 +394,9 @@ export default {
             toggleStoreStatus,
             currentLang,
             setLanguage,
-            t
+            t,
+            unreadOrderCount,
+            navigateToOrders,
         };
     }
 }

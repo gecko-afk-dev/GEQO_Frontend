@@ -3,7 +3,7 @@ import { api } from '../api.js';
 
 export default {
     template: `
-        <div class="h-[calc(100vh-140px)] flex flex-col font-sans select-none">
+        <div class="flex flex-col font-sans select-none">
             
             <!-- Filters -->
             <div class="flex gap-2 min-w-max mb-6">
@@ -59,9 +59,14 @@ export default {
                             </thead>
                             <tbody class="divide-y divide-neutral-800/50">
                                 <tr v-for="order in sortedOrders" :key="order.id" 
-                                    @click="selectOrder(order)"
-                                    class="group cursor-pointer transition-colors"
-                                    :class="selectedOrderId === order.id ? 'bg-[#1A1A1A]' : 'hover:bg-white/[0.02]'">
+                                    @click="selectAndMarkViewed(order)"
+                                    class="group cursor-pointer transition-all duration-300"
+                                    :class="[
+                                        selectedOrderId === order.id ? 'bg-[#1A1A1A]' : 'hover:bg-white/[0.02]',
+                                        order.status === 'received' && !viewedOrders.has(order.id)
+                                            ? 'ring-1 ring-inset ring-amber-500/60 bg-amber-500/5'
+                                            : ''
+                                    ]">
                                     
                                     <td class="py-4 px-4 font-mono font-bold text-sm" :class="selectedOrderId === order.id ? 'text-amber-500' : 'text-neutral-300'">
                                         #{{ order.tracking_code || order.id }}
@@ -211,6 +216,7 @@ export default {
         const activeFilter = ref('all');
         const selectedOrderId = ref(null);
         const selectedDriverId = ref('');
+        const viewedOrders = ref(new Set());
         let ws = null;
         let wsRetryCount = 0;
 
@@ -342,6 +348,15 @@ export default {
             selectedDriverId.value = '';
         };
 
+        const selectAndMarkViewed = (order) => {
+            selectedOrderId.value = order.id;
+            selectedDriverId.value = '';
+            // Remove saffron highlight once clicked
+            const updated = new Set(viewedOrders.value);
+            updated.add(order.id);
+            viewedOrders.value = updated;
+        };
+
         const orderSummary = (order) => {
             if (!order.items || order.items.length === 0) return 'No items';
             return order.items.map(i => `${i.quantity}x ${getItemName(i)}`).join(', ');
@@ -380,6 +395,7 @@ export default {
         return { 
             orders, drivers, loading, activeFilter, filterCounts, 
             selectedOrderId, selectedOrder, selectedDriverId, selectOrder,
+            selectAndMarkViewed, viewedOrders,
             updateStatus, dispatchOrder,
             sortedOrders, statusPillClass, timeAgo, orderSummary, getItemName
         };
