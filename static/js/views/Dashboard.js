@@ -5,6 +5,7 @@ import RestaurantsAdmin from './RestaurantsAdmin.js';
 import MenuManager from './MenuManager.js';
 import DriversManager from './DriversManager.js';
 import OrdersManager from './OrdersManager.js';
+import DeliveryManager from './DeliveryManager.js';
 import StaffManager from './StaffManager.js';
 import KitchenMonitor from './KitchenMonitor.js';
 import AuditLog from './AuditLog.js';
@@ -19,6 +20,7 @@ const translations = {
         'Menu Management': 'Menu Management',
         'Staff Management': 'Staff Management',
         'Delivery Agents': 'Delivery Agents',
+        'Deliveries': 'Deliveries',
         'Audit Logs': 'Audit Logs',
         '💳 Billing': '💳 Billing',
         'Sign Out': 'Sign Out'
@@ -30,6 +32,7 @@ const translations = {
         'Menu Management': 'Gestion Menu',
         'Staff Management': 'Gestion Personnel',
         'Delivery Agents': 'Livreurs',
+        'Deliveries': 'Livraisons',
         'Audit Logs': 'Journaux d\'Audit',
         '💳 Billing': '💳 Facturation',
         'Sign Out': 'Déconnexion'
@@ -41,6 +44,7 @@ const translations = {
         'Menu Management': 'إدارة القائمة',
         'Staff Management': 'إدارة الموظفين',
         'Delivery Agents': 'عمال التوصيل',
+        'Deliveries': 'التوصيلات',
         'Audit Logs': 'سجلات التدقيق',
         '💳 Billing': '💳 الفواتير',
         'Sign Out': 'تسجيل الخروج'
@@ -160,6 +164,14 @@ export default {
                             {{ t('Delivery Agents') }}
                         </button>
 
+                        <!-- Deliveries: Admin, Owner, Cashier -->
+                        <button v-if="['admin', 'restaurant_owner', 'cashier'].includes(user.role)"
+                                @click="currentView = 'deliveries'"
+                                :class="currentView === 'deliveries' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
+                                class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
+                            {{ t('Deliveries') }}
+                        </button>
+
                         <!-- Audit Logs: Admin, Owner -->
                         <button v-if="['admin', 'restaurant_owner'].includes(user.role)"
                                 @click="currentView = 'audit-log'"
@@ -202,6 +214,7 @@ export default {
         MenuManager,
         DriversManager,
         OrdersManager,
+        DeliveryManager,
         StaffManager,
         KitchenMonitor,
         AuditLog,
@@ -385,6 +398,7 @@ export default {
             switch (view) {
                 case 'overview': return 'Overview';
                 case 'orders': return 'OrdersManager';
+                case 'deliveries': return 'DeliveryManager';
                 case 'restaurants': return role === 'admin' ? 'RestaurantsAdmin' : 'Overview';
                 case 'menu': return 'MenuManager';
                 case 'staff': return 'StaffManager';
