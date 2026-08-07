@@ -6,37 +6,69 @@ export default {
         <div class="flex flex-col font-sans select-none">
             
             <!-- Filters -->
-            <div class="flex gap-2 min-w-max mb-6">
-                <button @click="activeFilter = 'all'" 
-                        class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
-                        :class="activeFilter === 'all' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
-                    All ({{ orders.length }})
-                </button>
-                <button @click="activeFilter = 'received'" 
-                        class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
-                        :class="activeFilter === 'received' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
-                    New ({{ filterCounts['received'] || 0 }})
-                </button>
-                <button @click="activeFilter = 'accepted'" 
-                        class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
-                        :class="activeFilter === 'accepted' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
-                    Accepted ({{ filterCounts['accepted'] || 0 }})
-                </button>
-                <button @click="activeFilter = 'preparing'" 
-                        class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
-                        :class="activeFilter === 'preparing' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
-                    Preparing ({{ filterCounts['preparing'] || 0 }})
-                </button>
-                <button @click="activeFilter = 'ready'" 
-                        class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
-                        :class="activeFilter === 'ready' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
-                    Ready ({{ filterCounts['ready'] || 0 }})
-                </button>
-                <button @click="activeFilter = 'dispatched'" 
-                        class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
-                        :class="activeFilter === 'dispatched' ? 'bg-blue-600 text-white' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
-                    🛵 Dispatched ({{ filterCounts['dispatched'] || 0 }})
-                </button>
+            <div class="flex flex-col gap-3 mb-6">
+                <!-- Status Filters -->
+                <div class="flex flex-wrap gap-2">
+                    <button @click="activeFilter = 'all'" 
+                            class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
+                            :class="activeFilter === 'all' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
+                        All ({{ orders.length }})
+                    </button>
+                    <button @click="activeFilter = 'received'" 
+                            class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
+                            :class="activeFilter === 'received' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
+                        New ({{ filterCounts['received'] || 0 }})
+                    </button>
+                    <button @click="activeFilter = 'accepted'" 
+                            class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
+                            :class="activeFilter === 'accepted' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
+                        Accepted ({{ filterCounts['accepted'] || 0 }})
+                    </button>
+                    <button @click="activeFilter = 'preparing'" 
+                            class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
+                            :class="activeFilter === 'preparing' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
+                        Preparing ({{ filterCounts['preparing'] || 0 }})
+                    </button>
+                    <button @click="activeFilter = 'ready'" 
+                            class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
+                            :class="activeFilter === 'ready' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
+                        Ready ({{ filterCounts['ready'] || 0 }})
+                    </button>
+                    <button @click="activeFilter = 'dispatched'" 
+                            class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
+                            :class="activeFilter === 'dispatched' ? 'bg-blue-600 text-white' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
+                        🛵 Dispatched ({{ filterCounts['dispatched'] || 0 }})
+                    </button>
+                    <button @click="activeFilter = 'delivered'" 
+                            class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
+                            :class="activeFilter === 'delivered' ? 'bg-emerald-600 text-white' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
+                        Delivered ({{ filterCounts['delivered'] || 0 }})
+                    </button>
+                    <button @click="activeFilter = 'cancelled'" 
+                            class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
+                            :class="activeFilter === 'cancelled' ? 'bg-red-600 text-white' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
+                        Cancelled ({{ filterCounts['cancelled'] || 0 }})
+                    </button>
+                </div>
+                
+                <!-- Fulfillment Filters -->
+                <div class="flex gap-2">
+                    <button @click="fulfillmentFilter = 'all'" 
+                            class="px-3 py-1.5 rounded text-[10px] font-bold uppercase transition-all border"
+                            :class="fulfillmentFilter === 'all' ? 'bg-neutral-700 text-white border-neutral-600' : 'bg-transparent text-neutral-500 border-neutral-800 hover:text-neutral-300'">
+                        All Types
+                    </button>
+                    <button @click="fulfillmentFilter = 'delivery'" 
+                            class="px-3 py-1.5 rounded text-[10px] font-bold uppercase transition-all border"
+                            :class="fulfillmentFilter === 'delivery' ? 'bg-orange-500/20 text-orange-400 border-orange-500/50' : 'bg-transparent text-neutral-500 border-neutral-800 hover:text-neutral-300'">
+                        🛵 Delivery
+                    </button>
+                    <button @click="fulfillmentFilter = 'pickup'" 
+                            class="px-3 py-1.5 rounded text-[10px] font-bold uppercase transition-all border"
+                            :class="fulfillmentFilter === 'pickup' ? 'bg-purple-500/20 text-purple-400 border-purple-500/50' : 'bg-transparent text-neutral-500 border-neutral-800 hover:text-neutral-300'">
+                        🥡 Pickup
+                    </button>
+                </div>
             </div>
 
             <div v-if="loading" class="flex-1 flex items-center justify-center text-neutral-500 animate-pulse font-mono text-sm">
@@ -79,8 +111,9 @@ export default {
                                     
                                     <td class="py-4 px-4">
                                         <div class="flex items-center gap-2 mb-1">
-                                            <span class="px-1.5 py-0.5 border border-neutral-700 bg-neutral-800/50 text-[9px] font-bold tracking-wider uppercase text-neutral-400">
-                                                {{ order.fulfillment_method }}
+                                            <span class="px-1.5 py-0.5 border text-[9px] font-bold tracking-wider uppercase"
+                                                  :class="order.fulfillment_method === 'delivery' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-purple-500/20 text-purple-400 border-purple-500/30'">
+                                                {{ order.fulfillment_method === 'delivery' ? '🛵 ' : '🥡 ' }}{{ order.fulfillment_method }}
                                             </span>
                                             <span class="text-xs text-neutral-500 font-mono">{{ timeAgo(order.created_at) }}</span>
                                         </div>
@@ -219,6 +252,7 @@ export default {
         const drivers = ref([]);
         const loading = ref(true);
         const activeFilter = ref('all');
+        const fulfillmentFilter = ref('all');
         const selectedOrderId = ref(null);
         const selectedDriverId = ref('');
         const viewedOrders = ref(new Set());
@@ -279,8 +313,8 @@ export default {
                 const order = orders.value.find(o => o.id === id);
                 if (order) order.status = newStatus;
                 if (newStatus === 'cancelled' || newStatus === 'delivered') {
-                    orders.value = orders.value.filter(o => o.id !== id);
-                    if (selectedOrderId.value === id) selectedOrderId.value = null;
+                    // Do not remove it, we keep it in the ledger now.
+                    // Just update its status.
                 }
             } catch (err) {
                 console.error(err);
@@ -293,8 +327,10 @@ export default {
                 const payload = { new_status: 'dispatched' };
                 if (selectedDriverId.value) payload.driver_id = selectedDriverId.value;
                 await api.post('/dashboard/orders/' + id + '/status', payload);
-                orders.value = orders.value.filter(o => o.id !== id);
-                if (selectedOrderId.value === id) selectedOrderId.value = null;
+                // Do not remove dispatched orders either, they stay in the ledger.
+                // Just update status.
+                const order = orders.value.find(o => o.id === id);
+                if (order) order.status = 'dispatched';
             } catch (err) {
                 console.error(err);
                 alert("Failed to dispatch order");
@@ -335,7 +371,10 @@ export default {
             if (activeFilter.value !== 'all') {
                 filtered = filtered.filter(o => o.status === activeFilter.value);
             }
-            const statusWeights = { 'received': 1, 'accepted': 2, 'preparing': 3, 'ready': 4, 'dispatched': 5 };
+            if (fulfillmentFilter.value !== 'all') {
+                filtered = filtered.filter(o => o.fulfillment_method === fulfillmentFilter.value);
+            }
+            const statusWeights = { 'received': 1, 'accepted': 2, 'preparing': 3, 'ready': 4, 'dispatched': 5, 'delivered': 6, 'cancelled': 7 };
             return [...filtered].sort((a, b) => {
                 const wa = statusWeights[a.status] || 99;
                 const wb = statusWeights[b.status] || 99;
@@ -385,7 +424,9 @@ export default {
                 'accepted':   'status-pending',
                 'preparing':  'status-preparing',
                 'ready':      'status-ready',
-                'dispatched': 'bg-blue-900/60 text-blue-300 border border-blue-700',
+                'dispatched': 'bg-cyan-900/40 text-cyan-400 border border-cyan-800',
+                'delivered':  'bg-neutral-800/80 text-neutral-400 border border-neutral-700 opacity-75',
+                'cancelled':  'bg-neutral-800/80 text-neutral-400 border border-neutral-700 opacity-75'
             };
             return colors[status] || 'status-delivered';
         };
@@ -399,7 +440,7 @@ export default {
         onUnmounted(() => { if (ws) ws.close(); });
 
         return { 
-            orders, drivers, loading, activeFilter, filterCounts, 
+            orders, drivers, loading, activeFilter, fulfillmentFilter, filterCounts, 
             selectedOrderId, selectedOrder, selectedDriverId, selectOrder,
             selectAndMarkViewed, viewedOrders,
             updateStatus, dispatchOrder,
