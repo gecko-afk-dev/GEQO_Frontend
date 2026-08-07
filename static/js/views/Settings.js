@@ -21,7 +21,12 @@ export default {
                 <button @click="activeTab = 'delivery'; initMap()" 
                         class="px-4 py-2 rounded-lg text-sm font-bold transition-all"
                         :class="activeTab === 'delivery' ? 'bg-saffron text-black shadow-[0_0_12px_rgba(245,158,11,0.4)]' : 'text-slate-400 hover:text-slate-200'">
-                    Delivery Zone
+                    Delivery Settings
+                </button>
+                <button @click="activeTab = 'hours'" 
+                        class="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+                        :class="activeTab === 'hours' ? 'bg-saffron text-black shadow-[0_0_12px_rgba(245,158,11,0.4)]' : 'text-slate-400 hover:text-slate-200'">
+                    Operating Hours
                 </button>
             </div>
 
@@ -96,12 +101,8 @@ export default {
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Base Fee (MAD)</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Flat Delivery Fee (MAD)</label>
                         <input type="number" step="0.5" v-model.number="deliveryForm.base_delivery_fee" class="input-dark w-full font-mono" placeholder="10.0">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Per KM Fee (MAD)</label>
-                        <input type="number" step="0.5" v-model.number="deliveryForm.per_km_delivery_fee" class="input-dark w-full font-mono" placeholder="2.0">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Max Radius (KM)</label>
@@ -118,36 +119,56 @@ export default {
                     <div id="delivery-map" class="w-full h-[400px] rounded-xl border border-white/[0.06] overflow-hidden relative z-0"></div>
                 </div>
 
-                <div class="pt-4 border-t border-white/[0.06]">
-                    <div class="mb-4">
-                        <h3 class="text-base font-bold text-slate-200 mb-1">Operating Hours</h3>
-                        <p class="text-xs text-slate-500 mb-4">Set your opening hours for the week.</p>
-                        
-                        <div class="space-y-2 w-full max-w-2xl">
-                            <div v-for="(day, idx) in weeklyHours" :key="idx" 
-                                 class="flex items-center gap-4 bg-white/[0.02] border border-white/[0.05] p-3 rounded-xl">
-                                <div class="w-24 shrink-0 font-bold text-sm" :class="day.isOpen ? 'text-slate-200' : 'text-slate-500'">
-                                    {{ day.day }}
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer shrink-0">
-                                    <input type="checkbox" v-model="day.isOpen" class="sr-only peer">
-                                    <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald"></div>
-                                </label>
-                                <div v-if="day.isOpen" class="flex items-center gap-2 flex-1">
-                                    <input type="time" v-model="day.open" class="input-dark w-32 text-sm">
-                                    <span class="text-slate-500 text-sm">to</span>
-                                    <input type="time" v-model="day.close" class="input-dark w-32 text-sm">
-                                </div>
-                                <div v-else class="text-sm text-slate-500 italic flex-1">Closed</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
 
                 <div class="pt-4 flex justify-end">
                     <button @click="saveDeliverySettings" :disabled="loadingDelivery" class="btn btn-saffron px-8 flex items-center gap-2">
                         <span v-if="loadingDelivery" class="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></span>
                         Save Delivery Settings
+                    </button>
+                </div>
+            </div>
+
+            <!-- Operating Hours Tab -->
+            <div v-show="activeTab === 'hours'" class="card-dark p-6 space-y-6">
+                
+                <div v-if="hoursSuccessMsg" class="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-sm font-medium flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    {{ hoursSuccessMsg }}
+                </div>
+                <div v-if="hoursErrorMsg" class="p-4 bg-harissa/10 border border-harissa/20 text-harissa rounded-xl text-sm font-medium flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    {{ hoursErrorMsg }}
+                </div>
+
+                <div class="mb-4">
+                    <h3 class="text-base font-bold text-slate-200 mb-1">Weekly Schedule</h3>
+                    <p class="text-xs text-slate-500 mb-4">Set your opening hours. Orders will be disabled automatically outside of these hours.</p>
+                    
+                    <div class="space-y-2 w-full max-w-2xl">
+                        <div v-for="(day, idx) in weeklyHours" :key="idx" 
+                                class="flex items-center gap-4 bg-white/[0.02] border border-white/[0.05] p-3 rounded-xl">
+                            <div class="w-24 shrink-0 font-bold text-sm" :class="day.isOpen ? 'text-slate-200' : 'text-slate-500'">
+                                {{ day.day }}
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                <input type="checkbox" v-model="day.isOpen" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald"></div>
+                            </label>
+                            <div v-if="day.isOpen" class="flex items-center gap-2 flex-1">
+                                <input type="time" v-model="day.open" class="input-dark w-32 text-sm">
+                                <span class="text-slate-500 text-sm">to</span>
+                                <input type="time" v-model="day.close" class="input-dark w-32 text-sm">
+                            </div>
+                            <div v-else class="text-sm text-slate-500 italic flex-1">Closed</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 flex justify-end border-t border-white/[0.06]">
+                    <button @click="saveOperatingHours" :disabled="loadingHours" class="btn bg-emerald-500 hover:bg-emerald-400 text-black font-black px-8 flex items-center gap-2 shadow-[0_0_12px_rgba(16,185,129,0.3)]">
+                        <span v-if="loadingHours" class="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></span>
+                        Save Operating Hours
                     </button>
                 </div>
             </div>
@@ -178,13 +199,15 @@ export default {
             longitude: -7.5898,
             max_delivery_radius_km: 10,
             base_delivery_fee: 10,
-            per_km_delivery_fee: 2,
-            operating_hours: '',
             city: ''
         });
         const loadingDelivery = ref(false);
         const deliverySuccessMsg = ref('');
         const deliveryErrorMsg = ref('');
+
+        const loadingHours = ref(false);
+        const hoursSuccessMsg = ref('');
+        const hoursErrorMsg = ref('');
 
         let map = null;
         let marker = null;
@@ -298,8 +321,7 @@ export default {
                     longitude: deliveryForm.value.longitude,
                     max_delivery_radius_km: deliveryForm.value.max_delivery_radius_km,
                     base_delivery_fee: deliveryForm.value.base_delivery_fee,
-                    per_km_delivery_fee: deliveryForm.value.per_km_delivery_fee,
-                    operating_hours: JSON.stringify(weeklyHours.value),
+                    operating_hours: JSON.stringify(weeklyHours.value), // Shared endpoint
                     city: deliveryForm.value.city
                 });
                 deliverySuccessMsg.value = 'Delivery settings updated successfully!';
@@ -308,6 +330,28 @@ export default {
             } finally {
                 loadingDelivery.value = false;
                 setTimeout(() => deliverySuccessMsg.value = '', 5000);
+            }
+        };
+
+        const saveOperatingHours = async () => {
+            loadingHours.value = true;
+            hoursSuccessMsg.value = '';
+            hoursErrorMsg.value = '';
+            try {
+                await api.put('/dashboard/restaurant/delivery-settings', {
+                    latitude: deliveryForm.value.latitude,
+                    longitude: deliveryForm.value.longitude,
+                    max_delivery_radius_km: deliveryForm.value.max_delivery_radius_km,
+                    base_delivery_fee: deliveryForm.value.base_delivery_fee,
+                    operating_hours: JSON.stringify(weeklyHours.value),
+                    city: deliveryForm.value.city
+                });
+                hoursSuccessMsg.value = 'Operating hours saved successfully!';
+            } catch (err) {
+                hoursErrorMsg.value = err.response?.data?.detail || 'Failed to update operating hours.';
+            } finally {
+                loadingHours.value = false;
+                setTimeout(() => hoursSuccessMsg.value = '', 5000);
             }
         };
 
@@ -336,7 +380,6 @@ export default {
                     deliveryForm.value.longitude = r.longitude || -7.5898;
                     deliveryForm.value.max_delivery_radius_km = r.max_delivery_radius_km || 10;
                     deliveryForm.value.base_delivery_fee = r.base_delivery_fee || 10;
-                    deliveryForm.value.per_km_delivery_fee = r.per_km_delivery_fee || 2;
                     deliveryForm.value.city = r.city || '';
                     
                     let savedHours = r.operating_hours;
@@ -359,7 +402,7 @@ export default {
         return { 
             activeTab, profile, form, loading, loadingForgot, successMsg, errorMsg, saveProfile, forgotPassword,
             deliveryForm, loadingDelivery, deliverySuccessMsg, deliveryErrorMsg, saveDeliverySettings, initMap, updateCircle,
-            weeklyHours
+            weeklyHours, loadingHours, hoursSuccessMsg, hoursErrorMsg, saveOperatingHours
         };
     }
 };
