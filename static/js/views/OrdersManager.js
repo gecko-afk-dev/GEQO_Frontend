@@ -32,6 +32,11 @@ export default {
                         :class="activeFilter === 'ready' ? 'bg-white text-black' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
                     Ready ({{ filterCounts['ready'] || 0 }})
                 </button>
+                <button @click="activeFilter = 'dispatched'" 
+                        class="px-4 py-2 rounded text-[11px] font-mono tracking-widest uppercase transition-all"
+                        :class="activeFilter === 'dispatched' ? 'bg-blue-600 text-white' : 'bg-[#141414] text-neutral-400 border border-neutral-800 hover:bg-[#1A1A1A]'">
+                    🛵 Dispatched ({{ filterCounts['dispatched'] || 0 }})
+                </button>
             </div>
 
             <div v-if="loading" class="flex-1 flex items-center justify-center text-neutral-500 animate-pulse font-mono text-sm">
@@ -330,7 +335,7 @@ export default {
             if (activeFilter.value !== 'all') {
                 filtered = filtered.filter(o => o.status === activeFilter.value);
             }
-            const statusWeights = { 'received': 1, 'accepted': 2, 'preparing': 3, 'ready': 4 };
+            const statusWeights = { 'received': 1, 'accepted': 2, 'preparing': 3, 'ready': 4, 'dispatched': 5 };
             return [...filtered].sort((a, b) => {
                 const wa = statusWeights[a.status] || 99;
                 const wb = statusWeights[b.status] || 99;
@@ -376,10 +381,11 @@ export default {
 
         const statusPillClass = (status) => {
             const colors = {
-                'received': 'status-pending',
-                'accepted': 'status-pending',
-                'preparing': 'status-preparing',
-                'ready': 'status-ready',
+                'received':   'status-pending',
+                'accepted':   'status-pending',
+                'preparing':  'status-preparing',
+                'ready':      'status-ready',
+                'dispatched': 'bg-blue-900/60 text-blue-300 border border-blue-700',
             };
             return colors[status] || 'status-delivered';
         };
