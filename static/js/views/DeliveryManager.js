@@ -101,7 +101,7 @@ export default {
             if (!token) return;
 
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = \`\${wsProtocol}//\${window.location.host}/api/v1/dashboard/ws/\${props.user.restaurant_id}\`;
+            const wsUrl = `${wsProtocol}//${window.location.host}/api/v1/dashboard/ws/${props.user.restaurant_id}`;
             
             ws = new WebSocket(wsUrl, ["bearer", token]);
 
