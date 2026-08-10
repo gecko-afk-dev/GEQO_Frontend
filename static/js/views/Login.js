@@ -97,7 +97,9 @@ export default {
                 // NOTE: In production the backend sets access_token = null and
                 // relies on the httpOnly cookie. When that happens we store the
                 // string 'cookie' as a sentinel so checkAuth() still passes.
-                localStorage.setItem('token', access_token || 'cookie');
+                if (response.data && response.data.access_token) {
+                    localStorage.setItem('token', response.data.access_token);
+                }
                 localStorage.setItem('user', JSON.stringify(user));
                 emit('login', user);
             } catch (err) {
