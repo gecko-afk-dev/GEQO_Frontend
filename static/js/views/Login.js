@@ -5,8 +5,9 @@ export default {
     template: `
         <div class="flex items-center justify-center min-h-screen animated-bg">
             <div class="glass p-8 rounded-2xl shadow-2xl w-full max-w-md card-hover">
-                <div class="text-center mb-8">
-                    <h1 class="text-3xl font-bold text-slate-800 tracking-tight">GEQO Portal</h1>
+                <div class="text-center mb-8 flex flex-col items-center">
+                    <img src="/img/geqo-emblem.svg" alt="GEQO" class="w-16 h-16 mb-4 rounded-xl shadow-lg object-contain" />
+                    <h1 class="text-3xl font-bold text-slate-800 tracking-tight">GEQO</h1>
                     <p class="text-slate-500 mt-2 text-sm">{{ showForgot ? 'Reset your password' : 'Sign in to manage your orders' }}</p>
                 </div>
                 

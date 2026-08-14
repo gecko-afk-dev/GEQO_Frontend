@@ -1,0 +1,17 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Obsidian Dark Background Canvas -->
+  <rect width="256" height="256" fill="#0A0A0A"/>
+
+  <!-- GEQO Velocity & Grip Emblem (Saffron Gold #F59E0B) -->
+  <g fill="#F59E0B">
+    <!-- Top Slanted Velocity Bars (Angled Forward at ~60°) -->
+    <path d="M 52 148 L 88 72 H 108 L 72 148 Z" />
+    <path d="M 100 148 L 136 72 H 156 L 120 148 Z" />
+    <path d="M 148 148 L 184 72 H 204 L 168 148 Z" />
+
+    <!-- Foundation Grip Squares -->
+    <rect x="52"  y="164" width="28" height="28" rx="2" />
+    <rect x="100" y="164" width="28" height="28" rx="2" />
+    <rect x="148" y="164" width="28" height="28" rx="2" />
+  </g>
+</svg>

@@ -58,10 +58,10 @@ export default {
             <header v-if="user.role !== 'kitchen_staff'" class="bg-white border-b border-slate-200 sticky top-0 z-30 shrink-0">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between items-center h-16">
-                        <div class="flex items-center">
-                            <img src="/images/icon.svg" alt="GEQO" class="w-8 h-8 mr-3 object-contain" />
-                            <h1 class="text-xl font-bold text-slate-900 tracking-tight">GEQO Dashboard</h1>
-                        </div>
+                        <button @click="currentView = 'overview'" class="flex items-center hover:opacity-80 transition-opacity">
+                            <img src="/img/geqo-emblem.svg" alt="GEQO" class="w-8 h-8 mr-3 rounded shadow-sm object-contain" />
+                            <h1 class="text-xl font-bold text-[#FAFAFA] tracking-tight">GEQO</h1>
+                        </button>
                         <div class="flex items-center space-x-4">
                             <div class="hidden sm:flex flex-col items-end">
                                 <span class="text-sm font-medium text-slate-900">{{ user.email }}</span>
