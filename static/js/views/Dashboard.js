@@ -192,8 +192,8 @@ export default {
                             {{ t('💳 Billing') }}
                         </button>
 
-                        <!-- Insights & Reports: Admin ONLY -->
-                        <button v-if="user.role === 'admin'"
+                        <!-- Insights & Reports: Admin + Restaurant Owner -->
+                        <button v-if="['admin', 'restaurant_owner'].includes(user.role)"
                                 @click="currentView = 'insights'"
                                 :class="currentView === 'insights' ? 'bg-amber-500 text-white font-semibold shadow-sm shadow-amber-500/30' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
@@ -419,7 +419,7 @@ export default {
                 case 'audit-log': return 'AuditLog';
                 case 'settings': return 'Settings';
                 case 'billing': return 'Billing';
-                case 'insights': return role === 'admin' ? 'SuperAdminInsights' : 'Overview';
+                case 'insights': return ['admin', 'restaurant_owner'].includes(role) ? 'SuperAdminInsights' : 'Overview';
                 default: return 'Overview';
             }
         });
