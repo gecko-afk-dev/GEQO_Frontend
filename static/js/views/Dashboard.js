@@ -11,6 +11,7 @@ import KitchenMonitor from './KitchenMonitor.js';
 import AuditLog from './AuditLog.js';
 import Settings from './Settings.js';
 import Billing from './Billing.js';
+import SuperAdminInsights from './SuperAdminInsights.js';
 
 const translations = {
     'en': {
@@ -23,6 +24,7 @@ const translations = {
         'Deliveries': 'Deliveries',
         'Audit Logs': 'Audit Logs',
         '💳 Billing': '💳 Billing',
+        '📊 Insights & Rapports': '📊 Insights & Reports',
         'Sign Out': 'Sign Out'
     },
     'fr': {
@@ -35,6 +37,7 @@ const translations = {
         'Deliveries': 'Livraisons',
         'Audit Logs': 'Journaux d\'Audit',
         '💳 Billing': '💳 Facturation',
+        '📊 Insights & Rapports': '📊 Insights & Rapports',
         'Sign Out': 'Déconnexion'
     },
     'ar': {
@@ -47,6 +50,7 @@ const translations = {
         'Deliveries': 'التوصيلات',
         'Audit Logs': 'سجلات التدقيق',
         '💳 Billing': '💳 الفواتير',
+        '📊 Insights & Rapports': '📊 التقارير',
         'Sign Out': 'تسجيل الخروج'
     }
 };
@@ -187,6 +191,14 @@ export default {
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
                             {{ t('💳 Billing') }}
                         </button>
+
+                        <!-- Insights & Reports: Admin ONLY -->
+                        <button v-if="user.role === 'admin'"
+                                @click="currentView = 'insights'"
+                                :class="currentView === 'insights' ? 'bg-amber-500 text-white font-semibold shadow-sm shadow-amber-500/30' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
+                                class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
+                            {{ t('📊 Insights & Rapports') }}
+                        </button>
                     </div>
                 </div>
             </nav>
@@ -219,7 +231,8 @@ export default {
         KitchenMonitor,
         AuditLog,
         Settings,
-        Billing
+        Billing,
+        SuperAdminInsights,
     },
     props: {
         user: Object
@@ -406,6 +419,7 @@ export default {
                 case 'audit-log': return 'AuditLog';
                 case 'settings': return 'Settings';
                 case 'billing': return 'Billing';
+                case 'insights': return role === 'admin' ? 'SuperAdminInsights' : 'Overview';
                 default: return 'Overview';
             }
         });
