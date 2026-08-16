@@ -194,10 +194,20 @@ export default {
 
                         <!-- Insights & Reports: Admin + Restaurant Owner -->
                         <button v-if="['admin', 'restaurant_owner'].includes(user.role)"
-                                @click="currentView = 'insights'"
+                                @click="handleNavClick('insights', 'pdf_reports')"
                                 :class="currentView === 'insights' ? 'bg-amber-500 text-white font-semibold shadow-sm shadow-amber-500/30' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
-                                class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
+                                class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center gap-1">
+                            <span v-if="!hasFeature('pdf_reports')">🔒</span>
                             {{ t('📊 Insights & Rapports') }}
+                        </button>
+                        
+                        <!-- GEQO Boost Campaigns: Admin + Restaurant Owner -->
+                        <button v-if="['admin', 'restaurant_owner'].includes(user.role)"
+                                @click="handleNavClick('campaigns', 'campaigns')"
+                                :class="currentView === 'campaigns' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
+                                class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center gap-1">
+                            <span v-if="!hasFeature('campaigns')">🔒</span>
+                            {{ t('🚀 Boost Campaigns') }}
                         </button>
                     </div>
                 </div>
@@ -218,6 +228,23 @@ export default {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                 </svg>
             </button>
+
+            <!-- Upgrade Modal -->
+            <div v-if="showUpgradeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 text-center">
+                    <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🔒</div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">Fonctionnalité Verrouillée</h3>
+                    <p class="text-slate-600 mb-6 text-sm">
+                        Cette fonctionnalité nécessite le forfait Scale (1 299 DH/mois). Cliquez ici pour demander une mise à niveau via WhatsApp.
+                    </p>
+                    <div class="flex gap-3 justify-center">
+                        <button @click="showUpgradeModal = false" class="px-5 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors">Fermer</button>
+                        <a href="https://wa.me/212628005370?text=Bonjour,%20je%20souhaite%20passer%20au%20forfait%20Scale" target="_blank" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
+                            <i class="fab fa-whatsapp"></i> Contacter l'équipe
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     `,
     components: {
@@ -430,7 +457,24 @@ export default {
             return role;
         };
 
+        const showUpgradeModal = ref(false);
+        const hasFeature = (feat) => {
+            if (props.user.role === 'admin') return true;
+            return props.user.features && props.user.features[feat];
+        };
+
+        const handleNavClick = (viewName, featureRequired) => {
+            if (featureRequired && !hasFeature(featureRequired)) {
+                showUpgradeModal.value = true;
+                return;
+            }
+            currentView.value = viewName;
+        };
+
         return {
+            showUpgradeModal,
+            hasFeature,
+            handleNavClick,
             currentView,
             currentComponent,
             formatRole,
