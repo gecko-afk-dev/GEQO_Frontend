@@ -1,4 +1,4 @@
-import { ref, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
+import { ref, onMounted, computed } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 import { api } from '../api.js';
 
 export default {
@@ -13,12 +13,35 @@ export default {
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">New Password</label>
                         <input v-model="password" type="password" required class="input-premium" placeholder="••••••••">
+                        <!-- Password Strength Meter (4 rules) -->
+                        <div class="mt-3 space-y-1.5">
+                            <div :style="rules.hasMinLength ? 'color:#05CD99;font-weight:700;' : 'color:#9ca3af;'"
+                                 class="flex items-center gap-2 text-xs transition-all duration-200">
+                                <span>{{ rules.hasMinLength ? '✓' : '○' }}</span>
+                                <span>Au moins 8 caractères</span>
+                            </div>
+                            <div :style="rules.hasNumber ? 'color:#05CD99;font-weight:700;' : 'color:#9ca3af;'"
+                                 class="flex items-center gap-2 text-xs transition-all duration-200">
+                                <span>{{ rules.hasNumber ? '✓' : '○' }}</span>
+                                <span>Au moins 1 chiffre</span>
+                            </div>
+                            <div :style="rules.hasUpper ? 'color:#05CD99;font-weight:700;' : 'color:#9ca3af;'"
+                                 class="flex items-center gap-2 text-xs transition-all duration-200">
+                                <span>{{ rules.hasUpper ? '✓' : '○' }}</span>
+                                <span>Au moins 1 majuscule</span>
+                            </div>
+                            <div :style="rules.hasSymbol ? 'color:#05CD99;font-weight:700;' : 'color:#9ca3af;'"
+                                 class="flex items-center gap-2 text-xs transition-all duration-200">
+                                <span>{{ rules.hasSymbol ? '✓' : '○' }}</span>
+                                <span>Au moins 1 symbole (!@#$%...)</span>
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Confirm Password</label>
                         <input v-model="confirmPassword" type="password" required class="input-premium" placeholder="••••••••">
                     </div>
-                    <button type="submit" :disabled="loading || password !== confirmPassword || password.length < 6" class="w-full btn-primary mt-2 flex justify-center items-center disabled:opacity-50">
+                    <button type="submit" :disabled="loading || !isFormValid" class="w-full btn-primary mt-2 flex justify-center items-center disabled:opacity-50">
                         <span v-if="loading" class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"></span>
                         <span>{{ loading ? 'Saving...' : 'Save Password' }}</span>
                     </button>
@@ -49,7 +72,27 @@ export default {
         const error = ref(null);
         const success = ref(false);
 
+        const rules = computed(() => ({
+            hasMinLength: password.value.length >= 8,
+            hasNumber:    /\d/.test(password.value),
+            hasUpper:     /[A-Z]/.test(password.value),
+            hasSymbol:    /[!@#$%^&*(),.?":{}|<>]/.test(password.value),
+        }));
+
+        const isPasswordStrong = computed(() =>
+            rules.value.hasMinLength &&
+            rules.value.hasNumber &&
+            rules.value.hasUpper &&
+            rules.value.hasSymbol
+        );
+
+        const isFormValid = computed(() =>
+            isPasswordStrong.value &&
+            password.value === confirmPassword.value
+        );
+
         const submit = async () => {
+            if (!isFormValid.value) return;
             loading.value = true;
             error.value = null;
             try {
@@ -66,6 +109,6 @@ export default {
             }
         };
 
-        return { password, confirmPassword, loading, error, success, submit };
+        return { password, confirmPassword, loading, error, success, submit, rules, isPasswordStrong, isFormValid };
     }
 }

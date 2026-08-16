@@ -198,6 +198,52 @@ export default {
             </div>
 
             <template v-else>
+                <!-- ── PDF Report Block (Owner only) ──────────────────────────── -->
+                <div v-if="!isAdmin" style="margin-bottom:24px;">
+
+                    <!-- Loading PDF manifest -->
+                    <div v-if="pdfLoading" style="background:#141414;border:1px solid #1E1E1E;border-radius:14px;padding:32px;text-align:center;color:#555;font-size:13px;">
+                        <div style="width:24px;height:24px;border:2px solid #333;border-top-color:#F59E0B;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 10px;"></div>
+                        Vérification du rapport PDF…
+                    </div>
+
+                    <!-- First Month Notice -->
+                    <div v-else-if="pdfReport && !pdfReport.has_report"
+                         style="background:#141414;border:1px solid rgba(245,158,11,0.3);border-radius:14px;padding:48px 32px;text-align:center;">
+                        <div style="font-size:32px;margin-bottom:16px;">📊</div>
+                        <h2 style="font-size:18px;font-weight:900;color:#F59E0B;letter-spacing:-.3px;text-transform:uppercase;margin:0 0 12px;">ANALYTIQUES MENSUELLES</h2>
+                        <p style="font-size:14px;color:#666;max-width:420px;margin:0 auto;line-height:1.6;">
+                            {{ pdfReport.message }}
+                        </p>
+                        <div style="margin-top:20px;font-size:11px;color:#444;font-family:monospace;">Rapport prévu pour fin {{ monthName(pdfReport.report_month) }} {{ pdfReport.report_year }}</div>
+                    </div>
+
+                    <!-- Report Available -->
+                    <div v-else-if="pdfReport && pdfReport.has_report"
+                         style="background:#141414;border:1px solid #1E1E1E;border-radius:14px;overflow:hidden;">
+                        <div style="padding:20px 24px;border-bottom:1px solid #1E1E1E;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                            <div>
+                                <h2 style="font-size:14px;font-weight:800;color:#F59E0B;text-transform:uppercase;letter-spacing:.8px;margin:0 0 4px;">📊 Rapport — {{ monthName(pdfReport.report_month) }} {{ pdfReport.report_year }}</h2>
+                                <p style="font-size:12px;color:#555;margin:0;">{{ pdfReport.restaurant_name }}</p>
+                            </div>
+                            <a :href="'https://api.mygeqo.com' + pdfReport.pdf_url" target="_blank"
+                               style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:linear-gradient(135deg,#F59E0B,#D97706);border:none;color:#0A0A0A;border-radius:10px;font-size:13px;font-weight:800;text-decoration:none;">
+                                ⬇️ Télécharger le PDF
+                            </a>
+                        </div>
+                        <iframe :src="'https://api.mygeqo.com' + pdfReport.pdf_url"
+                                style="width:100%;height:520px;border:none;background:#111;"
+                                title="Rapport mensuel PDF">
+                        </iframe>
+                    </div>
+
+                    <!-- PDF Not Available (tier or error) -->
+                    <div v-else-if="pdfError"
+                         style="background:#141414;border:1px solid #1E1E1E;border-radius:14px;padding:32px;text-align:center;">
+                        <p style="font-size:13px;color:#555;">{{ pdfError }}</p>
+                    </div>
+                </div>
+
                 <!-- Quick Actions for Owner -->
                 <div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;">
                     <a v-if="myRestaurantId" :href="getCrmExportUrl(myRestaurantId)" target="_blank"
@@ -464,7 +510,7 @@ export default {
                     for (const a of (analyticsRes.data || [])) map[a.restaurant_id] = a;
                     analyticsMap.value = map;
                 } else {
-                    // Owner: fetch only own restaurant data
+                    // Owner: fetch only own restaurant data + PDF manifest
                     const [dashRes, analyticsRes] = await Promise.all([
                         api.get('/admin/restaurant/dashboard'),
                         api.get('/admin/analytics/restaurants'),
@@ -478,12 +524,44 @@ export default {
                     const rid = myRestaurantId.value;
                     const allAnalytics = analyticsRes.data || [];
                     ownerAnalytics.value = allAnalytics.find(a => a.restaurant_id === rid) ?? null;
+
+                    // Load PDF manifest (non-blocking — tier failure is handled gracefully)
+                    loadPdfManifest();
                 }
             } catch (err) {
                 errorMsg.value = 'Impossible de charger les données. Vérifiez votre connexion.';
                 console.error('[Insights] load error', err);
             } finally {
                 loading.value = false;
+            }
+        };
+
+        // ── PDF Manifest (Owner only) ─────────────────────────────────────────
+        const pdfReport  = ref(null);
+        const pdfLoading = ref(false);
+        const pdfError   = ref('');
+
+        const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+        const monthName = (m) => monthNames[(m - 1)] || '';
+
+        const loadPdfManifest = async () => {
+            pdfLoading.value = true;
+            pdfError.value   = '';
+            pdfReport.value  = null;
+            try {
+                const res = await api.get('/dashboard/reports/my-latest-pdf');
+                pdfReport.value = res.data;
+            } catch (err) {
+                const status = err.response?.status;
+                const detail = err.response?.data?.detail || '';
+                if (status === 403) {
+                    pdfError.value = detail || 'Les rapports PDF nécessitent le forfait Scale ou Multi.';
+                } else if (status !== 401) {
+                    // 401 is handled globally; any other error show a message
+                    pdfError.value = 'Impossible de charger le rapport PDF.';
+                }
+            } finally {
+                pdfLoading.value = false;
             }
         };
 
@@ -551,6 +629,7 @@ export default {
             conversionFunnel, ownerMetrics,
             getCrmExportUrl, getPdfPreviewUrl,
             dispatchSinglePdf, batchDispatch, loadData,
+            pdfReport, pdfLoading, pdfError, monthName,
         };
     }
 };

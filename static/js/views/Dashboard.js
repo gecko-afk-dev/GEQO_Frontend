@@ -62,9 +62,11 @@ export default {
             <header v-if="user.role !== 'kitchen_staff'" class="bg-white border-b border-slate-200 sticky top-0 z-30 shrink-0">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between items-center h-16">
-                        <button @click="currentView = 'overview'" class="flex items-center hover:opacity-80 transition-opacity">
-                            <img src="/img/geqo-emblem.svg" alt="GEQO" class="w-8 h-8 mr-3 rounded shadow-sm object-contain" />
-                            <h1 class="text-xl font-bold text-[#FAFAFA] tracking-tight">GEQO</h1>
+                        <button @click="currentView = 'overview'" class="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+                            <img src="/img/geqo-emblem.svg" alt="GEQO Setae Mark" class="w-8 h-8 rounded shadow-sm object-contain flex-shrink-0" />
+                            <span class="text-xl font-extrabold tracking-tight text-slate-900" style="font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.02em;">
+                                GE<span style="color:#F59E0B;">QO</span>
+                            </span>
                         </button>
                         <div class="flex items-center space-x-4">
                             <div class="hidden sm:flex flex-col items-end">
@@ -192,12 +194,11 @@ export default {
                             {{ t('💳 Billing') }}
                         </button>
 
-                        <!-- Insights & Reports: Admin + Restaurant Owner -->
-                        <button v-if="['admin', 'restaurant_owner'].includes(user.role)"
+                        <!-- Insights & Reports: Admin always; Owner only on SCALE/MULTI -->
+                        <button v-if="user.role === 'admin' || (user.role === 'restaurant_owner' && ['SCALE', 'MULTI'].includes(user.subscription_tier))"
                                 @click="handleNavClick('insights', 'pdf_reports')"
                                 :class="currentView === 'insights' ? 'bg-amber-500 text-white font-semibold shadow-sm shadow-amber-500/30' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center gap-1">
-                            <span v-if="!hasFeature('pdf_reports')">🔒</span>
                             {{ t('📊 Insights & Rapports') }}
                         </button>
                         
