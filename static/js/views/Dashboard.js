@@ -155,7 +155,7 @@ export default {
                         </button>
 
                         <!-- Staff Management: Owner only -->
-                        <button v-if="['restaurant_owner', 'admin'].includes(user.role)"
+                        <button v-if="user.role === 'restaurant_owner'"
                                 @click="currentView = 'staff'"
                                 :class="currentView === 'staff' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
@@ -170,8 +170,8 @@ export default {
                             {{ t('Delivery Agents') }}
                         </button>
 
-                        <!-- Deliveries: Admin, Owner, Cashier -->
-                        <button v-if="['admin', 'restaurant_owner', 'cashier'].includes(user.role)"
+                        <!-- Deliveries: Owner, Cashier -->
+                        <button v-if="['restaurant_owner', 'cashier'].includes(user.role)"
                                 @click="currentView = 'deliveries'"
                                 :class="currentView === 'deliveries' ? 'bg-emerald-600 text-white font-semibold shadow-sm' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'"
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap">
