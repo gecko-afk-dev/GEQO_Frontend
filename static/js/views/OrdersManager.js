@@ -1,8 +1,14 @@
-import { ref, onMounted, onUnmounted, computed, watch } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { api } from '../api.js';
+import {
+  ref,
+  onMounted,
+  onUnmounted,
+  computed,
+  watch,
+} from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import { api } from "../api.js";
 
 export default {
-    template: `
+  template: `
         <div class="flex flex-col font-sans select-none">
             
             <!-- Filters -->
@@ -246,205 +252,259 @@ export default {
             </div>
         </div>
     `,
-    props: ['user', 'lang'],
-    setup(props) {
-        const orders = ref([]);
-        const drivers = ref([]);
-        const loading = ref(true);
-        const activeFilter = ref('all');
-        const fulfillmentFilter = ref('all');
-        const selectedOrderId = ref(null);
-        const selectedDriverId = ref('');
-        const viewedOrders = ref(new Set());
-        let ws = null;
-        let wsRetryCount = 0;
+  props: ["user", "lang"],
+  setup(props) {
+    const orders = ref([]);
+    const drivers = ref([]);
+    const loading = ref(true);
+    const activeFilter = ref("all");
+    const fulfillmentFilter = ref("all");
+    const selectedOrderId = ref(null);
+    const selectedDriverId = ref("");
+    const viewedOrders = ref(new Set());
+    let ws = null;
+    let wsRetryCount = 0;
 
-        const getItemName = (item) => {
-            if (!item) return 'Article Inconnu';
-            const lang = props.lang || 'fr';
-            if (item.menu_item) {
-                if (lang === 'fr' && item.menu_item.name_fr) return item.menu_item.name_fr;
-                if (lang === 'ar' && item.menu_item.name_ar) return item.menu_item.name_ar;
-                if (item.menu_item.name_en) return item.menu_item.name_en;
-                if (item.menu_item.name) return item.menu_item.name;
-            }
-            if (lang === 'fr' && item.name_fr) return item.name_fr;
-            if (lang === 'ar' && item.name_ar) return item.name_ar;
-            if (item.name_en) return item.name_en;
-            if (item.menu_item_name) return item.menu_item_name;
-            if (item.item_name) return item.item_name;
-            if (typeof item.name === 'string' && item.name.trim() !== '') return item.name;
-            return `Article #${item.id || item.menu_item_id || '1'}`;
-        };
+    const getItemName = (item) => {
+      if (!item) return "Article Inconnu";
+      const lang = props.lang || "fr";
+      if (item.menu_item) {
+        if (lang === "fr" && item.menu_item.name_fr)
+          return item.menu_item.name_fr;
+        if (lang === "ar" && item.menu_item.name_ar)
+          return item.menu_item.name_ar;
+        if (item.menu_item.name_en) return item.menu_item.name_en;
+        if (item.menu_item.name) return item.menu_item.name;
+      }
+      if (lang === "fr" && item.name_fr) return item.name_fr;
+      if (lang === "ar" && item.name_ar) return item.name_ar;
+      if (item.name_en) return item.name_en;
+      if (item.menu_item_name) return item.menu_item_name;
+      if (item.item_name) return item.item_name;
+      if (typeof item.name === "string" && item.name.trim() !== "")
+        return item.name;
+      return `Article #${item.id || item.menu_item_id || "1"}`;
+    };
 
-        const scheduleReconnect = () => {
-            wsRetryCount++;
-            const delay = Math.min(30000, Math.pow(2, wsRetryCount) * 1000 + Math.random() * 1000);
-            console.warn(`[OrdersManager] WebSocket disconnected. Reconnecting in ${Math.round(delay / 1000)}s...`);
-            setTimeout(initWebSocket, delay);
-        };
+    const scheduleReconnect = () => {
+      wsRetryCount++;
+      const delay = Math.min(
+        30000,
+        Math.pow(2, wsRetryCount) * 1000 + Math.random() * 1000,
+      );
+      console.warn(
+        `[OrdersManager] WebSocket disconnected. Reconnecting in ${Math.round(delay / 1000)}s...`,
+      );
+      setTimeout(initWebSocket, delay);
+    };
 
-        const loadOrders = async () => {
-            if (!props.user || !props.user.restaurant_id) return;
-            loading.value = true;
-            try {
-                const res = await api.get('/dashboard/orders/' + props.user.restaurant_id);
-                orders.value = res.data;
-            } catch (err) {
-                console.error(err);
-            } finally {
-                loading.value = false;
-            }
-        };
-        
-        const loadDrivers = async () => {
-            if (!props.user || !props.user.restaurant_id) return;
-            try {
-                const res = await api.get('/admin/drivers');
-                drivers.value = res.data || [];
-            } catch (err) {
-                console.warn('[OrdersManager] drivers load skipped', err);
-            }
-        };
+    const loadOrders = async () => {
+      if (!props.user || !props.user.restaurant_id) return;
+      loading.value = true;
+      try {
+        const res = await api.get(
+          "/dashboard/orders/" + props.user.restaurant_id,
+        );
+        orders.value = res.data;
+      } catch (err) {
+        console.error(err);
+      } finally {
+        loading.value = false;
+      }
+    };
 
-        const updateStatus = async (id, newStatus) => {
-            try {
-                await api.post('/dashboard/orders/' + id + '/status', { new_status: newStatus });
-                const order = orders.value.find(o => o.id === id);
-                if (order) order.status = newStatus;
-                if (newStatus === 'cancelled' || newStatus === 'delivered') {
-                    // Do not remove it, we keep it in the ledger now.
-                    // Just update its status.
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Failed to update status");
-            }
-        };
-        
-        const dispatchOrder = async (id) => {
-            try {
-                const payload = { new_status: 'dispatched' };
-                if (selectedDriverId.value) payload.driver_id = selectedDriverId.value;
-                await api.post('/dashboard/orders/' + id + '/status', payload);
-                // Do not remove dispatched orders either, they stay in the ledger.
-                // Just update status.
-                const order = orders.value.find(o => o.id === id);
-                if (order) order.status = 'dispatched';
-            } catch (err) {
-                console.error(err);
-                alert("Failed to dispatch order");
-            }
-        };
+    const loadDrivers = async () => {
+      if (!props.user || !props.user.restaurant_id) return;
+      try {
+        const res = await api.get("/admin/drivers");
+        drivers.value = res.data || [];
+      } catch (err) {
+        console.warn("[OrdersManager] drivers load skipped", err);
+      }
+    };
 
-        const initWebSocket = () => {
-            if (!props.user || !props.user.restaurant_id) return;
-            const token = localStorage.getItem('token');
-            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-            const protocol = isLocal ? 'ws:' : 'wss:';
-            const wsHost = isLocal ? 'localhost:8000' : 'api.mygeqo.com';
-            const wsUrl = `${protocol}//${wsHost}/api/v1/dashboard/ws/${props.user.restaurant_id}`;
-            const isRealToken = token && token !== 'cookie';
-            ws = isRealToken ? new WebSocket(wsUrl, [`bearer.${token}`]) : new WebSocket(wsUrl);
-
-            ws.onopen = () => { wsRetryCount = 0; };
-            ws.onclose = (event) => {
-                if (event.code === 4001 || event.code === 4003) return;
-                scheduleReconnect();
-            };
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                if (data.event === 'NEW_ORDER' || data.event === 'ORDER_STATUS_UPDATED') {
-                    loadOrders();
-                }
-            };
-        };
-
-        const filterCounts = computed(() => {
-            const counts = {};
-            orders.value.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
-            return counts;
+    const updateStatus = async (id, newStatus) => {
+      try {
+        await api.post("/dashboard/orders/" + id + "/status", {
+          new_status: newStatus,
         });
+        const order = orders.value.find((o) => o.id === id);
+        if (order) order.status = newStatus;
+        if (newStatus === "cancelled" || newStatus === "delivered") {
+          // Do not remove it, we keep it in the ledger now.
+          // Just update its status.
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Failed to update status");
+      }
+    };
 
-        const sortedOrders = computed(() => {
-            let filtered = orders.value;
-            if (activeFilter.value !== 'all') {
-                filtered = filtered.filter(o => o.status === activeFilter.value);
-            }
-            if (fulfillmentFilter.value !== 'all') {
-                filtered = filtered.filter(o => o.fulfillment_method === fulfillmentFilter.value);
-            }
-            const statusWeights = { 'received': 1, 'accepted': 2, 'preparing': 3, 'ready': 4, 'dispatched': 5, 'delivered': 6, 'cancelled': 7 };
-            return [...filtered].sort((a, b) => {
-                const wa = statusWeights[a.status] || 99;
-                const wb = statusWeights[b.status] || 99;
-                if (wa !== wb) return wa - wb;
-                return b.id - a.id;
-            });
-        });
-        
-        const selectedOrder = computed(() => {
-            return orders.value.find(o => o.id === selectedOrderId.value) || null;
-        });
-        
-        const selectOrder = (order) => {
-            selectedOrderId.value = order.id;
-            selectedDriverId.value = '';
-        };
+    const dispatchOrder = async (id) => {
+      try {
+        const payload = { new_status: "dispatched" };
+        if (selectedDriverId.value) payload.driver_id = selectedDriverId.value;
+        await api.post("/dashboard/orders/" + id + "/status", payload);
+        // Do not remove dispatched orders either, they stay in the ledger.
+        // Just update status.
+        const order = orders.value.find((o) => o.id === id);
+        if (order) order.status = "dispatched";
+      } catch (err) {
+        console.error(err);
+        alert("Failed to dispatch order");
+      }
+    };
 
-        const selectAndMarkViewed = (order) => {
-            selectedOrderId.value = order.id;
-            selectedDriverId.value = '';
-            // Remove saffron highlight once clicked
-            const updated = new Set(viewedOrders.value);
-            updated.add(order.id);
-            viewedOrders.value = updated;
-        };
+    const initWebSocket = () => {
+      if (!props.user || !props.user.restaurant_id) return;
+      const token = localStorage.getItem("token");
+      const isLocal =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1";
+      const protocol = isLocal ? "ws:" : "wss:";
+      const wsHost = isLocal ? "localhost:8000" : "api.mygeqo.com";
+      const wsUrl = `${protocol}//${wsHost}/api/v1/dashboard/ws/${props.user.restaurant_id}`;
+      const isRealToken = token && token !== "cookie";
+      ws = isRealToken
+        ? new WebSocket(wsUrl, [`bearer.${token}`])
+        : new WebSocket(wsUrl);
 
-        const orderSummary = (order) => {
-            if (!order.items || order.items.length === 0) return 'No items';
-            return order.items.map(i => `${i.quantity}x ${getItemName(i)}`).join(', ');
-        };
+      ws.onopen = () => {
+        wsRetryCount = 0;
+      };
+      ws.onclose = (event) => {
+        if (event.code === 4001 || event.code === 4003) return;
+        scheduleReconnect();
+      };
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (
+          data.event === "NEW_ORDER" ||
+          data.event === "ORDER_STATUS_UPDATED"
+        ) {
+          loadOrders();
+        }
+      };
+    };
 
-        const timeAgo = (dateStr) => {
-            if (!dateStr) return '';
-            const utcStr = dateStr.endsWith('Z') ? dateStr : dateStr + 'Z';
-            const diffInSeconds = Math.floor((new Date() - new Date(utcStr)) / 1000);
-            if (diffInSeconds < 60) return 'NOW';
-            const diffInMinutes = Math.floor(diffInSeconds / 60);
-            if (diffInMinutes < 60) return diffInMinutes + 'M';
-            const diffInHours = Math.floor(diffInMinutes / 60);
-            if (diffInHours < 24) return diffInHours + 'H ' + (diffInMinutes % 60) + 'M';
-            return Math.floor(diffInHours / 24) + 'D';
-        };
+    const filterCounts = computed(() => {
+      const counts = {};
+      orders.value.forEach((o) => {
+        counts[o.status] = (counts[o.status] || 0) + 1;
+      });
+      return counts;
+    });
 
-        const statusPillClass = (status) => {
-            const colors = {
-                'received':   'status-pending',
-                'accepted':   'status-pending',
-                'preparing':  'status-preparing',
-                'ready':      'status-ready',
-                'dispatched': 'bg-cyan-900/40 text-cyan-400 border border-cyan-800',
-                'delivered':  'bg-neutral-800/80 text-neutral-400 border border-neutral-700 opacity-75',
-                'cancelled':  'bg-neutral-800/80 text-neutral-400 border border-neutral-700 opacity-75'
-            };
-            return colors[status] || 'status-delivered';
-        };
+    const sortedOrders = computed(() => {
+      let filtered = orders.value;
+      if (activeFilter.value !== "all") {
+        filtered = filtered.filter((o) => o.status === activeFilter.value);
+      }
+      if (fulfillmentFilter.value !== "all") {
+        filtered = filtered.filter(
+          (o) => o.fulfillment_method === fulfillmentFilter.value,
+        );
+      }
+      const statusWeights = {
+        received: 1,
+        accepted: 2,
+        preparing: 3,
+        ready: 4,
+        dispatched: 5,
+        delivered: 6,
+        cancelled: 7,
+      };
+      return [...filtered].sort((a, b) => {
+        const wa = statusWeights[a.status] || 99;
+        const wb = statusWeights[b.status] || 99;
+        if (wa !== wb) return wa - wb;
+        return b.id - a.id;
+      });
+    });
 
-        onMounted(() => {
-            loadOrders();
-            loadDrivers();
-            initWebSocket();
-        });
+    const selectedOrder = computed(() => {
+      return orders.value.find((o) => o.id === selectedOrderId.value) || null;
+    });
 
-        onUnmounted(() => { if (ws) ws.close(); });
+    const selectOrder = (order) => {
+      selectedOrderId.value = order.id;
+      selectedDriverId.value = "";
+    };
 
-        return { 
-            orders, drivers, loading, activeFilter, fulfillmentFilter, filterCounts, 
-            selectedOrderId, selectedOrder, selectedDriverId, selectOrder,
-            selectAndMarkViewed, viewedOrders,
-            updateStatus, dispatchOrder,
-            sortedOrders, statusPillClass, timeAgo, orderSummary, getItemName
-        };
-    }
-}
+    const selectAndMarkViewed = (order) => {
+      selectedOrderId.value = order.id;
+      selectedDriverId.value = "";
+      // Remove saffron highlight once clicked
+      const updated = new Set(viewedOrders.value);
+      updated.add(order.id);
+      viewedOrders.value = updated;
+    };
+
+    const orderSummary = (order) => {
+      if (!order.items || order.items.length === 0) return "No items";
+      return order.items
+        .map((i) => `${i.quantity}x ${getItemName(i)}`)
+        .join(", ");
+    };
+
+    const timeAgo = (dateStr) => {
+      if (!dateStr) return "";
+      const utcStr = dateStr.endsWith("Z") ? dateStr : dateStr + "Z";
+      const diffInSeconds = Math.floor((new Date() - new Date(utcStr)) / 1000);
+      if (diffInSeconds < 60) return "NOW";
+      const diffInMinutes = Math.floor(diffInSeconds / 60);
+      if (diffInMinutes < 60) return diffInMinutes + "M";
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      if (diffInHours < 24)
+        return diffInHours + "H " + (diffInMinutes % 60) + "M";
+      return Math.floor(diffInHours / 24) + "D";
+    };
+
+    const statusPillClass = (status) => {
+      const colors = {
+        received: "status-pending",
+        accepted: "status-pending",
+        preparing: "status-preparing",
+        ready: "status-ready",
+        dispatched: "bg-cyan-900/40 text-cyan-400 border border-cyan-800",
+        delivered:
+          "bg-neutral-800/80 text-neutral-400 border border-neutral-700 opacity-75",
+        cancelled:
+          "bg-neutral-800/80 text-neutral-400 border border-neutral-700 opacity-75",
+      };
+      return colors[status] || "status-delivered";
+    };
+
+    onMounted(() => {
+      loadOrders();
+      loadDrivers();
+      initWebSocket();
+    });
+
+    onUnmounted(() => {
+      if (ws) ws.close();
+    });
+
+    return {
+      orders,
+      drivers,
+      loading,
+      activeFilter,
+      fulfillmentFilter,
+      filterCounts,
+      selectedOrderId,
+      selectedOrder,
+      selectedDriverId,
+      selectOrder,
+      selectAndMarkViewed,
+      viewedOrders,
+      updateStatus,
+      dispatchOrder,
+      sortedOrders,
+      statusPillClass,
+      timeAgo,
+      orderSummary,
+      getItemName,
+    };
+  },
+};

@@ -5,15 +5,18 @@
  *  1. Restaurant Fleet  — CRUD for provisioned restaurants
  *  2. Beta Leads        — pending beta signups awaiting 1-click provisioning
  */
-import { ref, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { api } from '../api.js';
-import RestaurantProfile from './RestaurantProfile.js';
+import {
+  ref,
+  onMounted,
+} from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import { api } from "../api.js";
+import RestaurantProfile from "./RestaurantProfile.js";
 
 export default {
-    name: 'RestaurantsAdmin',
-    components: { RestaurantProfile },
-    props: ['user'],
-    template: `
+  name: "RestaurantsAdmin",
+  components: { RestaurantProfile },
+  props: ["user"],
+  template: `
         <div class="space-y-6 animate-fade-in">
 
             <!-- ════ TAB SWITCHER ════ -->
@@ -460,248 +463,313 @@ export default {
         </div>
     `,
 
-    setup() {
-        // ── Restaurants tab ───────────────────────────────────────────────
-        const restaurants   = ref([]);
-        const loading       = ref(true);
-        const showCreate    = ref(false);
-        const error         = ref('');
-        const suspendTarget = ref(null);
-        const activeTab     = ref('restaurants');
-        const selectedRestaurant = ref(null);
+  setup() {
+    // ── Restaurants tab ───────────────────────────────────────────────
+    const restaurants = ref([]);
+    const loading = ref(true);
+    const showCreate = ref(false);
+    const error = ref("");
+    const suspendTarget = ref(null);
+    const activeTab = ref("restaurants");
+    const selectedRestaurant = ref(null);
 
-        const emptyForm = () => ({
-            name: '', wa_phone_number: '', api_token: '', phone_number_id: '',
-            owner_wa_id: '', cuisine_type: '', contact_email: '',
-            city: '',
+    const emptyForm = () => ({
+      name: "",
+      wa_phone_number: "",
+      api_token: "",
+      phone_number_id: "",
+      owner_wa_id: "",
+      cuisine_type: "",
+      contact_email: "",
+      city: "",
+    });
+
+    const form = ref(emptyForm());
+    const editingId = ref(null);
+
+    // ── Beta Leads tab ────────────────────────────────────────────────
+    const leads = ref([]);
+    const leadsLoading = ref(false);
+    const showProvision = ref(false);
+    const provisionLead = ref(null);
+    const provisionForm = ref({ phone_number_id: "", wa_phone_number: "" });
+    const provisionError = ref("");
+    const provisionLoading = ref(false);
+    const toast = ref("");
+
+    // ── Adjust Wallet ─────────────────────────────────────────────────
+    const showAdjust = ref(false);
+    const adjustTarget = ref(null);
+    const adjustAmount = ref(0);
+    const adjustType = ref("credit");
+    const adjustDescription = ref("");
+    const adjustLoading = ref(false);
+    const adjustError = ref("");
+
+    const openAdjustModal = (r) => {
+      adjustTarget.value = r;
+      adjustAmount.value = 0;
+      adjustType.value = "credit";
+      adjustDescription.value = "";
+      adjustError.value = "";
+      showAdjust.value = true;
+    };
+
+    const submitAdjust = async () => {
+      if (adjustAmount.value === 0) {
+        adjustError.value = "Amount cannot be 0";
+        return;
+      }
+      if (!adjustDescription.value.trim()) {
+        adjustError.value = "Description is required";
+        return;
+      }
+      adjustLoading.value = true;
+      adjustError.value = "";
+      try {
+        let amt = adjustAmount.value;
+        if (adjustType.value === "debit") {
+          amt = -Math.abs(amt);
+        } else if (adjustType.value === "credit") {
+          amt = Math.abs(amt);
+        }
+        await api.post(`/admin/billing/adjust`, {
+          restaurant_id: adjustTarget.value.id,
+          amount: amt,
+          type: adjustType.value,
+          description: adjustDescription.value,
         });
+        showToast(`Adjusted wallet for ${adjustTarget.value.name}`);
+        showAdjust.value = false;
+        await loadRestaurants();
+      } catch (err) {
+        adjustError.value =
+          err.response?.data?.detail || "Failed to adjust wallet.";
+      } finally {
+        adjustLoading.value = false;
+      }
+    };
 
-        const form      = ref(emptyForm());
-        const editingId = ref(null);
+    // ── Toast helper ──────────────────────────────────────────────────
+    const showToast = (msg) => {
+      toast.value = msg;
+      setTimeout(() => {
+        toast.value = "";
+      }, 4000);
+    };
 
-        // ── Beta Leads tab ────────────────────────────────────────────────
-        const leads          = ref([]);
-        const leadsLoading   = ref(false);
-        const showProvision  = ref(false);
-        const provisionLead  = ref(null);
-        const provisionForm  = ref({ phone_number_id: '', wa_phone_number: '' });
-        const provisionError = ref('');
-        const provisionLoading = ref(false);
-        const toast          = ref('');
+    // ── Date formatter ────────────────────────────────────────────────
+    const formatDate = (iso) => {
+      if (!iso) return "—";
+      const d = new Date(iso);
+      return d.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    };
 
-        // ── Adjust Wallet ─────────────────────────────────────────────────
-        const showAdjust = ref(false);
-        const adjustTarget = ref(null);
-        const adjustAmount = ref(0);
-        const adjustType = ref('credit');
-        const adjustDescription = ref('');
-        const adjustLoading = ref(false);
-        const adjustError = ref('');
+    // ── Billing tier helpers ──────────────────────────────────────────
+    const billingTier = (rate) => {
+      if (rate >= 0.25) return "Premium";
+      if (rate >= 0.15) return "Growth";
+      return "Starter";
+    };
+    const billingBadge = (rate) => {
+      if (rate >= 0.25) return "badge-saffron";
+      if (rate >= 0.15) return "badge-berry";
+      return "badge-slate";
+    };
 
-        const openAdjustModal = (r) => {
-            adjustTarget.value = r;
-            adjustAmount.value = 0;
-            adjustType.value = 'credit';
-            adjustDescription.value = '';
-            adjustError.value = '';
-            showAdjust.value = true;
-        };
+    // ── Restaurant CRUD ───────────────────────────────────────────────
+    const loadRestaurants = async () => {
+      loading.value = true;
+      try {
+        const res = await api.get("/admin/restaurants");
+        restaurants.value = res.data;
+      } catch (err) {
+        console.error("[RestaurantsAdmin] load error", err);
+      } finally {
+        loading.value = false;
+      }
+    };
 
-        const submitAdjust = async () => {
-            if (adjustAmount.value === 0) {
-                adjustError.value = 'Amount cannot be 0';
-                return;
-            }
-            if (!adjustDescription.value.trim()) {
-                adjustError.value = 'Description is required';
-                return;
-            }
-            adjustLoading.value = true;
-            adjustError.value = '';
-            try {
-                let amt = adjustAmount.value;
-                if (adjustType.value === 'debit') {
-                    amt = -Math.abs(amt);
-                } else if (adjustType.value === 'credit') {
-                    amt = Math.abs(amt);
-                }
-                await api.post(`/admin/billing/adjust`, { 
-                    restaurant_id: adjustTarget.value.id,
-                    amount: amt,
-                    type: adjustType.value,
-                    description: adjustDescription.value
-                });
-                showToast(`Adjusted wallet for ${adjustTarget.value.name}`);
-                showAdjust.value = false;
-                await loadRestaurants();
-            } catch (err) {
-                adjustError.value = err.response?.data?.detail || 'Failed to adjust wallet.';
-            } finally {
-                adjustLoading.value = false;
-            }
-        };
+    const openModal = () => {
+      editingId.value = null;
+      form.value = emptyForm();
+      error.value = "";
+      showCreate.value = true;
+    };
 
-        // ── Toast helper ──────────────────────────────────────────────────
-        const showToast = (msg) => {
-            toast.value = msg;
-            setTimeout(() => { toast.value = ''; }, 4000);
-        };
+    const editRestaurant = (r) => {
+      editingId.value = r.id;
+      form.value = {
+        name: r.name || "",
+        wa_phone_number: r.wa_phone_number || "",
+        api_token: r.api_token || "",
+        phone_number_id: r.phone_number_id || "",
+        owner_wa_id: r.owner_wa_id || "",
+        cuisine_type: r.cuisine_type || "",
+        contact_email: r.contact_email || "",
+        city: r.city || "",
+      };
+      error.value = "";
+      showCreate.value = true;
+    };
 
-        // ── Date formatter ────────────────────────────────────────────────
-        const formatDate = (iso) => {
-            if (!iso) return '—';
-            const d = new Date(iso);
-            return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-        };
+    const save = async () => {
+      error.value = "";
+      if (!form.value.name.trim()) {
+        error.value = "Restaurant name is required.";
+        return;
+      }
+      try {
+        if (editingId.value) {
+          await api.put(`/admin/restaurants/${editingId.value}`, form.value);
+        } else {
+          await api.post("/admin/restaurants", form.value);
+        }
+        showCreate.value = false;
+        editingId.value = null;
+        form.value = emptyForm();
+        await loadRestaurants();
+      } catch (err) {
+        error.value = err.response?.data?.detail || "Failed to save.";
+      }
+    };
 
-        // ── Billing tier helpers ──────────────────────────────────────────
-        const billingTier = (rate) => {
-            if (rate >= 0.25) return 'Premium';
-            if (rate >= 0.15) return 'Growth';
-            return 'Starter';
-        };
-        const billingBadge = (rate) => {
-            if (rate >= 0.25) return 'badge-saffron';
-            if (rate >= 0.15) return 'badge-berry';
-            return 'badge-slate';
-        };
+    const promptSuspend = (r) => {
+      suspendTarget.value = r;
+    };
+    const confirmSuspend = async () => {
+      if (!suspendTarget.value) return;
+      const id = suspendTarget.value.id;
+      suspendTarget.value = null;
+      try {
+        await api.post(`/admin/restaurants/${id}/suspend`);
+        await loadRestaurants();
+      } catch (err) {
+        console.error("[RestaurantsAdmin] suspend error", err);
+      }
+    };
+    const activate = async (id) => {
+      try {
+        await api.post(`/admin/restaurants/${id}/activate`);
+        await loadRestaurants();
+      } catch (err) {
+        console.error("[RestaurantsAdmin] activate error", err);
+      }
+    };
 
-        // ── Restaurant CRUD ───────────────────────────────────────────────
-        const loadRestaurants = async () => {
-            loading.value = true;
-            try {
-                const res = await api.get('/admin/restaurants');
-                restaurants.value = res.data;
-            } catch (err) {
-                console.error('[RestaurantsAdmin] load error', err);
-            } finally {
-                loading.value = false;
-            }
-        };
+    // ── Beta Leads CRUD ───────────────────────────────────────────────
+    const loadLeads = async () => {
+      leadsLoading.value = true;
+      try {
+        const res = await api.get("/admin/beta-signups");
+        leads.value = res.data;
+      } catch (err) {
+        console.error("[RestaurantsAdmin] leads load error", err);
+      } finally {
+        leadsLoading.value = false;
+      }
+    };
 
-        const openModal = () => {
-            editingId.value  = null;
-            form.value       = emptyForm();
-            error.value      = '';
-            showCreate.value = true;
-        };
+    const openProvisionModal = (lead) => {
+      provisionLead.value = lead;
+      provisionForm.value = {
+        phone_number_id: "",
+        wa_phone_number: lead.whatsapp_number || "",
+      };
+      provisionError.value = "";
+      showProvision.value = true;
+    };
 
-        const editRestaurant = (r) => {
-            editingId.value = r.id;
-            form.value = {
-                name: r.name || '',              wa_phone_number: r.wa_phone_number || '',
-                api_token: r.api_token || '',    phone_number_id: r.phone_number_id || '',
-                owner_wa_id: r.owner_wa_id || '', cuisine_type: r.cuisine_type || '',
-                contact_email: r.contact_email || '', city: r.city || '',
-            };
-            error.value      = '';
-            showCreate.value = true;
-        };
+    const closeProvisionModal = () => {
+      showProvision.value = false;
+      provisionLead.value = null;
+      provisionError.value = "";
+    };
 
-        const save = async () => {
-            error.value = '';
-            if (!form.value.name.trim()) { error.value = 'Restaurant name is required.'; return; }
-            try {
-                if (editingId.value) {
-                    await api.put(`/admin/restaurants/${editingId.value}`, form.value);
-                } else {
-                    await api.post('/admin/restaurants', form.value);
-                }
-                showCreate.value = false;
-                editingId.value  = null;
-                form.value       = emptyForm();
-                await loadRestaurants();
-            } catch (err) {
-                error.value = err.response?.data?.detail || 'Failed to save.';
-            }
-        };
+    const submitProvision = async () => {
+      provisionError.value = "";
 
-        const promptSuspend  = (r) => { suspendTarget.value = r; };
-        const confirmSuspend = async () => {
-            if (!suspendTarget.value) return;
-            const id = suspendTarget.value.id;
-            suspendTarget.value = null;
-            try {
-                await api.post(`/admin/restaurants/${id}/suspend`);
-                await loadRestaurants();
-            } catch (err) { console.error('[RestaurantsAdmin] suspend error', err); }
-        };
-        const activate = async (id) => {
-            try {
-                await api.post(`/admin/restaurants/${id}/activate`);
-                await loadRestaurants();
-            } catch (err) { console.error('[RestaurantsAdmin] activate error', err); }
-        };
+      if (!provisionForm.value.phone_number_id.trim()) {
+        provisionError.value = "Meta Phone Number ID is required.";
+        return;
+      }
+      if (!provisionForm.value.wa_phone_number.trim()) {
+        provisionError.value = "WhatsApp Phone Number is required.";
+        return;
+      }
 
-        // ── Beta Leads CRUD ───────────────────────────────────────────────
-        const loadLeads = async () => {
-            leadsLoading.value = true;
-            try {
-                const res = await api.get('/admin/beta-signups');
-                leads.value = res.data;
-            } catch (err) {
-                console.error('[RestaurantsAdmin] leads load error', err);
-            } finally {
-                leadsLoading.value = false;
-            }
-        };
+      provisionLoading.value = true;
+      try {
+        await api.post(
+          `/admin/beta-signups/${provisionLead.value.id}/provision`,
+          provisionForm.value,
+        );
+        leads.value = leads.value.filter(
+          (l) => l.id !== provisionLead.value.id,
+        );
+        closeProvisionModal();
+        showToast(
+          `${provisionLead.value?.restaurant_name || "Restaurant"} provisioned! Invite email sent.`,
+        );
+        await loadRestaurants();
+      } catch (err) {
+        provisionError.value =
+          err.response?.data?.detail ||
+          "Provisioning failed. Please try again.";
+      } finally {
+        provisionLoading.value = false;
+      }
+    };
 
-        const openProvisionModal = (lead) => {
-            provisionLead.value  = lead;
-            provisionForm.value  = { phone_number_id: '', wa_phone_number: lead.whatsapp_number || '' };
-            provisionError.value = '';
-            showProvision.value  = true;
-        };
+    onMounted(() => {
+      loadRestaurants();
+      loadLeads();
+    });
 
-        const closeProvisionModal = () => {
-            showProvision.value  = false;
-            provisionLead.value  = null;
-            provisionError.value = '';
-        };
-
-        const submitProvision = async () => {
-            provisionError.value = '';
-
-            if (!provisionForm.value.phone_number_id.trim()) {
-                provisionError.value = 'Meta Phone Number ID is required.';
-                return;
-            }
-            if (!provisionForm.value.wa_phone_number.trim()) {
-                provisionError.value = 'WhatsApp Phone Number is required.';
-                return;
-            }
-
-            provisionLoading.value = true;
-            try {
-                await api.post(
-                    `/admin/beta-signups/${provisionLead.value.id}/provision`,
-                    provisionForm.value
-                );
-                leads.value = leads.value.filter(l => l.id !== provisionLead.value.id);
-                closeProvisionModal();
-                showToast(`${provisionLead.value?.restaurant_name || 'Restaurant'} provisioned! Invite email sent.`);
-                await loadRestaurants();
-            } catch (err) {
-                provisionError.value = err.response?.data?.detail || 'Provisioning failed. Please try again.';
-            } finally {
-                provisionLoading.value = false;
-            }
-        };
-
-        onMounted(() => {
-            loadRestaurants();
-            loadLeads();
-        });
-
-        return {
-            restaurants, loading, showCreate, error, form, editingId, suspendTarget,
-            openModal, editRestaurant, save, promptSuspend, confirmSuspend, activate,
-            billingTier, billingBadge,
-            leads, leadsLoading, showProvision, provisionLead,
-            provisionForm, provisionError, provisionLoading,
-            loadLeads, openProvisionModal, closeProvisionModal, submitProvision,
-            activeTab, toast, formatDate, selectedRestaurant,
-            showAdjust, adjustTarget, adjustAmount, adjustType, adjustDescription, adjustLoading, adjustError, openAdjustModal, submitAdjust
-        };
-    }
+    return {
+      restaurants,
+      loading,
+      showCreate,
+      error,
+      form,
+      editingId,
+      suspendTarget,
+      openModal,
+      editRestaurant,
+      save,
+      promptSuspend,
+      confirmSuspend,
+      activate,
+      billingTier,
+      billingBadge,
+      leads,
+      leadsLoading,
+      showProvision,
+      provisionLead,
+      provisionForm,
+      provisionError,
+      provisionLoading,
+      loadLeads,
+      openProvisionModal,
+      closeProvisionModal,
+      submitProvision,
+      activeTab,
+      toast,
+      formatDate,
+      selectedRestaurant,
+      showAdjust,
+      adjustTarget,
+      adjustAmount,
+      adjustType,
+      adjustDescription,
+      adjustLoading,
+      adjustError,
+      openAdjustModal,
+      submitAdjust,
+    };
+  },
 };

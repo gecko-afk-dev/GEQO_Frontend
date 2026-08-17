@@ -1,16 +1,28 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
+  <head>
     <meta charset="utf-8" />
     <title>Admin Setup Disabled</title>
-    <style>body{font-family:Arial,Helvetica,sans-serif;margin:40px;color:#333}</style>
-</head>
-<body>
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        margin: 40px;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
     <h1>Admin Setup Disabled</h1>
-    <p>This setup page has been disabled for security reasons. To initialize an admin account, set the
-    <strong>SETUP_BOOTSTRAP_TOKEN</strong> environment variable on the server and run the protected setup
-    endpoint using the same token in the <code>X-Setup-Token</code> header.</p>
-    <p>If you are in development and need to create an admin, consult your deployment documentation or run
-    the seed script manually with secure parameters.</p>
-</body>
+    <p>
+      This setup page has been disabled for security reasons. To initialize an
+      admin account, set the <strong>SETUP_BOOTSTRAP_TOKEN</strong> environment
+      variable on the server and run the protected setup endpoint using the same
+      token in the <code>X-Setup-Token</code> header.
+    </p>
+    <p>
+      If you are in development and need to create an admin, consult your
+      deployment documentation or run the seed script manually with secure
+      parameters.
+    </p>
+  </body>
 </html>

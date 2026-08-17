@@ -1,9 +1,12 @@
-import { ref, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { api } from '../api.js';
+import {
+  ref,
+  onMounted,
+} from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import { api } from "../api.js";
 
 export default {
-    name: 'Settings',
-    template: `
+  name: "Settings",
+  template: `
         <div class="space-y-6 animate-fade-in max-w-4xl">
             <!-- Header -->
             <div>
@@ -175,234 +178,279 @@ export default {
 
         </div>
     `,
-    setup() {
-        const activeTab = ref('profile');
-        
-        const weeklyHours = ref([
-            { day: 'Monday', isOpen: true, open: '11:00', close: '23:30' },
-            { day: 'Tuesday', isOpen: true, open: '11:00', close: '23:30' },
-            { day: 'Wednesday', isOpen: true, open: '11:00', close: '23:30' },
-            { day: 'Thursday', isOpen: true, open: '11:00', close: '23:30' },
-            { day: 'Friday', isOpen: true, open: '11:00', close: '23:30' },
-            { day: 'Saturday', isOpen: true, open: '11:00', close: '23:30' },
-            { day: 'Sunday', isOpen: true, open: '11:00', close: '23:30' },
-        ]);
-        const profile = ref({});
-        const form = ref({ full_name: '', contact_phone: '', old_password: '', password: '' });
-        const loading = ref(false);
-        const loadingForgot = ref(false);
-        const successMsg = ref('');
-        const errorMsg = ref('');
+  setup() {
+    const activeTab = ref("profile");
 
-        const deliveryForm = ref({
-            latitude: 33.5731,
-            longitude: -7.5898,
-            max_delivery_radius_km: 10,
-            base_delivery_fee: 10,
-            city: ''
-        });
-        const loadingDelivery = ref(false);
-        const deliverySuccessMsg = ref('');
-        const deliveryErrorMsg = ref('');
+    const weeklyHours = ref([
+      { day: "Monday", isOpen: true, open: "11:00", close: "23:30" },
+      { day: "Tuesday", isOpen: true, open: "11:00", close: "23:30" },
+      { day: "Wednesday", isOpen: true, open: "11:00", close: "23:30" },
+      { day: "Thursday", isOpen: true, open: "11:00", close: "23:30" },
+      { day: "Friday", isOpen: true, open: "11:00", close: "23:30" },
+      { day: "Saturday", isOpen: true, open: "11:00", close: "23:30" },
+      { day: "Sunday", isOpen: true, open: "11:00", close: "23:30" },
+    ]);
+    const profile = ref({});
+    const form = ref({
+      full_name: "",
+      contact_phone: "",
+      old_password: "",
+      password: "",
+    });
+    const loading = ref(false);
+    const loadingForgot = ref(false);
+    const successMsg = ref("");
+    const errorMsg = ref("");
 
-        const loadingHours = ref(false);
-        const hoursSuccessMsg = ref('');
-        const hoursErrorMsg = ref('');
+    const deliveryForm = ref({
+      latitude: 33.5731,
+      longitude: -7.5898,
+      max_delivery_radius_km: 10,
+      base_delivery_fee: 10,
+      city: "",
+    });
+    const loadingDelivery = ref(false);
+    const deliverySuccessMsg = ref("");
+    const deliveryErrorMsg = ref("");
 
-        let map = null;
-        let marker = null;
-        let circle = null;
-        let mapInitialized = false;
+    const loadingHours = ref(false);
+    const hoursSuccessMsg = ref("");
+    const hoursErrorMsg = ref("");
 
-        const initMap = async () => {
-            if (mapInitialized) return;
-            // Allow DOM to render tab first
-            await new Promise(r => setTimeout(r, 100));
-            if (!document.getElementById('delivery-map')) return;
+    let map = null;
+    let marker = null;
+    let circle = null;
+    let mapInitialized = false;
 
-            map = L.map('delivery-map').setView([deliveryForm.value.latitude, deliveryForm.value.longitude], 12);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap &copy; CARTO'
-            }).addTo(map);
+    const initMap = async () => {
+      if (mapInitialized) return;
+      // Allow DOM to render tab first
+      await new Promise((r) => setTimeout(r, 100));
+      if (!document.getElementById("delivery-map")) return;
 
-            marker = L.marker([deliveryForm.value.latitude, deliveryForm.value.longitude], { draggable: true }).addTo(map);
-            circle = L.circle([deliveryForm.value.latitude, deliveryForm.value.longitude], {
-                color: '#F59E0B',
-                fillColor: '#F59E0B',
-                fillOpacity: 0.15,
-                radius: deliveryForm.value.max_delivery_radius_km * 1000
-            }).addTo(map);
+      map = L.map("delivery-map").setView(
+        [deliveryForm.value.latitude, deliveryForm.value.longitude],
+        12,
+      );
+      L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+        {
+          attribution: "&copy; OpenStreetMap &copy; CARTO",
+        },
+      ).addTo(map);
 
-            marker.on('dragend', function (event) {
-                const position = marker.getLatLng();
-                deliveryForm.value.latitude = position.lat;
-                deliveryForm.value.longitude = position.lng;
-                circle.setLatLng(position);
-            });
-            mapInitialized = true;
+      marker = L.marker(
+        [deliveryForm.value.latitude, deliveryForm.value.longitude],
+        { draggable: true },
+      ).addTo(map);
+      circle = L.circle(
+        [deliveryForm.value.latitude, deliveryForm.value.longitude],
+        {
+          color: "#F59E0B",
+          fillColor: "#F59E0B",
+          fillOpacity: 0.15,
+          radius: deliveryForm.value.max_delivery_radius_km * 1000,
+        },
+      ).addTo(map);
+
+      marker.on("dragend", function (event) {
+        const position = marker.getLatLng();
+        deliveryForm.value.latitude = position.lat;
+        deliveryForm.value.longitude = position.lng;
+        circle.setLatLng(position);
+      });
+      mapInitialized = true;
+    };
+
+    const updateCircle = () => {
+      if (circle && deliveryForm.value.max_delivery_radius_km) {
+        circle.setRadius(deliveryForm.value.max_delivery_radius_km * 1000);
+      }
+    };
+
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get("/admin/profile");
+        profile.value = res.data;
+        form.value.full_name = res.data.full_name || "";
+        form.value.contact_phone = res.data.contact_phone || "";
+      } catch (err) {
+        errorMsg.value = "Failed to load profile data.";
+      }
+
+      try {
+        const dashRes = await api.get("/admin/restaurant/dashboard");
+        const r = dashRes.data.restaurant;
+        // Wait, the API doesn't expose latitude etc in /dashboard by default.
+        // We'll just fetch from /restaurants or rely on the dashboard injecting it if it does.
+        // Actually, let's fetch from the backend using a dedicated route or just use the dashboard data.
+        // If dashboard API doesn't have it, we might need to add it there.
+      } catch (err) {}
+
+      // Just for safety, let's load restaurant details if possible
+      try {
+        // To fetch full details, the easiest is to call a robust endpoint.
+        const rRes = await api.get("/admin/restaurant/dashboard");
+        // Let's assume we can add it to the dashboard response, but since I can't guarantee it,
+        // we'll see if the user's restaurant has it or just default to Casablanca
+        // Wait, I can just fetch it!
+      } catch (e) {}
+    };
+
+    const loadRestaurantSettings = async () => {
+      try {
+        // we can't fetch single restaurant easily if we are just a restaurant_owner unless we use the dashboard endpoint.
+        // Wait, /admin/restaurant/dashboard is what we used for Billing.js. I'll just use it!
+        const res = await api.get("/admin/restaurant/dashboard");
+        // Wait, I need to make sure the backend returns it in the dashboard!
+      } catch (e) {}
+    };
+
+    const saveProfile = async () => {
+      loading.value = true;
+      successMsg.value = "";
+      errorMsg.value = "";
+      try {
+        const payload = {
+          full_name: form.value.full_name,
+          contact_phone: form.value.contact_phone,
         };
-
-        const updateCircle = () => {
-            if (circle && deliveryForm.value.max_delivery_radius_km) {
-                circle.setRadius(deliveryForm.value.max_delivery_radius_km * 1000);
-            }
-        };
-
-        const fetchProfile = async () => {
-            try {
-                const res = await api.get('/admin/profile');
-                profile.value = res.data;
-                form.value.full_name = res.data.full_name || '';
-                form.value.contact_phone = res.data.contact_phone || '';
-            } catch (err) {
-                errorMsg.value = 'Failed to load profile data.';
-            }
-
-            try {
-                const dashRes = await api.get('/admin/restaurant/dashboard');
-                const r = dashRes.data.restaurant;
-                // Wait, the API doesn't expose latitude etc in /dashboard by default.
-                // We'll just fetch from /restaurants or rely on the dashboard injecting it if it does.
-                // Actually, let's fetch from the backend using a dedicated route or just use the dashboard data.
-                // If dashboard API doesn't have it, we might need to add it there.
-            } catch (err) {}
-            
-            // Just for safety, let's load restaurant details if possible
-            try {
-                // To fetch full details, the easiest is to call a robust endpoint.
-                const rRes = await api.get('/admin/restaurant/dashboard'); 
-                // Let's assume we can add it to the dashboard response, but since I can't guarantee it, 
-                // we'll see if the user's restaurant has it or just default to Casablanca
-                // Wait, I can just fetch it!
-            } catch(e) {}
-        };
-
-        const loadRestaurantSettings = async () => {
-            try {
-                // we can't fetch single restaurant easily if we are just a restaurant_owner unless we use the dashboard endpoint.
-                // Wait, /admin/restaurant/dashboard is what we used for Billing.js. I'll just use it!
-                const res = await api.get('/admin/restaurant/dashboard');
-                // Wait, I need to make sure the backend returns it in the dashboard!
-            } catch (e) {}
+        if (form.value.password) {
+          payload.password = form.value.password;
+          payload.old_password = form.value.old_password;
         }
+        await api.put("/admin/profile", payload);
+        successMsg.value = "Profile updated successfully!";
+        form.value.password = "";
+        form.value.old_password = "";
+      } catch (err) {
+        errorMsg.value =
+          err.response?.data?.detail || "Failed to update profile.";
+      } finally {
+        loading.value = false;
+        setTimeout(() => (successMsg.value = ""), 5000);
+      }
+    };
 
-        const saveProfile = async () => {
-            loading.value = true;
-            successMsg.value = '';
-            errorMsg.value = '';
-            try {
-                const payload = {
-                    full_name: form.value.full_name,
-                    contact_phone: form.value.contact_phone
-                };
-                if (form.value.password) {
-                    payload.password = form.value.password;
-                    payload.old_password = form.value.old_password;
-                }
-                await api.put('/admin/profile', payload);
-                successMsg.value = 'Profile updated successfully!';
-                form.value.password = '';
-                form.value.old_password = '';
-            } catch (err) {
-                errorMsg.value = err.response?.data?.detail || 'Failed to update profile.';
-            } finally {
-                loading.value = false;
-                setTimeout(() => successMsg.value = '', 5000);
-            }
-        };
-
-        const saveDeliverySettings = async () => {
-            loadingDelivery.value = true;
-            deliverySuccessMsg.value = '';
-            deliveryErrorMsg.value = '';
-            try {
-                await api.put('/dashboard/restaurant/delivery-settings', {
-                    latitude: deliveryForm.value.latitude,
-                    longitude: deliveryForm.value.longitude,
-                    max_delivery_radius_km: deliveryForm.value.max_delivery_radius_km,
-                    base_delivery_fee: deliveryForm.value.base_delivery_fee,
-                    operating_hours: JSON.stringify(weeklyHours.value), // Shared endpoint
-                    city: deliveryForm.value.city
-                });
-                deliverySuccessMsg.value = 'Delivery settings updated successfully!';
-            } catch (err) {
-                deliveryErrorMsg.value = err.response?.data?.detail || 'Failed to update delivery settings.';
-            } finally {
-                loadingDelivery.value = false;
-                setTimeout(() => deliverySuccessMsg.value = '', 5000);
-            }
-        };
-
-        const saveOperatingHours = async () => {
-            loadingHours.value = true;
-            hoursSuccessMsg.value = '';
-            hoursErrorMsg.value = '';
-            try {
-                await api.put('/dashboard/restaurant/delivery-settings', {
-                    latitude: deliveryForm.value.latitude,
-                    longitude: deliveryForm.value.longitude,
-                    max_delivery_radius_km: deliveryForm.value.max_delivery_radius_km,
-                    base_delivery_fee: deliveryForm.value.base_delivery_fee,
-                    operating_hours: JSON.stringify(weeklyHours.value),
-                    city: deliveryForm.value.city
-                });
-                hoursSuccessMsg.value = 'Operating hours saved successfully!';
-            } catch (err) {
-                hoursErrorMsg.value = err.response?.data?.detail || 'Failed to update operating hours.';
-            } finally {
-                loadingHours.value = false;
-                setTimeout(() => hoursSuccessMsg.value = '', 5000);
-            }
-        };
-
-        const forgotPassword = async () => {
-            if (!profile.value.email) return;
-            loadingForgot.value = true;
-            errorMsg.value = '';
-            successMsg.value = '';
-            try {
-                await api.post('/auth/forgot-password', { email: profile.value.email });
-                successMsg.value = 'A password reset link has been sent to your email.';
-            } catch (err) {
-                errorMsg.value = 'Failed to request password reset.';
-            } finally {
-                loadingForgot.value = false;
-            }
-        };
-
-        onMounted(async () => {
-            await fetchProfile();
-            try {
-                const dashRes = await api.get('/admin/restaurant/dashboard');
-                const r = dashRes.data.restaurant;
-                if (r) {
-                    deliveryForm.value.latitude = r.latitude || 33.5731;
-                    deliveryForm.value.longitude = r.longitude || -7.5898;
-                    deliveryForm.value.max_delivery_radius_km = r.max_delivery_radius_km || 10;
-                    deliveryForm.value.base_delivery_fee = r.base_delivery_fee || 10;
-                    deliveryForm.value.city = r.city || '';
-                    
-                    let savedHours = r.operating_hours;
-                    if (savedHours) {
-                        if (savedHours.startsWith('[')) {
-                            try { weeklyHours.value = JSON.parse(savedHours); } catch(e) {}
-                        } else {
-                            let parts = savedHours.split('-');
-                            if(parts.length === 2) {
-                                let open = parts[0].trim();
-                                let close = parts[1].trim();
-                                weeklyHours.value.forEach(d => { d.isOpen = true; d.open = open; d.close = close; });
-                            }
-                        }
-                    }
-                }
-            } catch(e) {}
+    const saveDeliverySettings = async () => {
+      loadingDelivery.value = true;
+      deliverySuccessMsg.value = "";
+      deliveryErrorMsg.value = "";
+      try {
+        await api.put("/dashboard/restaurant/delivery-settings", {
+          latitude: deliveryForm.value.latitude,
+          longitude: deliveryForm.value.longitude,
+          max_delivery_radius_km: deliveryForm.value.max_delivery_radius_km,
+          base_delivery_fee: deliveryForm.value.base_delivery_fee,
+          operating_hours: JSON.stringify(weeklyHours.value), // Shared endpoint
+          city: deliveryForm.value.city,
         });
+        deliverySuccessMsg.value = "Delivery settings updated successfully!";
+      } catch (err) {
+        deliveryErrorMsg.value =
+          err.response?.data?.detail || "Failed to update delivery settings.";
+      } finally {
+        loadingDelivery.value = false;
+        setTimeout(() => (deliverySuccessMsg.value = ""), 5000);
+      }
+    };
 
-        return { 
-            activeTab, profile, form, loading, loadingForgot, successMsg, errorMsg, saveProfile, forgotPassword,
-            deliveryForm, loadingDelivery, deliverySuccessMsg, deliveryErrorMsg, saveDeliverySettings, initMap, updateCircle,
-            weeklyHours, loadingHours, hoursSuccessMsg, hoursErrorMsg, saveOperatingHours
-        };
-    }
+    const saveOperatingHours = async () => {
+      loadingHours.value = true;
+      hoursSuccessMsg.value = "";
+      hoursErrorMsg.value = "";
+      try {
+        await api.put("/dashboard/restaurant/delivery-settings", {
+          latitude: deliveryForm.value.latitude,
+          longitude: deliveryForm.value.longitude,
+          max_delivery_radius_km: deliveryForm.value.max_delivery_radius_km,
+          base_delivery_fee: deliveryForm.value.base_delivery_fee,
+          operating_hours: JSON.stringify(weeklyHours.value),
+          city: deliveryForm.value.city,
+        });
+        hoursSuccessMsg.value = "Operating hours saved successfully!";
+      } catch (err) {
+        hoursErrorMsg.value =
+          err.response?.data?.detail || "Failed to update operating hours.";
+      } finally {
+        loadingHours.value = false;
+        setTimeout(() => (hoursSuccessMsg.value = ""), 5000);
+      }
+    };
+
+    const forgotPassword = async () => {
+      if (!profile.value.email) return;
+      loadingForgot.value = true;
+      errorMsg.value = "";
+      successMsg.value = "";
+      try {
+        await api.post("/auth/forgot-password", { email: profile.value.email });
+        successMsg.value = "A password reset link has been sent to your email.";
+      } catch (err) {
+        errorMsg.value = "Failed to request password reset.";
+      } finally {
+        loadingForgot.value = false;
+      }
+    };
+
+    onMounted(async () => {
+      await fetchProfile();
+      try {
+        const dashRes = await api.get("/admin/restaurant/dashboard");
+        const r = dashRes.data.restaurant;
+        if (r) {
+          deliveryForm.value.latitude = r.latitude || 33.5731;
+          deliveryForm.value.longitude = r.longitude || -7.5898;
+          deliveryForm.value.max_delivery_radius_km =
+            r.max_delivery_radius_km || 10;
+          deliveryForm.value.base_delivery_fee = r.base_delivery_fee || 10;
+          deliveryForm.value.city = r.city || "";
+
+          let savedHours = r.operating_hours;
+          if (savedHours) {
+            if (savedHours.startsWith("[")) {
+              try {
+                weeklyHours.value = JSON.parse(savedHours);
+              } catch (e) {}
+            } else {
+              let parts = savedHours.split("-");
+              if (parts.length === 2) {
+                let open = parts[0].trim();
+                let close = parts[1].trim();
+                weeklyHours.value.forEach((d) => {
+                  d.isOpen = true;
+                  d.open = open;
+                  d.close = close;
+                });
+              }
+            }
+          }
+        }
+      } catch (e) {}
+    });
+
+    return {
+      activeTab,
+      profile,
+      form,
+      loading,
+      loadingForgot,
+      successMsg,
+      errorMsg,
+      saveProfile,
+      forgotPassword,
+      deliveryForm,
+      loadingDelivery,
+      deliverySuccessMsg,
+      deliveryErrorMsg,
+      saveDeliverySettings,
+      initMap,
+      updateCircle,
+      weeklyHours,
+      loadingHours,
+      hoursSuccessMsg,
+      hoursErrorMsg,
+      saveOperatingHours,
+    };
+  },
 };

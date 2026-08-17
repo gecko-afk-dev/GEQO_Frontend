@@ -1,8 +1,8 @@
-import { ref } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { api } from '../api.js';
+import { ref } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import { api } from "../api.js";
 
 export default {
-    template: `
+  template: `
         <div class="flex items-center justify-center min-h-screen animated-bg">
             <div class="glass p-8 rounded-2xl shadow-2xl w-full max-w-md card-hover">
                 <div class="text-center mb-8 flex flex-col items-center">
@@ -73,59 +73,71 @@ export default {
             </div>
         </div>
     `,
-    emits: ['login'],
-    setup(props, { emit }) {
-        const email = ref('');
-        const password = ref('');
-        const loading = ref(false);
-        const error = ref(null);
-        const msg = ref(null);
-        const showForgot = ref(false);
-        const showPassword = ref(false);
+  emits: ["login"],
+  setup(props, { emit }) {
+    const email = ref("");
+    const password = ref("");
+    const loading = ref(false);
+    const error = ref(null);
+    const msg = ref(null);
+    const showForgot = ref(false);
+    const showPassword = ref(false);
 
-        const login = async () => {
-            loading.value = true;
-            error.value = null;
-            try {
-                const response = await api.post('/admin/login', {
-                    email: email.value,
-                    password: password.value
-                });
-                const { access_token, user } = response.data;
-                // Persist the token in localStorage so that:
-                //   1. app.js checkAuth() can confirm the session is active.
-                //   2. OrdersManager WebSocket can send the bearer subprotocol
-                //      on cross-origin dev connections where the httpOnly cookie
-                //      is blocked by SameSite rules.
-                // NOTE: In production the backend sets access_token = null and
-                // relies on the httpOnly cookie. When that happens we store the
-                // string 'cookie' as a sentinel so checkAuth() still passes.
-                if (response.data && response.data.access_token) {
-                    localStorage.setItem('token', response.data.access_token);
-                }
-                localStorage.setItem('user', JSON.stringify(user));
-                emit('login', user);
-            } catch (err) {
-                error.value = err.response?.data?.detail || 'Login failed';
-            } finally {
-                loading.value = false;
-            }
-        };
+    const login = async () => {
+      loading.value = true;
+      error.value = null;
+      try {
+        const response = await api.post("/admin/login", {
+          email: email.value,
+          password: password.value,
+        });
+        const { access_token, user } = response.data;
+        // Persist the token in localStorage so that:
+        //   1. app.js checkAuth() can confirm the session is active.
+        //   2. OrdersManager WebSocket can send the bearer subprotocol
+        //      on cross-origin dev connections where the httpOnly cookie
+        //      is blocked by SameSite rules.
+        // NOTE: In production the backend sets access_token = null and
+        // relies on the httpOnly cookie. When that happens we store the
+        // string 'cookie' as a sentinel so checkAuth() still passes.
+        if (response.data && response.data.access_token) {
+          localStorage.setItem("token", response.data.access_token);
+        }
+        localStorage.setItem("user", JSON.stringify(user));
+        emit("login", user);
+      } catch (err) {
+        error.value = err.response?.data?.detail || "Login failed";
+      } finally {
+        loading.value = false;
+      }
+    };
 
-        const forgotPassword = async () => {
-            loading.value = true;
-            error.value = null;
-            msg.value = null;
-            try {
-                const res = await api.post('/auth/forgot-password', { email: email.value });
-                msg.value = res.data.message;
-            } catch (err) {
-                error.value = err.response?.data?.detail || 'Failed to request reset';
-            } finally {
-                loading.value = false;
-            }
-        };
+    const forgotPassword = async () => {
+      loading.value = true;
+      error.value = null;
+      msg.value = null;
+      try {
+        const res = await api.post("/auth/forgot-password", {
+          email: email.value,
+        });
+        msg.value = res.data.message;
+      } catch (err) {
+        error.value = err.response?.data?.detail || "Failed to request reset";
+      } finally {
+        loading.value = false;
+      }
+    };
 
-        return { email, password, loading, error, msg, showForgot, showPassword, login, forgotPassword };
-    }
-}
+    return {
+      email,
+      password,
+      loading,
+      error,
+      msg,
+      showForgot,
+      showPassword,
+      login,
+      forgotPassword,
+    };
+  },
+};

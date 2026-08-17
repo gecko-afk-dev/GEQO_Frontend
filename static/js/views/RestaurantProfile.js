@@ -1,21 +1,21 @@
-import { ref, computed } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { api } from '../api.js';
-import MenuManager from './MenuManager.js';
-import DriversManager from './DriversManager.js';
-import Settings from './Settings.js';
-import AuditLog from './AuditLog.js';
+import { ref, computed } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import { api } from "../api.js";
+import MenuManager from "./MenuManager.js";
+import DriversManager from "./DriversManager.js";
+import Settings from "./Settings.js";
+import AuditLog from "./AuditLog.js";
 
 export default {
-    name: 'RestaurantProfile',
-    components: {
-        MenuManager,
-        DriversManager,
-        Settings,
-        AuditLog
-    },
-    props: ['user', 'restaurant'],
-    emits: ['back', 'suspend', 'activate', 'refreshList'],
-    template: `
+  name: "RestaurantProfile",
+  components: {
+    MenuManager,
+    DriversManager,
+    Settings,
+    AuditLog,
+  },
+  props: ["user", "restaurant"],
+  emits: ["back", "suspend", "activate", "refreshList"],
+  template: `
         <div class="space-y-6 animate-fade-in">
 
             <!-- ════ BACK BUTTON ════ -->
@@ -143,84 +143,98 @@ export default {
 
         </div>
     `,
-    setup(props, { emit }) {
-        const activeTab = ref('menu');
+  setup(props, { emit }) {
+    const activeTab = ref("menu");
 
-        // Wallet Modal State — fully self-contained
-        const showWalletModal = ref(false);
-        const adjustAmount = ref(0);
-        const adjustType = ref('credit');
-        const adjustDescription = ref('');
-        const adjustLoading = ref(false);
-        const adjustError = ref('');
+    // Wallet Modal State — fully self-contained
+    const showWalletModal = ref(false);
+    const adjustAmount = ref(0);
+    const adjustType = ref("credit");
+    const adjustDescription = ref("");
+    const adjustLoading = ref(false);
+    const adjustError = ref("");
 
-        const openWalletModal = () => {
-            adjustAmount.value = 0;
-            adjustType.value = 'credit';
-            adjustDescription.value = '';
-            adjustError.value = '';
-            showWalletModal.value = true;
-        };
+    const openWalletModal = () => {
+      adjustAmount.value = 0;
+      adjustType.value = "credit";
+      adjustDescription.value = "";
+      adjustError.value = "";
+      showWalletModal.value = true;
+    };
 
-        const submitAdjust = async () => {
-            if (adjustAmount.value === 0) {
-                adjustError.value = 'Amount cannot be 0';
-                return;
-            }
-            if (!adjustDescription.value.trim()) {
-                adjustError.value = 'Description is required';
-                return;
-            }
-            adjustLoading.value = true;
-            adjustError.value = '';
-            try {
-                let amt = adjustAmount.value;
-                if (adjustType.value === 'debit') {
-                    amt = -Math.abs(amt);
-                } else if (adjustType.value === 'credit') {
-                    amt = Math.abs(amt);
-                }
-                const res = await api.post('/admin/billing/adjust', {
-                    restaurant_id: props.restaurant.id,
-                    amount: amt,
-                    type: adjustType.value,
-                    description: adjustDescription.value
-                });
-                // Update the restaurant's wallet balance in-place
-                props.restaurant.wallet_balance = res.data.wallet_balance;
-                showWalletModal.value = false;
-                emit('refreshList');
-            } catch (err) {
-                adjustError.value = err.response?.data?.detail || 'Failed to adjust wallet.';
-            } finally {
-                adjustLoading.value = false;
-            }
-        };
-
-        // Compute which component to load
-        const activeTabComponent = computed(() => {
-            switch(activeTab.value) {
-                case 'menu': return 'MenuManager';
-                case 'agents': return 'DriversManager';
-                case 'settings': return 'Settings';
-                case 'audit': return 'AuditLog';
-                default: return 'MenuManager';
-            }
+    const submitAdjust = async () => {
+      if (adjustAmount.value === 0) {
+        adjustError.value = "Amount cannot be 0";
+        return;
+      }
+      if (!adjustDescription.value.trim()) {
+        adjustError.value = "Description is required";
+        return;
+      }
+      adjustLoading.value = true;
+      adjustError.value = "";
+      try {
+        let amt = adjustAmount.value;
+        if (adjustType.value === "debit") {
+          amt = -Math.abs(amt);
+        } else if (adjustType.value === "credit") {
+          amt = Math.abs(amt);
+        }
+        const res = await api.post("/admin/billing/adjust", {
+          restaurant_id: props.restaurant.id,
+          amount: amt,
+          type: adjustType.value,
+          description: adjustDescription.value,
         });
+        // Update the restaurant's wallet balance in-place
+        props.restaurant.wallet_balance = res.data.wallet_balance;
+        showWalletModal.value = false;
+        emit("refreshList");
+      } catch (err) {
+        adjustError.value =
+          err.response?.data?.detail || "Failed to adjust wallet.";
+      } finally {
+        adjustLoading.value = false;
+      }
+    };
 
-        // Inject the specific restaurant_id into the user prop so children components load tenant data
-        const mockedUser = computed(() => {
-            return {
-                ...props.user,
-                restaurant_id: props.restaurant.id,
-                role: 'restaurant_owner'
-            };
-        });
+    // Compute which component to load
+    const activeTabComponent = computed(() => {
+      switch (activeTab.value) {
+        case "menu":
+          return "MenuManager";
+        case "agents":
+          return "DriversManager";
+        case "settings":
+          return "Settings";
+        case "audit":
+          return "AuditLog";
+        default:
+          return "MenuManager";
+      }
+    });
 
-        return {
-            activeTab, activeTabComponent, mockedUser,
-            showWalletModal, adjustAmount, adjustType, adjustDescription,
-            adjustLoading, adjustError, openWalletModal, submitAdjust
-        };
-    }
+    // Inject the specific restaurant_id into the user prop so children components load tenant data
+    const mockedUser = computed(() => {
+      return {
+        ...props.user,
+        restaurant_id: props.restaurant.id,
+        role: "restaurant_owner",
+      };
+    });
+
+    return {
+      activeTab,
+      activeTabComponent,
+      mockedUser,
+      showWalletModal,
+      adjustAmount,
+      adjustType,
+      adjustDescription,
+      adjustLoading,
+      adjustError,
+      openWalletModal,
+      submitAdjust,
+    };
+  },
 };

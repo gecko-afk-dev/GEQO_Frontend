@@ -1,10 +1,14 @@
-import { ref, computed, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { api } from '../api.js';
+import {
+  ref,
+  computed,
+  onMounted,
+} from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import { api } from "../api.js";
 
 export default {
-    name: 'DriversManager',
-    props: ['user'],
-    template: `
+  name: "DriversManager",
+  props: ["user"],
+  template: `
         <div class="space-y-6" style="font-family:'Plus Jakarta Sans',sans-serif;">
 
             <!-- ── Page Header ── -->
@@ -183,118 +187,140 @@ export default {
 
         </div>
     `,
-    setup(props) {
-        // ── Daily summary state ──
-        const summaryDate    = ref(null);
-        const totalDeliveries = ref(0);
-        const totalCash       = ref(0);
-        const driverSummary   = ref([]);
-        const loadingDay      = ref(true);
-        const dayError        = ref(null);
-        const expandedDrivers = ref([]);
+  setup(props) {
+    // ── Daily summary state ──
+    const summaryDate = ref(null);
+    const totalDeliveries = ref(0);
+    const totalCash = ref(0);
+    const driverSummary = ref([]);
+    const loadingDay = ref(true);
+    const dayError = ref(null);
+    const expandedDrivers = ref([]);
 
-        // ── Driver CRUD state ──
-        const driversList   = ref([]);
-        const loadingDrivers = ref(true);
-        const adding         = ref(false);
-        const newDriver      = ref({ name: '', wa_id: '' });
+    // ── Driver CRUD state ──
+    const driversList = ref([]);
+    const loadingDrivers = ref(true);
+    const adding = ref(false);
+    const newDriver = ref({ name: "", wa_id: "" });
 
-        const toggleExpand = (driverId) => {
-            const idx = expandedDrivers.value.indexOf(driverId);
-            if (idx === -1) expandedDrivers.value.push(driverId);
-            else expandedDrivers.value.splice(idx, 1);
-        };
+    const toggleExpand = (driverId) => {
+      const idx = expandedDrivers.value.indexOf(driverId);
+      if (idx === -1) expandedDrivers.value.push(driverId);
+      else expandedDrivers.value.splice(idx, 1);
+    };
 
-        const formatTime = (isoStr) => {
-            if (!isoStr) return '—';
-            try {
-                const d = new Date(isoStr);
-                return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-            } catch { return '—'; }
-        };
-
-        const loadDailySummary = async () => {
-            if (!props.user?.restaurant_id && props.user?.role !== 'admin') return;
-            const restaurantId = props.user?.restaurant_id;
-            if (!restaurantId) return;
-
-            loadingDay.value = true;
-            dayError.value = null;
-            try {
-                const res = await api.get(`/dashboard/deliveries/daily-summary/${restaurantId}`);
-                const data = res.data;
-                summaryDate.value      = data.date;
-                totalDeliveries.value  = data.total_deliveries_today;
-                totalCash.value        = data.total_cash_collected_today;
-                driverSummary.value    = data.drivers;
-            } catch (err) {
-                const status = err.response?.status;
-                const detail = err.response?.data?.detail;
-                if (status === 403) {
-                    dayError.value = "Permission refusée pour accéder au résumé des livraisons.";
-                } else {
-                    dayError.value = detail || "Impossible de charger le résumé des livraisons.";
-                }
-                console.error('[DriversManager] daily summary error:', err);
-            } finally {
-                loadingDay.value = false;
-            }
-        };
-
-        const loadDriversList = async () => {
-            loadingDrivers.value = true;
-            try {
-                const res = await api.get('/admin/drivers');
-                driversList.value = res.data;
-            } catch (err) {
-                console.error('[DriversManager] list error:', err);
-            } finally {
-                loadingDrivers.value = false;
-            }
-        };
-
-        const addDriver = async () => {
-            adding.value = true;
-            try {
-                await api.post('/admin/drivers', newDriver.value);
-                newDriver.value = { name: '', wa_id: '' };
-                await loadDriversList();
-                await loadDailySummary(); // refresh summary too
-            } catch (err) {
-                const detail = err.response?.data?.detail || 'Échec de l\'ajout du livreur.';
-                alert(detail);
-                console.error('[DriversManager] add error:', err);
-            } finally {
-                adding.value = false;
-            }
-        };
-
-        const deleteDriver = async (id) => {
-            if (!confirm('Supprimer cet agent définitivement ?')) return;
-            try {
-                await api.delete('/admin/drivers/' + id);
-                await loadDriversList();
-            } catch (err) {
-                const detail = err.response?.data?.detail || 'Échec de la suppression.';
-                alert(detail);
-                console.error('[DriversManager] delete error:', err);
-            }
-        };
-
-        const refreshAll = async () => {
-            await Promise.all([loadDailySummary(), loadDriversList()]);
-        };
-
-        onMounted(() => {
-            loadDailySummary();
-            loadDriversList();
+    const formatTime = (isoStr) => {
+      if (!isoStr) return "—";
+      try {
+        const d = new Date(isoStr);
+        return d.toLocaleTimeString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit",
         });
+      } catch {
+        return "—";
+      }
+    };
 
-        return {
-            summaryDate, totalDeliveries, totalCash, driverSummary,
-            loadingDay, dayError, expandedDrivers,
-            driversList, loadingDrivers, adding, newDriver,
-            toggleExpand, formatTime, addDriver, deleteDriver, refreshAll,
-        };
-    }
+    const loadDailySummary = async () => {
+      if (!props.user?.restaurant_id && props.user?.role !== "admin") return;
+      const restaurantId = props.user?.restaurant_id;
+      if (!restaurantId) return;
+
+      loadingDay.value = true;
+      dayError.value = null;
+      try {
+        const res = await api.get(
+          `/dashboard/deliveries/daily-summary/${restaurantId}`,
+        );
+        const data = res.data;
+        summaryDate.value = data.date;
+        totalDeliveries.value = data.total_deliveries_today;
+        totalCash.value = data.total_cash_collected_today;
+        driverSummary.value = data.drivers;
+      } catch (err) {
+        const status = err.response?.status;
+        const detail = err.response?.data?.detail;
+        if (status === 403) {
+          dayError.value =
+            "Permission refusée pour accéder au résumé des livraisons.";
+        } else {
+          dayError.value =
+            detail || "Impossible de charger le résumé des livraisons.";
+        }
+        console.error("[DriversManager] daily summary error:", err);
+      } finally {
+        loadingDay.value = false;
+      }
+    };
+
+    const loadDriversList = async () => {
+      loadingDrivers.value = true;
+      try {
+        const res = await api.get("/admin/drivers");
+        driversList.value = res.data;
+      } catch (err) {
+        console.error("[DriversManager] list error:", err);
+      } finally {
+        loadingDrivers.value = false;
+      }
+    };
+
+    const addDriver = async () => {
+      adding.value = true;
+      try {
+        await api.post("/admin/drivers", newDriver.value);
+        newDriver.value = { name: "", wa_id: "" };
+        await loadDriversList();
+        await loadDailySummary(); // refresh summary too
+      } catch (err) {
+        const detail =
+          err.response?.data?.detail || "Échec de l'ajout du livreur.";
+        alert(detail);
+        console.error("[DriversManager] add error:", err);
+      } finally {
+        adding.value = false;
+      }
+    };
+
+    const deleteDriver = async (id) => {
+      if (!confirm("Supprimer cet agent définitivement ?")) return;
+      try {
+        await api.delete("/admin/drivers/" + id);
+        await loadDriversList();
+      } catch (err) {
+        const detail = err.response?.data?.detail || "Échec de la suppression.";
+        alert(detail);
+        console.error("[DriversManager] delete error:", err);
+      }
+    };
+
+    const refreshAll = async () => {
+      await Promise.all([loadDailySummary(), loadDriversList()]);
+    };
+
+    onMounted(() => {
+      loadDailySummary();
+      loadDriversList();
+    });
+
+    return {
+      summaryDate,
+      totalDeliveries,
+      totalCash,
+      driverSummary,
+      loadingDay,
+      dayError,
+      expandedDrivers,
+      driversList,
+      loadingDrivers,
+      adding,
+      newDriver,
+      toggleExpand,
+      formatTime,
+      addDriver,
+      deleteDriver,
+      refreshAll,
+    };
+  },
 };

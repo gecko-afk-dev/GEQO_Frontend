@@ -1,9 +1,13 @@
-import { ref, onMounted, computed } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { api } from '../api.js';
+import {
+  ref,
+  onMounted,
+  computed,
+} from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import { api } from "../api.js";
 
 export default {
-    name: 'AuditLog',
-    template: `
+  name: "AuditLog",
+  template: `
         <div class="space-y-6">
             <!-- Header section -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
@@ -80,105 +84,112 @@ export default {
             </div>
         </div>
     `,
-    setup() {
-        const logs = ref([]);
-        const loading = ref(true);
-        const limit = ref(50);
-        const offset = ref(0);
+  setup() {
+    const logs = ref([]);
+    const loading = ref(true);
+    const limit = ref(50);
+    const offset = ref(0);
 
-        const fetchLogs = async (newOffset = 0) => {
-            loading.value = true;
-            try {
-                const res = await api.get(`/admin/audit-log?limit=${limit.value}&offset=${newOffset}`);
-                logs.value = res.data;
-                offset.value = newOffset;
-            } catch (err) {
-                console.error(err);
-            } finally {
-                loading.value = false;
-            }
-        };
+    const fetchLogs = async (newOffset = 0) => {
+      loading.value = true;
+      try {
+        const res = await api.get(
+          `/admin/audit-log?limit=${limit.value}&offset=${newOffset}`,
+        );
+        logs.value = res.data;
+        offset.value = newOffset;
+      } catch (err) {
+        console.error(err);
+      } finally {
+        loading.value = false;
+      }
+    };
 
-        const formatTimestamp = (isoString) => {
-            if (!isoString) return '-';
-            const date = new Date(isoString);
-            return date.toLocaleString();
-        };
+    const formatTimestamp = (isoString) => {
+      if (!isoString) return "-";
+      const date = new Date(isoString);
+      return date.toLocaleString();
+    };
 
-        const formatAction = (action) => {
-            return action.replace(/_/g, ' ');
-        };
+    const formatAction = (action) => {
+      return action.replace(/_/g, " ");
+    };
 
-        const actionBadgeClass = (action) => {
-            if (action.includes('STAFF_INVITED') || action.includes('INVITE')) {
-                return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-            }
-            if (action.includes('ORDER')) {
-                return 'bg-emerald-50 text-emerald-700 border border-blue-200';
-            }
-            if (action.includes('TOGGLE') || action.includes('STATUS')) {
-                return 'bg-amber-50 text-amber-700 border border-amber-200';
-            }
-            if (action.includes('REMOVED') || action.includes('DELETE') || action.includes('SUSPEND') || action.includes('DEBIT')) {
-                return 'bg-rose-50 text-rose-700 border border-rose-200';
-            }
-            if (action.includes('BILLING') || action.includes('CREDIT')) {
-                return 'bg-purple-50 text-purple-700 border border-purple-200';
-            }
-            return 'bg-slate-100 text-slate-700 border border-slate-200';
-        };
+    const actionBadgeClass = (action) => {
+      if (action.includes("STAFF_INVITED") || action.includes("INVITE")) {
+        return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+      }
+      if (action.includes("ORDER")) {
+        return "bg-emerald-50 text-emerald-700 border border-blue-200";
+      }
+      if (action.includes("TOGGLE") || action.includes("STATUS")) {
+        return "bg-amber-50 text-amber-700 border border-amber-200";
+      }
+      if (
+        action.includes("REMOVED") ||
+        action.includes("DELETE") ||
+        action.includes("SUSPEND") ||
+        action.includes("DEBIT")
+      ) {
+        return "bg-rose-50 text-rose-700 border border-rose-200";
+      }
+      if (action.includes("BILLING") || action.includes("CREDIT")) {
+        return "bg-purple-50 text-purple-700 border border-purple-200";
+      }
+      return "bg-slate-100 text-slate-700 border border-slate-200";
+    };
 
-        const generateReadableDetail = (log) => {
-            if (!log.detail) return 'Action performed without additional details.';
-            
-            // Legacy strings wrapped in {"message": ...}
-            if (log.detail.message) {
-                return log.detail.message;
-            }
+    const generateReadableDetail = (log) => {
+      if (!log.detail) return "Action performed without additional details.";
 
-            switch(log.action) {
-                case 'ORDER_STATUS_UPDATED':
-                    return `Updated order from '${log.detail.old}' to '${log.detail.new}'`;
-                case 'ITEM_AVAILABILITY_TOGGLED':
-                    const status = log.detail.is_available ? 'Available' : 'Out of Stock';
-                    return `Marked menu item '${log.detail.item_name}' as ${status}`;
-                case 'BILLING_ADJUSTED':
-                    return `Adjusted wallet balance by ${log.detail.amount > 0 ? '+' : ''}${log.detail.amount} MAD (${log.detail.type}). Reason: ${log.detail.description}`;
-                default:
-                    // Fallback for unknown JSON structures
-                    return JSON.stringify(log.detail);
-            }
-        };
+      // Legacy strings wrapped in {"message": ...}
+      if (log.detail.message) {
+        return log.detail.message;
+      }
 
-        const currentPage = computed(() => {
-            return Math.floor(offset.value / limit.value) + 1;
-        });
+      switch (log.action) {
+        case "ORDER_STATUS_UPDATED":
+          return `Updated order from '${log.detail.old}' to '${log.detail.new}'`;
+        case "ITEM_AVAILABILITY_TOGGLED":
+          const status = log.detail.is_available ? "Available" : "Out of Stock";
+          return `Marked menu item '${log.detail.item_name}' as ${status}`;
+        case "BILLING_ADJUSTED":
+          return `Adjusted wallet balance by ${log.detail.amount > 0 ? "+" : ""}${log.detail.amount} MAD (${log.detail.type}). Reason: ${log.detail.description}`;
+        default:
+          // Fallback for unknown JSON structures
+          return JSON.stringify(log.detail);
+      }
+    };
 
-        const nextPage = () => {
-            fetchLogs(offset.value + limit.value);
-        };
+    const currentPage = computed(() => {
+      return Math.floor(offset.value / limit.value) + 1;
+    });
 
-        const prevPage = () => {
-            fetchLogs(Math.max(0, offset.value - limit.value));
-        };
+    const nextPage = () => {
+      fetchLogs(offset.value + limit.value);
+    };
 
-        onMounted(() => {
-            fetchLogs(0);
-        });
+    const prevPage = () => {
+      fetchLogs(Math.max(0, offset.value - limit.value));
+    };
 
-        return {
-            logs,
-            loading,
-            limit,
-            offset,
-            currentPage,
-            fetchLogs,
-            formatTimestamp,
-            formatAction,
-            actionBadgeClass,
-            generateReadableDetail,
-            nextPage,
-            prevPage
-        };
-    }
+    onMounted(() => {
+      fetchLogs(0);
+    });
+
+    return {
+      logs,
+      loading,
+      limit,
+      offset,
+      currentPage,
+      fetchLogs,
+      formatTimestamp,
+      formatAction,
+      actionBadgeClass,
+      generateReadableDetail,
+      nextPage,
+      prevPage,
+    };
+  },
 };
