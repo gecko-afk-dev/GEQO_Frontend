@@ -1,8 +1,8 @@
-import { ref, computed } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { api } from '../api.js';
+import { ref, computed } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import { api } from "../api.js";
 
 export default {
-    template: `
+  template: `
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm">
             <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
                 <div class="text-center mb-6">
@@ -59,47 +59,60 @@ export default {
             </div>
         </div>
     `,
-    props: ['user'],
-    emits: ['updated'],
-    setup(props, { emit }) {
-        const password = ref('');
-        const confirmPassword = ref('');
-        const loading = ref(false);
-        const error = ref(null);
+  props: ["user"],
+  emits: ["updated"],
+  setup(props, { emit }) {
+    const password = ref("");
+    const confirmPassword = ref("");
+    const loading = ref(false);
+    const error = ref(null);
 
-        const rules = computed(() => ({
-            hasMinLength: password.value.length >= 8,
-            hasNumber:    /\d/.test(password.value),
-            hasUpper:     /[A-Z]/.test(password.value),
-            hasSymbol:    /[!@#$%^&*(),.?":{}|<>]/.test(password.value),
-        }));
+    const rules = computed(() => ({
+      hasMinLength: password.value.length >= 8,
+      hasNumber: /\d/.test(password.value),
+      hasUpper: /[A-Z]/.test(password.value),
+      hasSymbol: /[!@#$%^&*(),.?":{}|<>]/.test(password.value),
+    }));
 
-        const isPasswordStrong = computed(() =>
-            rules.value.hasMinLength &&
-            rules.value.hasNumber &&
-            rules.value.hasUpper &&
-            rules.value.hasSymbol
-        );
+    const isPasswordStrong = computed(
+      () =>
+        rules.value.hasMinLength &&
+        rules.value.hasNumber &&
+        rules.value.hasUpper &&
+        rules.value.hasSymbol,
+    );
 
-        const isFormValid = computed(() =>
-            isPasswordStrong.value &&
-            password.value === confirmPassword.value
-        );
+    const isFormValid = computed(
+      () => isPasswordStrong.value && password.value === confirmPassword.value,
+    );
 
-        const submit = async () => {
-            if (!isFormValid.value) return;
-            loading.value = true;
-            error.value = null;
-            try {
-                await api.post('/auth/force-change-password', { new_password: password.value });
-                emit('updated');
-            } catch (err) {
-                error.value = err.response?.data?.detail || 'Failed to update password. Please try again.';
-            } finally {
-                loading.value = false;
-            }
-        };
+    const submit = async () => {
+      if (!isFormValid.value) return;
+      loading.value = true;
+      error.value = null;
+      try {
+        await api.post("/auth/force-change-password", {
+          new_password: password.value,
+        });
+        emit("updated");
+      } catch (err) {
+        error.value =
+          err.response?.data?.detail ||
+          "Failed to update password. Please try again.";
+      } finally {
+        loading.value = false;
+      }
+    };
 
-        return { password, confirmPassword, loading, error, rules, isPasswordStrong, isFormValid, submit };
-    }
-}
+    return {
+      password,
+      confirmPassword,
+      loading,
+      error,
+      rules,
+      isPasswordStrong,
+      isFormValid,
+      submit,
+    };
+  },
+};

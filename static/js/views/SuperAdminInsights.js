@@ -1,15 +1,19 @@
-import { ref, computed, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { api } from '../api.js';
+import {
+  ref,
+  computed,
+  onMounted,
+} from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import { api } from "../api.js";
 
-const API_BASE = 'https://api.mygeqo.com/api/v1/admin';
+const API_BASE = "https://api.mygeqo.com/api/v1/admin";
 
 export default {
-    // ── Props — receives user from Dashboard ─────────────────────────────────
-    props: {
-        user: { type: Object, required: true },
-    },
+  // ── Props — receives user from Dashboard ─────────────────────────────────
+  props: {
+    user: { type: Object, required: true },
+  },
 
-    template: `
+  template: `
     <div style="background:#0A0A0A;min-height:100vh;font-family:'Inter',system-ui,sans-serif;color:#FAFAFA;padding:0;">
 
         <!-- ── Top Header Bar ──────────────────────────────────────────────── -->
@@ -374,262 +378,430 @@ export default {
     </div>
     `,
 
-    setup(props) {
-        const now = new Date();
-        const selectedMonth = ref(now.getMonth() + 1);
-        const selectedYear = ref(now.getFullYear());
-        const months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-        const years = Array.from({ length: 3 }, (_, i) => now.getFullYear() - i);
+  setup(props) {
+    const now = new Date();
+    const selectedMonth = ref(now.getMonth() + 1);
+    const selectedYear = ref(now.getFullYear());
+    const months = [
+      "Janvier",
+      "Février",
+      "Mars",
+      "Avril",
+      "Mai",
+      "Juin",
+      "Juillet",
+      "Août",
+      "Septembre",
+      "Octobre",
+      "Novembre",
+      "Décembre",
+    ];
+    const years = Array.from({ length: 3 }, (_, i) => now.getFullYear() - i);
 
-        // Role helpers — strictly compare against backend string 'admin'
-        const isAdmin = computed(() => props.user?.role === 'admin');
-        const myRestaurantId = computed(() => props.user?.restaurant_id ?? null);
-        const myRestaurantName = ref('Mon Restaurant');
-        const myRestaurant = ref(null);
+    // Role helpers — strictly compare against backend string 'admin'
+    const isAdmin = computed(() => props.user?.role === "admin");
+    const myRestaurantId = computed(() => props.user?.restaurant_id ?? null);
+    const myRestaurantName = ref("Mon Restaurant");
+    const myRestaurant = ref(null);
 
-        // ── Shared state ──────────────────────────────────────────────────────
-        const restaurants = ref([]);
-        const analyticsMap = ref({});
-        const loading = ref(true);
-        const errorMsg = ref('');
-        const selectedRestoIds = ref([]);
-        const dispatching = ref(false);
-        const dispatchProgress = ref(0);
-        const dispatchStatus = ref(null);
+    // ── Shared state ──────────────────────────────────────────────────────
+    const restaurants = ref([]);
+    const analyticsMap = ref({});
+    const loading = ref(true);
+    const errorMsg = ref("");
+    const selectedRestoIds = ref([]);
+    const dispatching = ref(false);
+    const dispatchProgress = ref(0);
+    const dispatchStatus = ref(null);
 
-        // Owner-specific analytics
-        const ownerAnalytics = ref(null);
+    // Owner-specific analytics
+    const ownerAnalytics = ref(null);
 
-        // ── Platform KPI strip ────────────────────────────────────────────────
-        const platformKpis = computed(() => {
-            if (isAdmin.value) {
-                const active = restaurants.value.filter(r => r.status === 'active').length;
-                const totalOrders = Object.values(analyticsMap.value).reduce((s, a) => s + (a.orders_month || 0), 0);
-                const totalGmv = Object.values(analyticsMap.value).reduce((s, a) => s + (a.revenue_month || 0), 0);
-                return [
-                    { label: 'Restos Actifs', value: active, color: '#05CD99' },
-                    { label: 'Commandes 30J (flotte)', value: totalOrders.toLocaleString('fr-FR'), color: '#F59E0B' },
-                    { label: 'GMV 30J (MAD)', value: totalGmv.toFixed(0) + ' MAD', color: '#FAFAFA' },
-                    { label: 'Tolls Collectés', value: (totalOrders * 3).toFixed(0) + ' MAD', color: '#F59E0B' },
-                ];
-            }
-            // Owner — single venue
-            const a = ownerAnalytics.value;
-            const wb = myRestaurant.value?.wallet_balance ?? 0;
-            return [
-                { label: 'Commandes ce mois', value: a?.orders_month ?? '—', color: '#F59E0B' },
-                { label: 'Chiffre d\'affaires (30J)', value: a ? a.revenue_month.toFixed(0) + ' MAD' : '—', color: '#FAFAFA' },
-                { label: 'Ticket moyen', value: a && a.orders_month > 0 ? (a.revenue_month / a.orders_month).toFixed(0) + ' MAD' : '—', color: '#05CD99' },
-                { label: 'Solde portefeuille', value: wb.toFixed(2) + ' MAD', color: wb < 0 ? '#F87171' : '#05CD99' },
-            ];
-        });
-
-        // ── Owner: simulated peak rush hours based on total monthly orders ────
-        // Real hourly breakdown would require a dedicated backend endpoint.
-        // We simulate a realistic Moroccan F&B curve seeded from actual order volume.
-        const peakHours = computed(() => {
-            const base = ownerAnalytics.value?.orders_month ?? 0;
-            // Weight curve: lunch 12-14h, dinner 19-22h dominant
-            const weights = [0,0,0,0,0,0, 0.5,1,1.5,2,2.5,3, 5,4,3,2,2,3, 4,5,4.5,3,2,1];
-            const total = weights.reduce((a, b) => a + b, 0);
-            return weights.map((w, i) => ({
-                val: Math.round((w / total) * base),
-                label: i.toString().padStart(2, '0') + 'h',
-                peak: w >= 4,
-            }));
-        });
-        const maxPeak = computed(() => Math.max(1, ...peakHours.value.map(h => h.val)));
-        const peakHourLabel = computed(() => {
-            const idx = peakHours.value.indexOf(peakHours.value.reduce((a, b) => a.val > b.val ? a : b));
-            return idx.toString().padStart(2, '0') + 'h';
-        });
-
-        // ── Owner: conversion funnel ──────────────────────────────────────────
-        // menu_viewed → product_added → checkout_started → order_placed
-        // Without a dedicated analytics query, we derive approximate steps.
-        const conversionFunnel = computed(() => {
-            const orders = ownerAnalytics.value?.orders_month ?? 0;
-            // Industry-typical conversion ratios for WhatsApp-first funnels
-            const menuViewed   = Math.round(orders * 4.2);
-            const addedToCart  = Math.round(orders * 2.1);
-            const checkoutStart= Math.round(orders * 1.25);
-            const placed       = orders;
-            const top = Math.max(menuViewed, 1);
-            return [
-                { label: 'Menu Vu',      count: menuViewed,    pct: 100 },
-                { label: 'Produit Ajouté',count: addedToCart,  pct: Math.round(addedToCart  / top * 100) },
-                { label: 'Checkout',      count: checkoutStart, pct: Math.round(checkoutStart / top * 100) },
-                { label: 'Commandé',      count: placed,        pct: Math.round(placed / top * 100) },
-            ];
-        });
-
-        // ── Owner: key metrics cards ──────────────────────────────────────────
-        const ownerMetrics = computed(() => {
-            const a = ownerAnalytics.value;
-            const wb = myRestaurant.value?.wallet_balance ?? 0;
-            if (!a) return [];
-            return [
-                { label: 'Commandes Aujourd\'hui', value: a.orders_today ?? '—', color: '#F59E0B' },
-                { label: 'CA Aujourd\'hui', value: (a.revenue_today ?? 0).toFixed(0) + ' MAD', color: '#FAFAFA' },
-                { label: 'Ticket Moyen (mois)', value: a.orders_month > 0 ? (a.revenue_month / a.orders_month).toFixed(0) + ' MAD' : '—', color: '#05CD99' },
-                { label: 'Tolérance Utilisée', value: wb < 0 ? Math.min(25, Math.abs(Math.round(wb / 3))) + '/25' : 'OK', color: wb < -60 ? '#F87171' : '#05CD99' },
-            ];
-        });
-
-        // ── Admin: Select All helpers ─────────────────────────────────────────
-        const allSelected = computed(() =>
-            restaurants.value.length > 0 && selectedRestoIds.value.length === restaurants.value.length
+    // ── Platform KPI strip ────────────────────────────────────────────────
+    const platformKpis = computed(() => {
+      if (isAdmin.value) {
+        const active = restaurants.value.filter(
+          (r) => r.status === "active",
+        ).length;
+        const totalOrders = Object.values(analyticsMap.value).reduce(
+          (s, a) => s + (a.orders_month || 0),
+          0,
         );
-        const someSelected = computed(() => selectedRestoIds.value.length > 0);
-        const toggleSelectAll = () => {
-            selectedRestoIds.value = allSelected.value ? [] : restaurants.value.map(r => r.id);
-        };
+        const totalGmv = Object.values(analyticsMap.value).reduce(
+          (s, a) => s + (a.revenue_month || 0),
+          0,
+        );
+        return [
+          { label: "Restos Actifs", value: active, color: "#05CD99" },
+          {
+            label: "Commandes 30J (flotte)",
+            value: totalOrders.toLocaleString("fr-FR"),
+            color: "#F59E0B",
+          },
+          {
+            label: "GMV 30J (MAD)",
+            value: totalGmv.toFixed(0) + " MAD",
+            color: "#FAFAFA",
+          },
+          {
+            label: "Tolls Collectés",
+            value: (totalOrders * 3).toFixed(0) + " MAD",
+            color: "#F59E0B",
+          },
+        ];
+      }
+      // Owner — single venue
+      const a = ownerAnalytics.value;
+      const wb = myRestaurant.value?.wallet_balance ?? 0;
+      return [
+        {
+          label: "Commandes ce mois",
+          value: a?.orders_month ?? "—",
+          color: "#F59E0B",
+        },
+        {
+          label: "Chiffre d'affaires (30J)",
+          value: a ? a.revenue_month.toFixed(0) + " MAD" : "—",
+          color: "#FAFAFA",
+        },
+        {
+          label: "Ticket moyen",
+          value:
+            a && a.orders_month > 0
+              ? (a.revenue_month / a.orders_month).toFixed(0) + " MAD"
+              : "—",
+          color: "#05CD99",
+        },
+        {
+          label: "Solde portefeuille",
+          value: wb.toFixed(2) + " MAD",
+          color: wb < 0 ? "#F87171" : "#05CD99",
+        },
+      ];
+    });
 
-        const statusBadgeStyle = (status) => ({
-            background: status === 'active' ? '#052E16' : status === 'suspended' ? '#3B0808' : '#1C1917',
-            color: status === 'active' ? '#86EFAC' : status === 'suspended' ? '#FCA5A5' : '#A8A29E',
+    // ── Owner: simulated peak rush hours based on total monthly orders ────
+    // Real hourly breakdown would require a dedicated backend endpoint.
+    // We simulate a realistic Moroccan F&B curve seeded from actual order volume.
+    const peakHours = computed(() => {
+      const base = ownerAnalytics.value?.orders_month ?? 0;
+      // Weight curve: lunch 12-14h, dinner 19-22h dominant
+      const weights = [
+        0, 0, 0, 0, 0, 0, 0.5, 1, 1.5, 2, 2.5, 3, 5, 4, 3, 2, 2, 3, 4, 5, 4.5,
+        3, 2, 1,
+      ];
+      const total = weights.reduce((a, b) => a + b, 0);
+      return weights.map((w, i) => ({
+        val: Math.round((w / total) * base),
+        label: i.toString().padStart(2, "0") + "h",
+        peak: w >= 4,
+      }));
+    });
+    const maxPeak = computed(() =>
+      Math.max(1, ...peakHours.value.map((h) => h.val)),
+    );
+    const peakHourLabel = computed(() => {
+      const idx = peakHours.value.indexOf(
+        peakHours.value.reduce((a, b) => (a.val > b.val ? a : b)),
+      );
+      return idx.toString().padStart(2, "0") + "h";
+    });
+
+    // ── Owner: conversion funnel ──────────────────────────────────────────
+    // menu_viewed → product_added → checkout_started → order_placed
+    // Without a dedicated analytics query, we derive approximate steps.
+    const conversionFunnel = computed(() => {
+      const orders = ownerAnalytics.value?.orders_month ?? 0;
+      // Industry-typical conversion ratios for WhatsApp-first funnels
+      const menuViewed = Math.round(orders * 4.2);
+      const addedToCart = Math.round(orders * 2.1);
+      const checkoutStart = Math.round(orders * 1.25);
+      const placed = orders;
+      const top = Math.max(menuViewed, 1);
+      return [
+        { label: "Menu Vu", count: menuViewed, pct: 100 },
+        {
+          label: "Produit Ajouté",
+          count: addedToCart,
+          pct: Math.round((addedToCart / top) * 100),
+        },
+        {
+          label: "Checkout",
+          count: checkoutStart,
+          pct: Math.round((checkoutStart / top) * 100),
+        },
+        {
+          label: "Commandé",
+          count: placed,
+          pct: Math.round((placed / top) * 100),
+        },
+      ];
+    });
+
+    // ── Owner: key metrics cards ──────────────────────────────────────────
+    const ownerMetrics = computed(() => {
+      const a = ownerAnalytics.value;
+      const wb = myRestaurant.value?.wallet_balance ?? 0;
+      if (!a) return [];
+      return [
+        {
+          label: "Commandes Aujourd'hui",
+          value: a.orders_today ?? "—",
+          color: "#F59E0B",
+        },
+        {
+          label: "CA Aujourd'hui",
+          value: (a.revenue_today ?? 0).toFixed(0) + " MAD",
+          color: "#FAFAFA",
+        },
+        {
+          label: "Ticket Moyen (mois)",
+          value:
+            a.orders_month > 0
+              ? (a.revenue_month / a.orders_month).toFixed(0) + " MAD"
+              : "—",
+          color: "#05CD99",
+        },
+        {
+          label: "Tolérance Utilisée",
+          value:
+            wb < 0 ? Math.min(25, Math.abs(Math.round(wb / 3))) + "/25" : "OK",
+          color: wb < -60 ? "#F87171" : "#05CD99",
+        },
+      ];
+    });
+
+    // ── Admin: Select All helpers ─────────────────────────────────────────
+    const allSelected = computed(
+      () =>
+        restaurants.value.length > 0 &&
+        selectedRestoIds.value.length === restaurants.value.length,
+    );
+    const someSelected = computed(() => selectedRestoIds.value.length > 0);
+    const toggleSelectAll = () => {
+      selectedRestoIds.value = allSelected.value
+        ? []
+        : restaurants.value.map((r) => r.id);
+    };
+
+    const statusBadgeStyle = (status) => ({
+      background:
+        status === "active"
+          ? "#052E16"
+          : status === "suspended"
+            ? "#3B0808"
+            : "#1C1917",
+      color:
+        status === "active"
+          ? "#86EFAC"
+          : status === "suspended"
+            ? "#FCA5A5"
+            : "#A8A29E",
+    });
+
+    const getCrmExportUrl = (restaurantId) =>
+      `${API_BASE}/crm/export/${restaurantId}`;
+    const getPdfPreviewUrl = (restaurantId) =>
+      `${API_BASE}/reports/preview/${restaurantId}?month=${selectedMonth.value}&year=${selectedYear.value}`;
+
+    // ── Data loaders ──────────────────────────────────────────────────────
+    const loadData = async () => {
+      loading.value = true;
+      errorMsg.value = "";
+      try {
+        if (isAdmin.value) {
+          // Admin: fetch all restaurants + fleet analytics
+          const [restoRes, analyticsRes] = await Promise.all([
+            api.get("/admin/restaurants"),
+            api.get("/admin/analytics/restaurants"),
+          ]);
+          restaurants.value = restoRes.data;
+          const map = {};
+          for (const a of analyticsRes.data || []) map[a.restaurant_id] = a;
+          analyticsMap.value = map;
+        } else {
+          // Owner: fetch only own restaurant data + PDF manifest
+          const [dashRes, analyticsRes] = await Promise.all([
+            api.get("/admin/restaurant/dashboard"),
+            api.get("/admin/analytics/restaurants"),
+          ]);
+          const resto = dashRes.data?.restaurant;
+          if (resto) {
+            myRestaurant.value = resto;
+            myRestaurantName.value = resto.name;
+          }
+          // Filter analytics to own restaurant
+          const rid = myRestaurantId.value;
+          const allAnalytics = analyticsRes.data || [];
+          ownerAnalytics.value =
+            allAnalytics.find((a) => a.restaurant_id === rid) ?? null;
+
+          // Load PDF manifest (non-blocking — tier failure is handled gracefully)
+          loadPdfManifest();
+        }
+      } catch (err) {
+        errorMsg.value =
+          "Impossible de charger les données. Vérifiez votre connexion.";
+        console.error("[Insights] load error", err);
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // ── PDF Manifest (Owner only) ─────────────────────────────────────────
+    const pdfReport = ref(null);
+    const pdfLoading = ref(false);
+    const pdfError = ref("");
+
+    const monthNames = [
+      "Janvier",
+      "Février",
+      "Mars",
+      "Avril",
+      "Mai",
+      "Juin",
+      "Juillet",
+      "Août",
+      "Septembre",
+      "Octobre",
+      "Novembre",
+      "Décembre",
+    ];
+    const monthName = (m) => monthNames[m - 1] || "";
+
+    const loadPdfManifest = async () => {
+      pdfLoading.value = true;
+      pdfError.value = "";
+      pdfReport.value = null;
+      try {
+        const res = await api.get("/dashboard/reports/my-latest-pdf");
+        pdfReport.value = res.data;
+      } catch (err) {
+        const status = err.response?.status;
+        const detail = err.response?.data?.detail || "";
+        if (status === 403) {
+          pdfError.value =
+            detail || "Les rapports PDF nécessitent le forfait Scale ou Multi.";
+        } else if (status !== 401) {
+          // 401 is handled globally; any other error show a message
+          pdfError.value = "Impossible de charger le rapport PDF.";
+        }
+      } finally {
+        pdfLoading.value = false;
+      }
+    };
+
+    // ── Dispatch helpers ──────────────────────────────────────────────────
+    const dispatchSinglePdf = async (restaurantId, name) => {
+      if (dispatching.value || !restaurantId) return;
+      dispatching.value = true;
+      dispatchProgress.value = 0;
+      dispatchStatus.value = {
+        type: "progress",
+        msg: `⏳ Envoi du rapport pour ${name}…`,
+      };
+      try {
+        const res = await api.post("/admin/reports/batch-dispatch", {
+          restaurant_ids: [restaurantId],
+          month: selectedMonth.value,
+          year: selectedYear.value,
         });
-
-        const getCrmExportUrl = (restaurantId) => `${API_BASE}/crm/export/${restaurantId}`;
-        const getPdfPreviewUrl = (restaurantId) =>
-            `${API_BASE}/reports/preview/${restaurantId}?month=${selectedMonth.value}&year=${selectedYear.value}`;
-
-        // ── Data loaders ──────────────────────────────────────────────────────
-        const loadData = async () => {
-            loading.value = true;
-            errorMsg.value = '';
-            try {
-                if (isAdmin.value) {
-                    // Admin: fetch all restaurants + fleet analytics
-                    const [restoRes, analyticsRes] = await Promise.all([
-                        api.get('/admin/restaurants'),
-                        api.get('/admin/analytics/restaurants'),
-                    ]);
-                    restaurants.value = restoRes.data;
-                    const map = {};
-                    for (const a of (analyticsRes.data || [])) map[a.restaurant_id] = a;
-                    analyticsMap.value = map;
-                } else {
-                    // Owner: fetch only own restaurant data + PDF manifest
-                    const [dashRes, analyticsRes] = await Promise.all([
-                        api.get('/admin/restaurant/dashboard'),
-                        api.get('/admin/analytics/restaurants'),
-                    ]);
-                    const resto = dashRes.data?.restaurant;
-                    if (resto) {
-                        myRestaurant.value = resto;
-                        myRestaurantName.value = resto.name;
-                    }
-                    // Filter analytics to own restaurant
-                    const rid = myRestaurantId.value;
-                    const allAnalytics = analyticsRes.data || [];
-                    ownerAnalytics.value = allAnalytics.find(a => a.restaurant_id === rid) ?? null;
-
-                    // Load PDF manifest (non-blocking — tier failure is handled gracefully)
-                    loadPdfManifest();
-                }
-            } catch (err) {
-                errorMsg.value = 'Impossible de charger les données. Vérifiez votre connexion.';
-                console.error('[Insights] load error', err);
-            } finally {
-                loading.value = false;
-            }
+        const d = res.data;
+        dispatchStatus.value =
+          d.dispatched > 0
+            ? {
+                type: "success",
+                msg: `✅ Rapport envoyé à ${name} avec succès.`,
+              }
+            : {
+                type: "error",
+                msg: `❌ Échec de l'envoi pour ${name}. Vérifiez les logs.`,
+              };
+      } catch (err) {
+        dispatchStatus.value = {
+          type: "error",
+          msg: `❌ Erreur réseau lors de l'envoi.`,
         };
+      } finally {
+        dispatching.value = false;
+      }
+    };
 
-        // ── PDF Manifest (Owner only) ─────────────────────────────────────────
-        const pdfReport  = ref(null);
-        const pdfLoading = ref(false);
-        const pdfError   = ref('');
-
-        const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-        const monthName = (m) => monthNames[(m - 1)] || '';
-
-        const loadPdfManifest = async () => {
-            pdfLoading.value = true;
-            pdfError.value   = '';
-            pdfReport.value  = null;
-            try {
-                const res = await api.get('/dashboard/reports/my-latest-pdf');
-                pdfReport.value = res.data;
-            } catch (err) {
-                const status = err.response?.status;
-                const detail = err.response?.data?.detail || '';
-                if (status === 403) {
-                    pdfError.value = detail || 'Les rapports PDF nécessitent le forfait Scale ou Multi.';
-                } else if (status !== 401) {
-                    // 401 is handled globally; any other error show a message
-                    pdfError.value = 'Impossible de charger le rapport PDF.';
-                }
-            } finally {
-                pdfLoading.value = false;
-            }
+    const batchDispatch = async () => {
+      if (selectedRestoIds.value.length === 0 || dispatching.value) return;
+      dispatching.value = true;
+      dispatchProgress.value = 0;
+      const total = selectedRestoIds.value.length;
+      dispatchStatus.value = {
+        type: "progress",
+        msg: `⏳ Envoi de 0/${total} rapports en cours…`,
+      };
+      try {
+        const res = await api.post("/admin/reports/batch-dispatch", {
+          restaurant_ids: selectedRestoIds.value,
+          month: selectedMonth.value,
+          year: selectedYear.value,
+        });
+        const d = res.data;
+        dispatchStatus.value = {
+          type: d.failed === 0 ? "success" : "progress",
+          msg:
+            `✅ ${d.dispatched}/${d.total_requested} rapports envoyés.` +
+            (d.failed > 0
+              ? ` ⚠️ ${d.failed} échec(s) — IDs: ${(d.failed_ids || []).join(", ")}`
+              : ""),
         };
-
-        // ── Dispatch helpers ──────────────────────────────────────────────────
-        const dispatchSinglePdf = async (restaurantId, name) => {
-            if (dispatching.value || !restaurantId) return;
-            dispatching.value = true;
-            dispatchProgress.value = 0;
-            dispatchStatus.value = { type: 'progress', msg: `⏳ Envoi du rapport pour ${name}…` };
-            try {
-                const res = await api.post('/admin/reports/batch-dispatch', {
-                    restaurant_ids: [restaurantId],
-                    month: selectedMonth.value,
-                    year: selectedYear.value,
-                });
-                const d = res.data;
-                dispatchStatus.value = d.dispatched > 0
-                    ? { type: 'success', msg: `✅ Rapport envoyé à ${name} avec succès.` }
-                    : { type: 'error', msg: `❌ Échec de l'envoi pour ${name}. Vérifiez les logs.` };
-            } catch (err) {
-                dispatchStatus.value = { type: 'error', msg: `❌ Erreur réseau lors de l'envoi.` };
-            } finally {
-                dispatching.value = false;
-            }
+        selectedRestoIds.value = [];
+      } catch (err) {
+        dispatchStatus.value = {
+          type: "error",
+          msg: "❌ Erreur réseau lors du dispatch batch.",
         };
+        console.error("[Insights] batch dispatch error", err);
+      } finally {
+        dispatching.value = false;
+      }
+    };
 
-        const batchDispatch = async () => {
-            if (selectedRestoIds.value.length === 0 || dispatching.value) return;
-            dispatching.value = true;
-            dispatchProgress.value = 0;
-            const total = selectedRestoIds.value.length;
-            dispatchStatus.value = { type: 'progress', msg: `⏳ Envoi de 0/${total} rapports en cours…` };
-            try {
-                const res = await api.post('/admin/reports/batch-dispatch', {
-                    restaurant_ids: selectedRestoIds.value,
-                    month: selectedMonth.value,
-                    year: selectedYear.value,
-                });
-                const d = res.data;
-                dispatchStatus.value = {
-                    type: d.failed === 0 ? 'success' : 'progress',
-                    msg: `✅ ${d.dispatched}/${d.total_requested} rapports envoyés.` +
-                         (d.failed > 0 ? ` ⚠️ ${d.failed} échec(s) — IDs: ${(d.failed_ids || []).join(', ')}` : ''),
-                };
-                selectedRestoIds.value = [];
-            } catch (err) {
-                dispatchStatus.value = { type: 'error', msg: '❌ Erreur réseau lors du dispatch batch.' };
-                console.error('[Insights] batch dispatch error', err);
-            } finally {
-                dispatching.value = false;
-            }
-        };
+    onMounted(loadData);
 
-        onMounted(loadData);
-
-        return {
-            isAdmin, myRestaurantId, myRestaurantName, myRestaurant,
-            restaurants, analyticsMap, ownerAnalytics,
-            loading, errorMsg,
-            selectedRestoIds, allSelected, someSelected, toggleSelectAll,
-            dispatching, dispatchProgress, dispatchStatus,
-            platformKpis, statusBadgeStyle,
-            months, years, selectedMonth, selectedYear,
-            peakHours, maxPeak, peakHourLabel,
-            conversionFunnel, ownerMetrics,
-            getCrmExportUrl, getPdfPreviewUrl,
-            dispatchSinglePdf, batchDispatch, loadData,
-            pdfReport, pdfLoading, pdfError, monthName,
-        };
-    }
+    return {
+      isAdmin,
+      myRestaurantId,
+      myRestaurantName,
+      myRestaurant,
+      restaurants,
+      analyticsMap,
+      ownerAnalytics,
+      loading,
+      errorMsg,
+      selectedRestoIds,
+      allSelected,
+      someSelected,
+      toggleSelectAll,
+      dispatching,
+      dispatchProgress,
+      dispatchStatus,
+      platformKpis,
+      statusBadgeStyle,
+      months,
+      years,
+      selectedMonth,
+      selectedYear,
+      peakHours,
+      maxPeak,
+      peakHourLabel,
+      conversionFunnel,
+      ownerMetrics,
+      getCrmExportUrl,
+      getPdfPreviewUrl,
+      dispatchSinglePdf,
+      batchDispatch,
+      loadData,
+      pdfReport,
+      pdfLoading,
+      pdfError,
+      monthName,
+    };
+  },
 };

@@ -1,8 +1,13 @@
-import { ref, onMounted, onUnmounted, computed } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { api } from '../api.js';
+import {
+  ref,
+  onMounted,
+  onUnmounted,
+  computed,
+} from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import { api } from "../api.js";
 
 export default {
-    template: `
+  template: `
         <div class="flex flex-col font-sans select-none h-full">
             <h2 class="text-xl font-bold font-mono tracking-widest uppercase mb-6 text-neutral-800">Fleet Logistics</h2>
 
@@ -67,74 +72,79 @@ export default {
             </div>
         </div>
     `,
-    props: ['user', 'lang'],
-    setup(props) {
-        const deliveries = ref([]);
-        const loading = ref(true);
-        let ws = null;
-        let reconnectTimer = null;
+  props: ["user", "lang"],
+  setup(props) {
+    const deliveries = ref([]);
+    const loading = ref(true);
+    let ws = null;
+    let reconnectTimer = null;
 
-        const dispatchedOrders = computed(() => {
-            return deliveries.value.filter(o => o.status === 'dispatched');
-        });
+    const dispatchedOrders = computed(() => {
+      return deliveries.value.filter((o) => o.status === "dispatched");
+    });
 
-        const deliveredOrders = computed(() => {
-            return deliveries.value.filter(o => o.status === 'delivered');
-        });
+    const deliveredOrders = computed(() => {
+      return deliveries.value.filter((o) => o.status === "delivered");
+    });
 
-        const loadDeliveries = async () => {
-            if (!props.user || !props.user.restaurant_id) return;
-            loading.value = true;
-            try {
-                const res = await api.get('/dashboard/deliveries/' + props.user.restaurant_id);
-                deliveries.value = res.data;
-            } catch (err) {
-                console.error('Failed to load deliveries:', err);
-            } finally {
-                loading.value = false;
-            }
-        };
+    const loadDeliveries = async () => {
+      if (!props.user || !props.user.restaurant_id) return;
+      loading.value = true;
+      try {
+        const res = await api.get(
+          "/dashboard/deliveries/" + props.user.restaurant_id,
+        );
+        deliveries.value = res.data;
+      } catch (err) {
+        console.error("Failed to load deliveries:", err);
+      } finally {
+        loading.value = false;
+      }
+    };
 
-        const initWebSocket = () => {
-            if (!props.user || !props.user.restaurant_id) return;
-            const token = localStorage.getItem('token');
-            if (!token) return;
+    const initWebSocket = () => {
+      if (!props.user || !props.user.restaurant_id) return;
+      const token = localStorage.getItem("token");
+      if (!token) return;
 
-            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${wsProtocol}//${window.location.host}/api/v1/dashboard/ws/${props.user.restaurant_id}`;
-            
-            ws = new WebSocket(wsUrl, ["bearer", token]);
+      const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = `${wsProtocol}//${window.location.host}/api/v1/dashboard/ws/${props.user.restaurant_id}`;
 
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                if (data.event === 'ORDER_STATUS_UPDATED' && (data.new_status === 'dispatched' || data.new_status === 'delivered')) {
-                    loadDeliveries();
-                } else if (data.event === 'NEW_ORDER') {
-                    // Delivery board doesn't care about NEW_ORDER unless we want to track it early.
-                }
-            };
+      ws = new WebSocket(wsUrl, ["bearer", token]);
 
-            ws.onclose = () => {
-                const delay = Math.min(10000, Math.max(1000, Math.random() * 5000));
-                clearTimeout(reconnectTimer);
-                reconnectTimer = setTimeout(initWebSocket, delay);
-            };
-        };
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (
+          data.event === "ORDER_STATUS_UPDATED" &&
+          (data.new_status === "dispatched" || data.new_status === "delivered")
+        ) {
+          loadDeliveries();
+        } else if (data.event === "NEW_ORDER") {
+          // Delivery board doesn't care about NEW_ORDER unless we want to track it early.
+        }
+      };
 
-        onMounted(() => {
-            loadDeliveries();
-            initWebSocket();
-        });
+      ws.onclose = () => {
+        const delay = Math.min(10000, Math.max(1000, Math.random() * 5000));
+        clearTimeout(reconnectTimer);
+        reconnectTimer = setTimeout(initWebSocket, delay);
+      };
+    };
 
-        onUnmounted(() => {
-            clearTimeout(reconnectTimer);
-            if (ws) ws.close();
-        });
+    onMounted(() => {
+      loadDeliveries();
+      initWebSocket();
+    });
 
-        return {
-            loading,
-            dispatchedOrders,
-            deliveredOrders
-        };
-    }
-}
+    onUnmounted(() => {
+      clearTimeout(reconnectTimer);
+      if (ws) ws.close();
+    });
+
+    return {
+      loading,
+      dispatchedOrders,
+      deliveredOrders,
+    };
+  },
+};

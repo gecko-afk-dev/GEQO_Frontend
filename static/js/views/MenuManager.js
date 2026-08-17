@@ -10,16 +10,19 @@
  *  - Out-of-stock rows/cards dimmed to 60% opacity
  *  - Add Category & Add Item modals (dark-theme)
  */
-import { ref, computed, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { api } from '../api.js';
+import {
+  ref,
+  computed,
+  onMounted,
+} from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import { api } from "../api.js";
 
 // CEO: PASTE YOUR IMGBB API KEY HERE
 const IMGBB_API_KEY = "c165abbc4884f654c13541e5967d6c3a";
 
-
 export default {
-    name: 'MenuManager',
-    template: `
+  name: "MenuManager",
+  template: `
         <div class="flex flex-col font-sans select-none">
 
             <!-- ════════ LOADING ════════ -->
@@ -388,332 +391,490 @@ export default {
             </template>
         </div>
     `,
-    props: ['user'],
-    setup(props) {
-        const categories = ref([]);
-        const loading = ref(true);
-        const activeCategory = ref(null);
+  props: ["user"],
+  setup(props) {
+    const categories = ref([]);
+    const loading = ref(true);
+    const activeCategory = ref(null);
 
-        // Inline price editor state
-        const editingPriceId = ref(null);
-        const editingPriceValue = ref(0);
+    // Inline price editor state
+    const editingPriceId = ref(null);
+    const editingPriceValue = ref(0);
 
-        // Stock toggle confirmation
-        const stockConfirmItem = ref(null);
+    // Stock toggle confirmation
+    const stockConfirmItem = ref(null);
 
-        // Modal state
-        const showAddCategory = ref(false);
-        const showAddItem = ref(false);
-        const addItemCatId = ref(null);
-        const catEditingId = ref(null);
-        const itemEditingId = ref(null);
-        const modalError = ref('');
+    // Modal state
+    const showAddCategory = ref(false);
+    const showAddItem = ref(false);
+    const addItemCatId = ref(null);
+    const catEditingId = ref(null);
+    const itemEditingId = ref(null);
+    const modalError = ref("");
 
-        const catForm = ref({ name_en: '', name_fr: '', name_ar: '', image_url: '' });
-        const itemForm = ref({
-            name_en: '', name_fr: '', name_ar: '',
-            price: 0, item_details: '', image_url: '', inherit_image: false, is_available: true
+    const catForm = ref({
+      name_en: "",
+      name_fr: "",
+      name_ar: "",
+      image_url: "",
+    });
+    const itemForm = ref({
+      name_en: "",
+      name_fr: "",
+      name_ar: "",
+      price: 0,
+      item_details: "",
+      image_url: "",
+      inherit_image: false,
+      is_available: true,
+    });
+
+    const handleImageSelected = async (e, formRef) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const formData = new FormData();
+        formData.append("image", file);
+
+        const response = await fetch(
+          `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
+          {
+            method: "POST",
+            body: formData,
+          },
+        );
+
+        const data = await response.json();
+        if (data && data.success) {
+          formRef.image_url = data.data.url;
+        } else {
+          alert(
+            "Image upload failed: " + (data.error?.message || "Unknown error"),
+          );
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Image upload failed. Check console for details.");
+      }
+    };
+
+    // ── Filtered categories based on tab ───────────────────────────────
+    const filteredCategories = computed(() => {
+      if (activeCategory.value === null) return categories.value;
+      return categories.value.filter((c) => c.id === activeCategory.value);
+    });
+
+    // Modifier Modal State
+    const showModifiers = ref(false);
+    const modifierContextEntity = ref({});
+    const copySourceItemId = ref("");
+
+    const newGroupForm = ref({
+      name_en: "",
+      name_fr: "",
+      name_ar: "",
+      min_selection: 0,
+      max_selection: 1,
+      group_type: "optional",
+    });
+    const newOptionForms = ref({}); // keyed by group id
+
+    const openModifiersModal = (item, catId) => {
+      modifierContextEntity.value = item;
+      copySourceItemId.value = "";
+      if (!item.modifier_groups) item.modifier_groups = [];
+
+      // Initialize option forms for existing groups
+      newOptionForms.value = {};
+      item.modifier_groups.forEach((g) => {
+        newOptionForms.value[g.id] = {
+          name_en: "",
+          name_fr: "",
+          name_ar: "",
+          price_override: 0,
+        };
+      });
+
+      newGroupForm.value = {
+        name_en: "",
+        name_fr: "",
+        name_ar: "",
+        min_selection: 0,
+        max_selection: 1,
+        group_type: "optional",
+      };
+      showModifiers.value = true;
+    };
+
+    const closeModifiersModal = () => {
+      showModifiers.value = false;
+    };
+
+    const getOtherItemsInCategory = () => {
+      const currentItem = modifierContextEntity.value;
+      if (!currentItem || !currentItem.category_id) return [];
+      const cat = categories.value.find(
+        (c) => c.id === currentItem.category_id,
+      );
+      if (!cat) return [];
+      return cat.items.filter((i) => i.id !== currentItem.id);
+    };
+
+    const copyModifiers = async () => {
+      if (!copySourceItemId.value) return;
+      try {
+        await api.post(
+          `/admin/menu/items/${modifierContextEntity.value.id}/copy-modifiers/${copySourceItemId.value}`,
+        );
+        await loadMenu();
+        const cat = categories.value.find(
+          (c) => c.id === modifierContextEntity.value.category_id,
+        );
+        if (cat) {
+          const updatedItem = cat.items.find(
+            (i) => i.id === modifierContextEntity.value.id,
+          );
+          if (updatedItem) {
+            openModifiersModal(updatedItem, cat.id);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        alert(
+          "Failed to copy modifiers: " +
+            (err.response?.data?.detail || err.message),
+        );
+      }
+    };
+
+    const addModifierGroup = async () => {
+      if (!newGroupForm.value.name_en) return;
+      const payload = {
+        ...newGroupForm.value,
+        menu_item_id: modifierContextEntity.value.id,
+      };
+
+      if (payload.group_type === "mandatory" && payload.min_selection < 1) {
+        payload.min_selection = 1;
+      }
+
+      try {
+        const res = await api.post("/admin/menu/modifiers/groups", payload);
+        const newGroup = { ...res.data, options: [] };
+        modifierContextEntity.value.modifier_groups.push(newGroup);
+        newOptionForms.value[newGroup.id] = {
+          name_en: "",
+          name_fr: "",
+          name_ar: "",
+          price_override: 0,
+        };
+        newGroupForm.value = {
+          name_en: "",
+          name_fr: "",
+          name_ar: "",
+          min_selection: 0,
+          max_selection: 1,
+          group_type: "optional",
+        };
+      } catch (err) {
+        console.error(err);
+        alert(
+          "Failed to add modifier group: " +
+            (err.response?.data?.detail || err.message),
+        );
+      }
+    };
+
+    const addModifierOption = async (group) => {
+      const form = newOptionForms.value[group.id];
+      if (!form || !form.name_en) return;
+      try {
+        const res = await api.post("/admin/menu/modifiers/options", {
+          ...form,
+          group_id: group.id,
         });
-
-        const handleImageSelected = async (e, formRef) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            try {
-                const formData = new FormData();
-                formData.append('image', file);
-
-                const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-                if (data && data.success) {
-                    formRef.image_url = data.data.url;
-                } else {
-                    alert('Image upload failed: ' + (data.error?.message || 'Unknown error'));
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Image upload failed. Check console for details.');
-            }
+        group.options.push(res.data);
+        newOptionForms.value[group.id] = {
+          name_en: "",
+          name_fr: "",
+          name_ar: "",
+          price_override: 0,
         };
+      } catch (err) {
+        console.error(err);
+        alert(
+          "Failed to add option: " +
+            (err.response?.data?.detail || err.message),
+        );
+      }
+    };
 
-        // ── Filtered categories based on tab ───────────────────────────────
-        const filteredCategories = computed(() => {
-            if (activeCategory.value === null) return categories.value;
-            return categories.value.filter(c => c.id === activeCategory.value);
+    const deleteModifierGroup = async (groupId) => {
+      if (!confirm("Delete this modifier group? This cannot be undone."))
+        return;
+      try {
+        await api.delete("/admin/menu/modifiers/groups/" + groupId);
+        modifierContextEntity.value.modifier_groups =
+          modifierContextEntity.value.modifier_groups.filter(
+            (g) => g.id !== groupId,
+          );
+      } catch (err) {
+        console.error(err);
+        alert(
+          "Failed to delete group: " +
+            (err.response?.data?.detail || err.message),
+        );
+      }
+    };
+
+    const deleteModifierOption = async (group, optionId) => {
+      if (!confirm("Delete this option?")) return;
+      try {
+        await api.delete("/admin/menu/modifiers/options/" + optionId);
+        group.options = group.options.filter((o) => o.id !== optionId);
+      } catch (err) {
+        console.error(err);
+        alert(
+          "Failed to delete option: " +
+            (err.response?.data?.detail || err.message),
+        );
+      }
+    };
+
+    const toggleModifierOption = async (group, option) => {
+      const newAvail = !option.is_available;
+      try {
+        await api.put(`/admin/menu/modifiers/options/${option.id}`, {
+          is_available: newAvail,
         });
+        option.is_available = newAvail;
+      } catch (err) {
+        console.error(err);
+        alert(
+          "Failed to toggle option: " +
+            (err.response?.data?.detail || err.message),
+        );
+      }
+    };
 
+    // ── Load menu ───────────────────────────────────────────────────────
+    const loadMenu = async () => {
+      if (!props.user?.restaurant_id) {
+        loading.value = false;
+        return;
+      }
+      loading.value = true;
+      try {
+        const res = await api.get("/admin/menu/" + props.user.restaurant_id);
+        categories.value = res.data;
+      } catch (err) {
+        console.error("[MenuManager] loadMenu error", err);
+      } finally {
+        loading.value = false;
+      }
+    };
 
-        // Modifier Modal State
-        const showModifiers = ref(false);
-        const modifierContextEntity = ref({});
-        const copySourceItemId = ref('');
+    // ── Inline price edit ───────────────────────────────────────────────
+    const startEditPrice = (item) => {
+      editingPriceId.value = item.id;
+      editingPriceValue.value = item.price;
+    };
+    const savePrice = async (item) => {
+      if (editingPriceValue.value <= 0) return;
+      try {
+        await api.patch(`/admin/menu/items/${item.id}`, {
+          price: editingPriceValue.value,
+        });
+        item.price = editingPriceValue.value;
+      } catch (err) {
+        console.error("[MenuManager] savePrice error", err);
+      } finally {
+        editingPriceId.value = null;
+      }
+    };
 
-        const newGroupForm = ref({ name_en: '', name_fr: '', name_ar: '', min_selection: 0, max_selection: 1, group_type: 'optional' });
-        const newOptionForms = ref({}); // keyed by group id
+    // ── Stock toggle ────────────────────────────────────────────────────
+    const promptStockToggle = (item) => {
+      stockConfirmItem.value = item;
+    };
+    const confirmStockToggle = async () => {
+      const item = stockConfirmItem.value;
+      if (!item) return;
+      stockConfirmItem.value = null;
+      const newAvail = !item.is_available;
+      try {
+        await api.post(`/dashboard/items/${item.id}/toggle-availability`);
+        item.is_available = newAvail;
+      } catch (err) {
+        console.error("[MenuManager] stock toggle error", err);
+      }
+    };
 
-        const openModifiersModal = (item, catId) => {
-            modifierContextEntity.value = item;
-            copySourceItemId.value = '';
-            if (!item.modifier_groups) item.modifier_groups = [];
+    // ── Category CRUD ───────────────────────────────────────────────────
+    const openAddCategoryModal = () => {
+      catEditingId.value = null;
+      catForm.value = { name_en: "", name_fr: "", name_ar: "", image_url: "" };
+      modalError.value = "";
+      showAddCategory.value = true;
+    };
+    const openEditCategoryModal = (cat) => {
+      catEditingId.value = cat.id;
+      catForm.value = { ...cat };
+      modalError.value = "";
+      showAddCategory.value = true;
+    };
+    const saveCategory = async () => {
+      modalError.value = "";
+      if (!catForm.value.name_en.trim()) {
+        modalError.value = "English name is required.";
+        return;
+      }
+      try {
+        if (catEditingId.value) {
+          await api.put(
+            "/admin/menu/categories/" + catEditingId.value,
+            catForm.value,
+          );
+        } else {
+          await api.post("/admin/menu/categories", {
+            ...catForm.value,
+            restaurant_id: props.user.restaurant_id,
+          });
+        }
+        showAddCategory.value = false;
+        await loadMenu();
+      } catch (err) {
+        modalError.value =
+          err.response?.data?.detail || "Failed to save category.";
+      }
+    };
+    const deleteCategory = async (id) => {
+      if (
+        !confirm(
+          "Delete this category and all its items? This cannot be undone.",
+        )
+      )
+        return;
+      try {
+        await api.delete("/admin/menu/categories/" + id);
+        await loadMenu();
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
-            // Initialize option forms for existing groups
-            newOptionForms.value = {};
-            item.modifier_groups.forEach(g => {
-                newOptionForms.value[g.id] = { name_en: '', name_fr: '', name_ar: '', price_override: 0 };
-            });
+    // ── Item CRUD ────────────────────────────────────────────────────────
+    const openAddItemModal = (catId) => {
+      itemEditingId.value = null;
+      addItemCatId.value = catId;
+      itemForm.value = {
+        name_en: "",
+        name_fr: "",
+        name_ar: "",
+        price: 0,
+        item_details: "",
+        image_url: "",
+        inherit_image: false,
+        is_available: true,
+      };
+      modalError.value = "";
+      showAddItem.value = true;
+    };
+    const openEditItemModal = (item, catId) => {
+      itemEditingId.value = item.id;
+      addItemCatId.value = catId;
+      itemForm.value = { ...item, inherit_image: !item.image_url };
+      modalError.value = "";
+      showAddItem.value = true;
+    };
+    const saveItem = async () => {
+      modalError.value = "";
+      if (!itemForm.value.name_en.trim()) {
+        modalError.value = "English name is required.";
+        return;
+      }
+      if (itemForm.value.price <= 0) {
+        modalError.value = "Price must be greater than 0.";
+        return;
+      }
+      const payload = { ...itemForm.value };
+      if (payload.inherit_image) {
+        payload.image_url = null;
+      }
+      delete payload.inherit_image;
 
-            newGroupForm.value = { name_en: '', name_fr: '', name_ar: '', min_selection: 0, max_selection: 1, group_type: 'optional' };
-            showModifiers.value = true;
-        };
+      try {
+        if (itemEditingId.value) {
+          await api.put("/admin/menu/items/" + itemEditingId.value, payload);
+        } else {
+          await api.post("/admin/menu/items", {
+            ...payload,
+            category_id: addItemCatId.value,
+            restaurant_id: props.user.restaurant_id,
+          });
+        }
+        showAddItem.value = false;
+        await loadMenu();
+      } catch (err) {
+        modalError.value = err.response?.data?.detail || "Failed to save item.";
+      }
+    };
+    const deleteItem = async (id) => {
+      if (!confirm("Delete this item?")) return;
+      try {
+        await api.delete("/admin/menu/items/" + id);
+        await loadMenu();
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
-        const closeModifiersModal = () => {
-            showModifiers.value = false;
-        };
+    onMounted(loadMenu);
 
-        const getOtherItemsInCategory = () => {
-            const currentItem = modifierContextEntity.value;
-            if (!currentItem || !currentItem.category_id) return [];
-            const cat = categories.value.find(c => c.id === currentItem.category_id);
-            if (!cat) return [];
-            return cat.items.filter(i => i.id !== currentItem.id);
-        };
+    return {
+      categories,
+      loading,
+      activeCategory,
+      filteredCategories,
+      editingPriceId,
+      editingPriceValue,
+      startEditPrice,
+      savePrice,
+      stockConfirmItem,
+      promptStockToggle,
+      confirmStockToggle,
+      showAddCategory,
+      catForm,
+      openAddCategoryModal,
+      openEditCategoryModal,
+      saveCategory,
+      deleteCategory,
+      catEditingId,
+      showAddItem,
+      itemForm,
+      openAddItemModal,
+      openEditItemModal,
+      saveItem,
+      deleteItem,
+      itemEditingId,
 
-        const copyModifiers = async () => {
-            if (!copySourceItemId.value) return;
-            try {
-                await api.post(`/admin/menu/items/${modifierContextEntity.value.id}/copy-modifiers/${copySourceItemId.value}`);
-                await loadMenu();
-                const cat = categories.value.find(c => c.id === modifierContextEntity.value.category_id);
-                if (cat) {
-                    const updatedItem = cat.items.find(i => i.id === modifierContextEntity.value.id);
-                    if (updatedItem) {
-                        openModifiersModal(updatedItem, cat.id);
-                    }
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Failed to copy modifiers: " + (err.response?.data?.detail || err.message));
-            }
-        };
-
-        const addModifierGroup = async () => {
-            if (!newGroupForm.value.name_en) return;
-            const payload = { ...newGroupForm.value, menu_item_id: modifierContextEntity.value.id };
-
-            if (payload.group_type === 'mandatory' && payload.min_selection < 1) {
-                payload.min_selection = 1;
-            }
-
-            try {
-                const res = await api.post('/admin/menu/modifiers/groups', payload);
-                const newGroup = { ...res.data, options: [] };
-                modifierContextEntity.value.modifier_groups.push(newGroup);
-                newOptionForms.value[newGroup.id] = { name_en: '', name_fr: '', name_ar: '', price_override: 0 };
-                newGroupForm.value = { name_en: '', name_fr: '', name_ar: '', min_selection: 0, max_selection: 1, group_type: 'optional' };
-            } catch (err) {
-                console.error(err);
-                alert("Failed to add modifier group: " + (err.response?.data?.detail || err.message));
-            }
-        };
-
-        const addModifierOption = async (group) => {
-            const form = newOptionForms.value[group.id];
-            if (!form || !form.name_en) return;
-            try {
-                const res = await api.post('/admin/menu/modifiers/options', { ...form, group_id: group.id });
-                group.options.push(res.data);
-                newOptionForms.value[group.id] = { name_en: '', name_fr: '', name_ar: '', price_override: 0 };
-            } catch (err) {
-                console.error(err);
-                alert("Failed to add option: " + (err.response?.data?.detail || err.message));
-            }
-        };
-
-        const deleteModifierGroup = async (groupId) => {
-            if (!confirm('Delete this modifier group? This cannot be undone.')) return;
-            try {
-                await api.delete('/admin/menu/modifiers/groups/' + groupId);
-                modifierContextEntity.value.modifier_groups = modifierContextEntity.value.modifier_groups.filter(g => g.id !== groupId);
-            } catch (err) {
-                console.error(err);
-                alert("Failed to delete group: " + (err.response?.data?.detail || err.message));
-            }
-        };
-
-        const deleteModifierOption = async (group, optionId) => {
-            if (!confirm('Delete this option?')) return;
-            try {
-                await api.delete('/admin/menu/modifiers/options/' + optionId);
-                group.options = group.options.filter(o => o.id !== optionId);
-            } catch (err) {
-                console.error(err);
-                alert("Failed to delete option: " + (err.response?.data?.detail || err.message));
-            }
-        };
-
-        const toggleModifierOption = async (group, option) => {
-            const newAvail = !option.is_available;
-            try {
-                await api.put(`/admin/menu/modifiers/options/${option.id}`, { is_available: newAvail });
-                option.is_available = newAvail;
-            } catch (err) {
-                console.error(err);
-                alert("Failed to toggle option: " + (err.response?.data?.detail || err.message));
-            }
-        };
-
-
-        // ── Load menu ───────────────────────────────────────────────────────
-        const loadMenu = async () => {
-            if (!props.user?.restaurant_id) { loading.value = false; return; }
-            loading.value = true;
-            try {
-                const res = await api.get('/admin/menu/' + props.user.restaurant_id);
-                categories.value = res.data;
-            } catch (err) {
-                console.error('[MenuManager] loadMenu error', err);
-            } finally {
-                loading.value = false;
-            }
-        };
-
-        // ── Inline price edit ───────────────────────────────────────────────
-        const startEditPrice = (item) => {
-            editingPriceId.value = item.id;
-            editingPriceValue.value = item.price;
-        };
-        const savePrice = async (item) => {
-            if (editingPriceValue.value <= 0) return;
-            try {
-                await api.patch(`/admin/menu/items/${item.id}`, { price: editingPriceValue.value });
-                item.price = editingPriceValue.value;
-            } catch (err) {
-                console.error('[MenuManager] savePrice error', err);
-            } finally {
-                editingPriceId.value = null;
-            }
-        };
-
-        // ── Stock toggle ────────────────────────────────────────────────────
-        const promptStockToggle = (item) => { stockConfirmItem.value = item; };
-        const confirmStockToggle = async () => {
-            const item = stockConfirmItem.value;
-            if (!item) return;
-            stockConfirmItem.value = null;
-            const newAvail = !item.is_available;
-            try {
-                await api.post(`/dashboard/items/${item.id}/toggle-availability`);
-                item.is_available = newAvail;
-            } catch (err) {
-                console.error('[MenuManager] stock toggle error', err);
-            }
-        };
-
-        // ── Category CRUD ───────────────────────────────────────────────────
-        const openAddCategoryModal = () => {
-            catEditingId.value = null;
-            catForm.value = { name_en: '', name_fr: '', name_ar: '', image_url: '' };
-            modalError.value = '';
-            showAddCategory.value = true;
-        };
-        const openEditCategoryModal = (cat) => {
-            catEditingId.value = cat.id;
-            catForm.value = { ...cat };
-            modalError.value = '';
-            showAddCategory.value = true;
-        };
-        const saveCategory = async () => {
-            modalError.value = '';
-            if (!catForm.value.name_en.trim()) { modalError.value = 'English name is required.'; return; }
-            try {
-                if (catEditingId.value) {
-                    await api.put('/admin/menu/categories/' + catEditingId.value, catForm.value);
-                } else {
-                    await api.post('/admin/menu/categories', {
-                        ...catForm.value,
-                        restaurant_id: props.user.restaurant_id
-                    });
-                }
-                showAddCategory.value = false;
-                await loadMenu();
-            } catch (err) {
-                modalError.value = err.response?.data?.detail || 'Failed to save category.';
-            }
-        };
-        const deleteCategory = async (id) => {
-            if (!confirm('Delete this category and all its items? This cannot be undone.')) return;
-            try {
-                await api.delete('/admin/menu/categories/' + id);
-                await loadMenu();
-            } catch (err) { console.error(err); }
-        };
-
-        // ── Item CRUD ────────────────────────────────────────────────────────
-        const openAddItemModal = (catId) => {
-            itemEditingId.value = null;
-            addItemCatId.value = catId;
-            itemForm.value = { name_en: '', name_fr: '', name_ar: '', price: 0, item_details: '', image_url: '', inherit_image: false, is_available: true };
-            modalError.value = '';
-            showAddItem.value = true;
-        };
-        const openEditItemModal = (item, catId) => {
-            itemEditingId.value = item.id;
-            addItemCatId.value = catId;
-            itemForm.value = { ...item, inherit_image: !item.image_url };
-            modalError.value = '';
-            showAddItem.value = true;
-        };
-        const saveItem = async () => {
-            modalError.value = '';
-            if (!itemForm.value.name_en.trim()) { modalError.value = 'English name is required.'; return; }
-            if (itemForm.value.price <= 0) { modalError.value = 'Price must be greater than 0.'; return; }
-            const payload = { ...itemForm.value };
-            if (payload.inherit_image) {
-                payload.image_url = null;
-            }
-            delete payload.inherit_image;
-
-            try {
-                if (itemEditingId.value) {
-                    await api.put('/admin/menu/items/' + itemEditingId.value, payload);
-                } else {
-                    await api.post('/admin/menu/items', {
-                        ...payload,
-                        category_id: addItemCatId.value,
-                        restaurant_id: props.user.restaurant_id,
-                    });
-                }
-                showAddItem.value = false;
-                await loadMenu();
-            } catch (err) {
-                modalError.value = err.response?.data?.detail || 'Failed to save item.';
-            }
-        };
-        const deleteItem = async (id) => {
-            if (!confirm('Delete this item?')) return;
-            try {
-                await api.delete('/admin/menu/items/' + id);
-                await loadMenu();
-            } catch (err) { console.error(err); }
-        };
-
-        onMounted(loadMenu);
-
-        return {
-            categories, loading, activeCategory, filteredCategories,
-            editingPriceId, editingPriceValue, startEditPrice, savePrice,
-            stockConfirmItem, promptStockToggle, confirmStockToggle,
-            showAddCategory, catForm, openAddCategoryModal, openEditCategoryModal, saveCategory, deleteCategory, catEditingId,
-            showAddItem, itemForm, openAddItemModal, openEditItemModal, saveItem, deleteItem, itemEditingId,
-
-            showModifiers, modifierContextEntity, newGroupForm, newOptionForms, copySourceItemId, getOtherItemsInCategory, copyModifiers,
-            openModifiersModal, closeModifiersModal, addModifierGroup, addModifierOption, deleteModifierGroup, deleteModifierOption, toggleModifierOption,
-            modalError,
-            handleImageSelected
-        };
-    }
+      showModifiers,
+      modifierContextEntity,
+      newGroupForm,
+      newOptionForms,
+      copySourceItemId,
+      getOtherItemsInCategory,
+      copyModifiers,
+      openModifiersModal,
+      closeModifiersModal,
+      addModifierGroup,
+      addModifierOption,
+      deleteModifierGroup,
+      deleteModifierOption,
+      toggleModifierOption,
+      modalError,
+      handleImageSelected,
+    };
+  },
 };

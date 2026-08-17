@@ -6,13 +6,17 @@
  *
  * For restaurant_owner / cashier: today's stats in the dark surface theme.
  */
-import { ref, computed, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { api } from '../api.js';
+import {
+  ref,
+  computed,
+  onMounted,
+} from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import { api } from "../api.js";
 
 // ── Reusable stat card component ──────────────────────────────────────────
 const AdminStatCard = {
-    props: ['title', 'value', 'sub', 'icon', 'accent', 'trend'],
-    template: `
+  props: ["title", "value", "sub", "icon", "accent", "trend"],
+  template: `
         <div class="card-superadmin p-5 flex flex-col gap-3 card-hover hover-glow-saffron group transition-all duration-200">
             <div class="flex items-start justify-between">
                 <div class="w-9 h-9 rounded-xl flex items-center justify-center text-base shrink-0"
@@ -32,31 +36,36 @@ const AdminStatCard = {
             </div>
         </div>
     `,
-    computed: {
-        displayValue() { return this.value ?? '—'; },
-        accentBg() {
-            const map = {
-                saffron: 'rgba(245,158,11,0.15)',
-                emerald: 'rgba(16,185,129,0.15)',
-                berry:   'rgba(139,92,246,0.15)',
-                harissa: 'rgba(239,68,68,0.15)',
-                slate:   'rgba(148,163,184,0.10)',
-            };
-            return map[this.accent] || map.slate;
-        },
-        accentColor() {
-            const map = {
-                saffron: '#F59E0B', emerald: '#10B981',
-                berry: '#8B5CF6',  harissa: '#EF4444', slate: '#94a3b8'
-            };
-            return map[this.accent] || map.slate;
-        }
-    }
+  computed: {
+    displayValue() {
+      return this.value ?? "—";
+    },
+    accentBg() {
+      const map = {
+        saffron: "rgba(245,158,11,0.15)",
+        emerald: "rgba(16,185,129,0.15)",
+        berry: "rgba(139,92,246,0.15)",
+        harissa: "rgba(239,68,68,0.15)",
+        slate: "rgba(148,163,184,0.10)",
+      };
+      return map[this.accent] || map.slate;
+    },
+    accentColor() {
+      const map = {
+        saffron: "#F59E0B",
+        emerald: "#10B981",
+        berry: "#8B5CF6",
+        harissa: "#EF4444",
+        slate: "#94a3b8",
+      };
+      return map[this.accent] || map.slate;
+    },
+  },
 };
 
 const OwnerStatCard = {
-    props: ['title', 'value', 'icon', 'accent'],
-    template: `
+  props: ["title", "value", "icon", "accent"],
+  template: `
         <div class="card-dark p-5 flex items-center gap-4 card-hover transition-all duration-200">
             <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0"
                  :style="{ background: accentBg, color: accentColor }">
@@ -68,16 +77,26 @@ const OwnerStatCard = {
             </div>
         </div>
     `,
-    computed: {
-        accentBg()    { const m={saffron:'rgba(245,158,11,0.15)',emerald:'rgba(16,185,129,0.15)',berry:'rgba(139,92,246,0.15)'}; return m[this.accent]||m.saffron; },
-        accentColor() { const m={saffron:'#F59E0B',emerald:'#10B981',berry:'#8B5CF6'}; return m[this.accent]||'#F59E0B'; }
-    }
+  computed: {
+    accentBg() {
+      const m = {
+        saffron: "rgba(245,158,11,0.15)",
+        emerald: "rgba(16,185,129,0.15)",
+        berry: "rgba(139,92,246,0.15)",
+      };
+      return m[this.accent] || m.saffron;
+    },
+    accentColor() {
+      const m = { saffron: "#F59E0B", emerald: "#10B981", berry: "#8B5CF6" };
+      return m[this.accent] || "#F59E0B";
+    },
+  },
 };
 
 export default {
-    name: 'Overview',
-    components: { AdminStatCard, OwnerStatCard },
-    template: `
+  name: "Overview",
+  components: { AdminStatCard, OwnerStatCard },
+  template: `
         <div class="space-y-8 animate-fade-in">
 
             <!-- ════ SUPER-ADMIN VIEW ════ -->
@@ -189,42 +208,51 @@ export default {
             </template>
         </div>
     `,
-    props: ['user'],
+  props: ["user"],
 
-    setup(props) {
-        const loading    = ref(true);
-        const adminStats = ref({});
-        const ownerStats = ref({ orders: 0, revenue: 0 });
+  setup(props) {
+    const loading = ref(true);
+    const adminStats = ref({});
+    const ownerStats = ref({ orders: 0, revenue: 0 });
 
-        const fmt    = (v, unit = '') => v != null ? `${Number(v).toLocaleString('fr-MA')} ${unit}`.trim() : '—';
-        const fmtMAD = (v) => fmt(v, 'MAD');
+    const fmt = (v, unit = "") =>
+      v != null ? `${Number(v).toLocaleString("fr-MA")} ${unit}`.trim() : "—";
+    const fmtMAD = (v) => fmt(v, "MAD");
 
-        const avgOrderValue = computed(() => {
-            const r = adminStats.value.total_revenue_today;
-            const o = adminStats.value.total_orders_today;
-            if (!r || !o) return '—';
-            return fmtMAD((r / o).toFixed(0));
-        });
+    const avgOrderValue = computed(() => {
+      const r = adminStats.value.total_revenue_today;
+      const o = adminStats.value.total_orders_today;
+      if (!r || !o) return "—";
+      return fmtMAD((r / o).toFixed(0));
+    });
 
-        const loadStats = async () => {
-            loading.value = true;
-            try {
-                if (props.user.role === 'admin') {
-                    const res = await api.get('/admin/analytics/summary');
-                    adminStats.value = res.data;
-                } else if (['restaurant_owner', 'cashier'].includes(props.user.role)) {
-                    const res = await api.get('/admin/restaurant/dashboard');
-                    ownerStats.value = res.data.today_stats || { orders: 0, revenue: 0 };
-                }
-            } catch (err) {
-                console.error('[Overview] loadStats error', err);
-            } finally {
-                loading.value = false;
-            }
-        };
+    const loadStats = async () => {
+      loading.value = true;
+      try {
+        if (props.user.role === "admin") {
+          const res = await api.get("/admin/analytics/summary");
+          adminStats.value = res.data;
+        } else if (["restaurant_owner", "cashier"].includes(props.user.role)) {
+          const res = await api.get("/admin/restaurant/dashboard");
+          ownerStats.value = res.data.today_stats || { orders: 0, revenue: 0 };
+        }
+      } catch (err) {
+        console.error("[Overview] loadStats error", err);
+      } finally {
+        loading.value = false;
+      }
+    };
 
-        onMounted(loadStats);
+    onMounted(loadStats);
 
-        return { loading, adminStats, ownerStats, loadStats, fmt, fmtMAD, avgOrderValue };
-    }
+    return {
+      loading,
+      adminStats,
+      ownerStats,
+      loadStats,
+      fmt,
+      fmtMAD,
+      avgOrderValue,
+    };
+  },
 };

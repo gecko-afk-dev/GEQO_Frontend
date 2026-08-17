@@ -1,9 +1,12 @@
-import { ref, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { api } from '../api.js';
+import {
+  ref,
+  onMounted,
+} from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import { api } from "../api.js";
 
 export default {
-    name: 'StaffManager',
-    template: `
+  name: "StaffManager",
+  template: `
         <div class="space-y-6">
             <!-- Header section -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
@@ -155,138 +158,145 @@ export default {
             </div>
         </div>
     `,
-    setup() {
-        const staffList = ref([]);
-        const loading = ref(true);
-        const submitting = ref(false);
-        const deleting = ref(false);
-        const togglingId = ref(null);
-        const showInviteModal = ref(false);
-        const showDeleteModal = ref(false);
-        const memberToDelete = ref(null);
+  setup() {
+    const staffList = ref([]);
+    const loading = ref(true);
+    const submitting = ref(false);
+    const deleting = ref(false);
+    const togglingId = ref(null);
+    const showInviteModal = ref(false);
+    const showDeleteModal = ref(false);
+    const memberToDelete = ref(null);
 
-        const inviteForm = ref({
-            email: '',
-            role: 'cashier'
-        });
+    const inviteForm = ref({
+      email: "",
+      role: "cashier",
+    });
 
-        const alert = ref({
-            show: false,
-            type: 'success',
-            message: ''
-        });
+    const alert = ref({
+      show: false,
+      type: "success",
+      message: "",
+    });
 
-        const fetchStaff = async () => {
-            loading.value = true;
-            try {
-                const res = await api.get('/admin/staff');
-                staffList.value = res.data;
-            } catch (err) {
-                console.error(err);
-                showAlert('danger', 'Failed to retrieve staff members. Please verify permissions.');
-            } finally {
-                loading.value = false;
-            }
-        };
+    const fetchStaff = async () => {
+      loading.value = true;
+      try {
+        const res = await api.get("/admin/staff");
+        staffList.value = res.data;
+      } catch (err) {
+        console.error(err);
+        showAlert(
+          "danger",
+          "Failed to retrieve staff members. Please verify permissions.",
+        );
+      } finally {
+        loading.value = false;
+      }
+    };
 
-        const inviteStaff = async () => {
-            submitting.value = true;
-            try {
-                const res = await api.post('/admin/staff/invite', inviteForm.value);
-                showAlert('success', res.data.message || 'Staff invited successfully.');
-                closeInviteModal();
-                await fetchStaff();
-            } catch (err) {
-                console.error(err);
-                const msg = err.response?.data?.detail || 'An error occurred during staff invitation.';
-                showAlert('danger', msg);
-            } finally {
-                submitting.value = false;
-            }
-        };
+    const inviteStaff = async () => {
+      submitting.value = true;
+      try {
+        const res = await api.post("/admin/staff/invite", inviteForm.value);
+        showAlert("success", res.data.message || "Staff invited successfully.");
+        closeInviteModal();
+        await fetchStaff();
+      } catch (err) {
+        console.error(err);
+        const msg =
+          err.response?.data?.detail ||
+          "An error occurred during staff invitation.";
+        showAlert("danger", msg);
+      } finally {
+        submitting.value = false;
+      }
+    };
 
-        const toggleStatus = async (member) => {
-            togglingId.value = member.id;
-            try {
-                const res = await api.post(`/admin/staff/${member.id}/toggle`, {});
-                member.is_active = res.data.is_active;
-                showAlert('success', res.data.message);
-            } catch (err) {
-                console.error(err);
-                showAlert('danger', 'Failed to toggle status.');
-            } finally {
-                togglingId.value = null;
-            }
-        };
+    const toggleStatus = async (member) => {
+      togglingId.value = member.id;
+      try {
+        const res = await api.post(`/admin/staff/${member.id}/toggle`, {});
+        member.is_active = res.data.is_active;
+        showAlert("success", res.data.message);
+      } catch (err) {
+        console.error(err);
+        showAlert("danger", "Failed to toggle status.");
+      } finally {
+        togglingId.value = null;
+      }
+    };
 
-        const confirmDelete = (member) => {
-            memberToDelete.value = member;
-            showDeleteModal.value = true;
-        };
+    const confirmDelete = (member) => {
+      memberToDelete.value = member;
+      showDeleteModal.value = true;
+    };
 
-        const deleteStaff = async () => {
-            if (!memberToDelete.value) return;
-            deleting.value = true;
-            try {
-                const res = await api.delete(`/admin/staff/${memberToDelete.value.id}`);
-                showAlert('success', res.data.message || 'Staff member removed.');
-                showDeleteModal.value = false;
-                memberToDelete.value = null;
-                await fetchStaff();
-            } catch (err) {
-                console.error(err);
-                showAlert('danger', 'Failed to remove staff member.');
-            } finally {
-                deleting.value = false;
-            }
-        };
+    const deleteStaff = async () => {
+      if (!memberToDelete.value) return;
+      deleting.value = true;
+      try {
+        const res = await api.delete(`/admin/staff/${memberToDelete.value.id}`);
+        showAlert("success", res.data.message || "Staff member removed.");
+        showDeleteModal.value = false;
+        memberToDelete.value = null;
+        await fetchStaff();
+      } catch (err) {
+        console.error(err);
+        showAlert("danger", "Failed to remove staff member.");
+      } finally {
+        deleting.value = false;
+      }
+    };
 
-        const showAlert = (type, message) => {
-            alert.value = { show: true, type, message };
-            setTimeout(() => {
-                alert.value.show = false;
-            }, 6000);
-        };
+    const showAlert = (type, message) => {
+      alert.value = { show: true, type, message };
+      setTimeout(() => {
+        alert.value.show = false;
+      }, 6000);
+    };
 
-        const closeInviteModal = () => {
-            showInviteModal.value = false;
-            inviteForm.value = { email: '', role: 'cashier' };
-        };
+    const closeInviteModal = () => {
+      showInviteModal.value = false;
+      inviteForm.value = { email: "", role: "cashier" };
+    };
 
-        const formatRole = (role) => {
-            if (role === 'cashier') return 'Cashier';
-            if (role === 'kitchen_staff') return 'Kitchen Staff';
-            return role;
-        };
+    const formatRole = (role) => {
+      if (role === "cashier") return "Cashier";
+      if (role === "kitchen_staff") return "Kitchen Staff";
+      return role;
+    };
 
-        const roleBadgeClass = (role) => {
-            if (role === 'cashier') return 'bg-indigo-50 text-indigo-700 border border-indigo-200';
-            if (role === 'kitchen_staff') return 'bg-teal-50 text-teal-700 border border-teal-200';
-            return 'bg-slate-50 text-slate-700 border border-slate-200';
-        };
+    const roleBadgeClass = (role) => {
+      if (role === "cashier")
+        return "bg-indigo-50 text-indigo-700 border border-indigo-200";
+      if (role === "kitchen_staff")
+        return "bg-teal-50 text-teal-700 border border-teal-200";
+      return "bg-slate-50 text-slate-700 border border-slate-200";
+    };
 
-        onMounted(() => {
-            fetchStaff();
-        });
+    onMounted(() => {
+      fetchStaff();
+    });
 
-        return {
-            staffList,
-            loading,
-            submitting,
-            deleting,
-            togglingId,
-            showInviteModal,
-            showDeleteModal,
-            memberToDelete,
-            inviteForm,
-            alert,
-            closeInviteModal,
-            inviteStaff,
-            toggleStatus,
-            confirmDelete,
-            deleteStaff,
-            formatRole,
-            roleBadgeClass
-        };
-    }
+    return {
+      staffList,
+      loading,
+      submitting,
+      deleting,
+      togglingId,
+      showInviteModal,
+      showDeleteModal,
+      memberToDelete,
+      inviteForm,
+      alert,
+      closeInviteModal,
+      inviteStaff,
+      toggleStatus,
+      confirmDelete,
+      deleteStaff,
+      formatRole,
+      roleBadgeClass,
+    };
+  },
 };

@@ -13,8 +13,8 @@
  */
 
 const _isLocal =
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1';
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1";
 
 /**
  * Open a dashboard WebSocket for a given restaurant.
@@ -24,18 +24,17 @@ const _isLocal =
  * @returns {WebSocket}
  */
 export function createDashboardSocket(restaurantId) {
-    const protocol = _isLocal ? 'ws:' : 'wss:';
-    const host     = _isLocal ? 'localhost:8000' : 'api.mygeqo.com';
-    const url      = `${protocol}//${host}/api/v1/dashboard/ws/${restaurantId}`;
+  const protocol = _isLocal ? "ws:" : "wss:";
+  const host = _isLocal ? "localhost:8000" : "api.mygeqo.com";
+  const url = `${protocol}//${host}/api/v1/dashboard/ws/${restaurantId}`;
 
-    // Read token set by Login.js. The sentinel 'cookie' means the server is in
-    // cookie-only mode — do NOT send 'bearer.cookie' as a subprotocol.
-    const token = localStorage.getItem('token');
-    const isRealToken = token && token !== 'cookie';
+  // Read token set by Login.js. The sentinel 'cookie' means the server is in
+  // cookie-only mode — do NOT send 'bearer.cookie' as a subprotocol.
+  const token = localStorage.getItem("token");
+  const isRealToken = token && token !== "cookie";
 
-    // Pass subprotocol when we have a real JWT; rely on cookie auth otherwise.
-    return isRealToken
-        ? new WebSocket(url, [`bearer.${token}`])
-        : new WebSocket(url);
+  // Pass subprotocol when we have a real JWT; rely on cookie auth otherwise.
+  return isRealToken
+    ? new WebSocket(url, [`bearer.${token}`])
+    : new WebSocket(url);
 }
-

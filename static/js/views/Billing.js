@@ -1,9 +1,12 @@
-import { ref, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { api } from '../api.js';
+import {
+  ref,
+  onMounted,
+} from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import { api } from "../api.js";
 
 export default {
-    name: 'Billing',
-    template: `
+  name: "Billing",
+  template: `
         <div class="space-y-6 animate-fade-in max-w-5xl font-sans select-none">
 
             <!-- Loading -->
@@ -153,60 +156,76 @@ export default {
             </div>
         </div>
     `,
-    props: ['user'],
-    setup(props) {
-        const balance = ref(0);
-        const transactions = ref([]);
-        const loading = ref(true);
-        
+  props: ["user"],
+  setup(props) {
+    const balance = ref(0);
+    const transactions = ref([]);
+    const loading = ref(true);
 
-        const adminRestaurants = ref([]);
+    const adminRestaurants = ref([]);
 
-        onMounted(async () => {
-            try {
-                if (props.user.role === 'admin') {
-                    const res = await api.get('/admin/restaurants');
-                    adminRestaurants.value = res.data;
-                } else {
-                    const res = await api.get('/admin/restaurant/dashboard');
-                    balance.value = res.data.restaurant.wallet_balance || 0;
-                    
-                    const txRes = await api.get('/admin/billing/transactions');
-                    transactions.value = txRes.data;
-                }
-            } catch (err) {
-                console.error('[Billing] error loading balance or transactions', err);
-            } finally {
-                loading.value = false;
-            }
-        });
+    onMounted(async () => {
+      try {
+        if (props.user.role === "admin") {
+          const res = await api.get("/admin/restaurants");
+          adminRestaurants.value = res.data;
+        } else {
+          const res = await api.get("/admin/restaurant/dashboard");
+          balance.value = res.data.restaurant.wallet_balance || 0;
 
-        const formatDate = (iso) => {
-            if (!iso) return '—';
-            const d = new Date(iso);
-            return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        };
+          const txRes = await api.get("/admin/billing/transactions");
+          transactions.value = txRes.data;
+        }
+      } catch (err) {
+        console.error("[Billing] error loading balance or transactions", err);
+      } finally {
+        loading.value = false;
+      }
+    });
 
-        const getTransactionReference = (tx) => {
-            if (tx.type === 'CREDIT' || tx.transaction_type === 'CREDIT' || tx.amount > 0) {
-                return tx.description || 'Recharge Portefeuille';
-            }
-            if (tx.order && tx.order.tracking_code) {
-                return `#${tx.order.tracking_code}`;
-            }
-            if (tx.order_tracking_code || tx.tracking_code) {
-                return `#${tx.order_tracking_code || tx.tracking_code}`;
-            }
-            if (tx.description && tx.description.includes('#')) {
-                const match = tx.description.match(/#[A-Za-z0-9-]+/);
-                if (match) return match[0];
-            }
-            if (tx.order_id) {
-                return `#${tx.order_id.slice(-6).toUpperCase()}`;
-            }
-            return tx.description || 'Déduction Commande';
-        };
+    const formatDate = (iso) => {
+      if (!iso) return "—";
+      const d = new Date(iso);
+      return d.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    };
 
-        return { balance, transactions, loading, adminRestaurants, formatDate, getTransactionReference };
-    }
+    const getTransactionReference = (tx) => {
+      if (
+        tx.type === "CREDIT" ||
+        tx.transaction_type === "CREDIT" ||
+        tx.amount > 0
+      ) {
+        return tx.description || "Recharge Portefeuille";
+      }
+      if (tx.order && tx.order.tracking_code) {
+        return `#${tx.order.tracking_code}`;
+      }
+      if (tx.order_tracking_code || tx.tracking_code) {
+        return `#${tx.order_tracking_code || tx.tracking_code}`;
+      }
+      if (tx.description && tx.description.includes("#")) {
+        const match = tx.description.match(/#[A-Za-z0-9-]+/);
+        if (match) return match[0];
+      }
+      if (tx.order_id) {
+        return `#${tx.order_id.slice(-6).toUpperCase()}`;
+      }
+      return tx.description || "Déduction Commande";
+    };
+
+    return {
+      balance,
+      transactions,
+      loading,
+      adminRestaurants,
+      formatDate,
+      getTransactionReference,
+    };
+  },
 };

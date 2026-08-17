@@ -1,8 +1,12 @@
-import { ref, onMounted, computed } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-import { api } from '../api.js';
+import {
+  ref,
+  onMounted,
+  computed,
+} from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+import { api } from "../api.js";
 
 export default {
-    template: `
+  template: `
         <div class="flex items-center justify-center min-h-screen animated-bg">
             <div class="glass p-8 rounded-2xl shadow-2xl w-full max-w-md card-hover">
                 <div class="text-center mb-8">
@@ -63,52 +67,66 @@ export default {
             </div>
         </div>
     `,
-    props: ['token', 'isSetup'],
-    emits: ['done'],
-    setup(props, { emit }) {
-        const password = ref('');
-        const confirmPassword = ref('');
-        const loading = ref(false);
-        const error = ref(null);
-        const success = ref(false);
+  props: ["token", "isSetup"],
+  emits: ["done"],
+  setup(props, { emit }) {
+    const password = ref("");
+    const confirmPassword = ref("");
+    const loading = ref(false);
+    const error = ref(null);
+    const success = ref(false);
 
-        const rules = computed(() => ({
-            hasMinLength: password.value.length >= 8,
-            hasNumber:    /\d/.test(password.value),
-            hasUpper:     /[A-Z]/.test(password.value),
-            hasSymbol:    /[!@#$%^&*(),.?":{}|<>]/.test(password.value),
-        }));
+    const rules = computed(() => ({
+      hasMinLength: password.value.length >= 8,
+      hasNumber: /\d/.test(password.value),
+      hasUpper: /[A-Z]/.test(password.value),
+      hasSymbol: /[!@#$%^&*(),.?":{}|<>]/.test(password.value),
+    }));
 
-        const isPasswordStrong = computed(() =>
-            rules.value.hasMinLength &&
-            rules.value.hasNumber &&
-            rules.value.hasUpper &&
-            rules.value.hasSymbol
-        );
+    const isPasswordStrong = computed(
+      () =>
+        rules.value.hasMinLength &&
+        rules.value.hasNumber &&
+        rules.value.hasUpper &&
+        rules.value.hasSymbol,
+    );
 
-        const isFormValid = computed(() =>
-            isPasswordStrong.value &&
-            password.value === confirmPassword.value
-        );
+    const isFormValid = computed(
+      () => isPasswordStrong.value && password.value === confirmPassword.value,
+    );
 
-        const submit = async () => {
-            if (!isFormValid.value) return;
-            loading.value = true;
-            error.value = null;
-            try {
-                const endpoint = props.isSetup ? '/auth/setup-password' : '/auth/reset-password';
-                await api.post(endpoint, {
-                    token: props.token,
-                    new_password: password.value
-                });
-                success.value = true;
-            } catch (err) {
-                error.value = err.response?.data?.detail || 'Failed to set password. The link may be expired.';
-            } finally {
-                loading.value = false;
-            }
-        };
+    const submit = async () => {
+      if (!isFormValid.value) return;
+      loading.value = true;
+      error.value = null;
+      try {
+        const endpoint = props.isSetup
+          ? "/auth/setup-password"
+          : "/auth/reset-password";
+        await api.post(endpoint, {
+          token: props.token,
+          new_password: password.value,
+        });
+        success.value = true;
+      } catch (err) {
+        error.value =
+          err.response?.data?.detail ||
+          "Failed to set password. The link may be expired.";
+      } finally {
+        loading.value = false;
+      }
+    };
 
-        return { password, confirmPassword, loading, error, success, submit, rules, isPasswordStrong, isFormValid };
-    }
-}
+    return {
+      password,
+      confirmPassword,
+      loading,
+      error,
+      success,
+      submit,
+      rules,
+      isPasswordStrong,
+      isFormValid,
+    };
+  },
+};

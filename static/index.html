@@ -1,131 +1,150 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#121212">
-    <meta name="description" content="GEQO — WhatsApp-first ordering platform admin dashboard for restaurant operators and super-admins.">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#121212" />
+    <meta
+      name="description"
+      content="GEQO — WhatsApp-first ordering platform admin dashboard for restaurant operators and super-admins."
+    />
     <title>GEQO — Dashboard & KDS</title>
-    <link rel="manifest" href="/manifest.json?v=2">
-    <link rel="icon" type="image/svg+xml" href="/img/geqo-emblem.svg">
-    <link rel="shortcut icon" href="/img/geqo-emblem.svg">
+    <link rel="manifest" href="/manifest.json?v=2" />
+    <link rel="icon" type="image/svg+xml" href="/img/geqo-emblem.svg" />
+    <link rel="shortcut icon" href="/img/geqo-emblem.svg" />
 
     <!-- Fonts: Plus Jakarta Sans (Latin) + Cairo (Arabic / Darija) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800&family=Cairo:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
 
     <!-- Leaflet Map Integration -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <!-- Tailwind CDN + Direction B Design Tokens -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans:    ['"Plus Jakarta Sans"', 'Cairo', 'sans-serif'],
-                        cairo:   ['Cairo', 'sans-serif'],
-                        jakarta: ['"Plus Jakarta Sans"', 'sans-serif'],
-                    },
-                    colors: {
-                        /* ── Direction B: Maghreb Charcoal & Saffron ── */
-                        canvas:  '#121212',
-                        surface: '#1E1E1E',
-                        saffron: {
-                            DEFAULT: '#F59E0B',
-                            light:   '#FCD34D',
-                            dark:    '#D97706',
-                        },
-                        berry: {
-                            DEFAULT: '#8B5CF6',
-                            light:   '#A78BFA',
-                            dark:    '#7C3AED',
-                        },
-                        emerald: {
-                            DEFAULT: '#10B981',
-                            light:   '#34D399',
-                            dark:    '#059669',
-                        },
-                        harissa: {
-                            DEFAULT: '#EF4444',
-                            light:   '#FCA5A5',
-                            dark:    '#DC2626',
-                        },
-                        /* ── SuperAdmin Pitch-Black Canvas ── */
-                        superadmin: {
-                            bg:      '#0A0A0A',
-                            border:  '#262626',
-                            surface: '#111111',
-                        },
-                    },
-                    animation: {
-                        'urgency-pulse': 'urgencyPulse 1s ease-in-out infinite',
-                        'slide-up':      'slideUp 0.25s ease-out',
-                        'fade-in':       'fadeIn 0.2s ease-out',
-                        'shimmer':       'shimmer 1.5s infinite linear',
-                    },
-                    keyframes: {
-                        urgencyPulse: {
-                            '0%,100%': { boxShadow: '0 0 0 0 rgba(245,158,11,0.4)' },
-                            '50%':     { boxShadow: '0 0 0 8px rgba(245,158,11,0)' },
-                        },
-                        slideUp: {
-                            from: { transform: 'translateY(100%)', opacity: '0' },
-                            to:   { transform: 'translateY(0)',    opacity: '1' },
-                        },
-                        fadeIn: {
-                            from: { opacity: '0' },
-                            to:   { opacity: '1' },
-                        },
-                        shimmer: {
-                            '0%':   { backgroundPosition: '-200% 0' },
-                            '100%': { backgroundPosition:  '200% 0' },
-                        },
-                    },
-                }
-            }
-        }
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', "Cairo", "sans-serif"],
+              cairo: ["Cairo", "sans-serif"],
+              jakarta: ['"Plus Jakarta Sans"', "sans-serif"],
+            },
+            colors: {
+              /* ── Direction B: Maghreb Charcoal & Saffron ── */
+              canvas: "#121212",
+              surface: "#1E1E1E",
+              saffron: {
+                DEFAULT: "#F59E0B",
+                light: "#FCD34D",
+                dark: "#D97706",
+              },
+              berry: {
+                DEFAULT: "#8B5CF6",
+                light: "#A78BFA",
+                dark: "#7C3AED",
+              },
+              emerald: {
+                DEFAULT: "#10B981",
+                light: "#34D399",
+                dark: "#059669",
+              },
+              harissa: {
+                DEFAULT: "#EF4444",
+                light: "#FCA5A5",
+                dark: "#DC2626",
+              },
+              /* ── SuperAdmin Pitch-Black Canvas ── */
+              superadmin: {
+                bg: "#0A0A0A",
+                border: "#262626",
+                surface: "#111111",
+              },
+            },
+            animation: {
+              "urgency-pulse": "urgencyPulse 1s ease-in-out infinite",
+              "slide-up": "slideUp 0.25s ease-out",
+              "fade-in": "fadeIn 0.2s ease-out",
+              shimmer: "shimmer 1.5s infinite linear",
+            },
+            keyframes: {
+              urgencyPulse: {
+                "0%,100%": { boxShadow: "0 0 0 0 rgba(245,158,11,0.4)" },
+                "50%": { boxShadow: "0 0 0 8px rgba(245,158,11,0)" },
+              },
+              slideUp: {
+                from: { transform: "translateY(100%)", opacity: "0" },
+                to: { transform: "translateY(0)", opacity: "1" },
+              },
+              fadeIn: {
+                from: { opacity: "0" },
+                to: { opacity: "1" },
+              },
+              shimmer: {
+                "0%": { backgroundPosition: "-200% 0" },
+                "100%": { backgroundPosition: "200% 0" },
+              },
+            },
+          },
+        },
+      };
     </script>
-    <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="/css/index.css" />
 
     <!-- Axios HTTP client -->
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-</head>
-<body class="bg-canvas text-slate-100 font-sans antialiased min-h-screen">
+  </head>
+  <body class="bg-canvas text-slate-100 font-sans antialiased min-h-screen">
     <div id="app" class="min-h-screen">
-        <!-- Initial auth-check loader -->
-        <div v-if="loading" class="flex flex-col items-center justify-center min-h-screen gap-4">
-            <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-saffron"></div>
-            <span class="text-slate-500 text-xs font-semibold tracking-[0.2em] uppercase">GEQO</span>
-        </div>
+      <!-- Initial auth-check loader -->
+      <div
+        v-if="loading"
+        class="flex flex-col items-center justify-center min-h-screen gap-4"
+      >
+        <div
+          class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-saffron"
+        ></div>
+        <span
+          class="text-slate-500 text-xs font-semibold tracking-[0.2em] uppercase"
+          >GEQO</span
+        >
+      </div>
 
+      <template v-else>
+        <!-- Password reset / account setup (URL token flow) -->
+        <reset-password
+          v-if="resetToken"
+          :token="resetToken"
+          :is-setup="isSetup"
+          @done="handlePasswordResetDone"
+        >
+        </reset-password>
+
+        <!-- Standard authenticated flow -->
         <template v-else>
-            <!-- Password reset / account setup (URL token flow) -->
-            <reset-password
-                v-if="resetToken"
-                :token="resetToken"
-                :is-setup="isSetup"
-                @done="handlePasswordResetDone">
-            </reset-password>
-
-            <!-- Standard authenticated flow -->
-            <template v-else>
-                <login v-if="!user" @login="handleLogin"></login>
-                <template v-else>
-                    <force-password-change
-                        v-if="user.requires_password_change"
-                        :user="user"
-                        @updated="handleForcePasswordUpdated">
-                    </force-password-change>
-                    <dashboard v-else :user="user" @logout="handleLogout"></dashboard>
-                </template>
-            </template>
+          <login v-if="!user" @login="handleLogin"></login>
+          <template v-else>
+            <force-password-change
+              v-if="user.requires_password_change"
+              :user="user"
+              @updated="handleForcePasswordUpdated"
+            >
+            </force-password-change>
+            <dashboard v-else :user="user" @logout="handleLogout"></dashboard>
+          </template>
         </template>
+      </template>
     </div>
     <!-- API Config moved to js/api.js -->
     <script type="module" src="/js/app.js"></script>
-</body>
+  </body>
 </html>
