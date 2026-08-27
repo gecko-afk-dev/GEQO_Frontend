@@ -96,7 +96,7 @@ export default {
                         <div>
                             <h4 class="text-xs font-black font-mono text-amber-500 tracking-widest uppercase mb-4">Top Up Instructions</h4>
                             <p class="text-xs text-neutral-400 mb-6 font-mono leading-relaxed">
-                                Make a bank transfer using the details below. Send the transfer receipt (screenshot) to our WhatsApp Support. Your wallet will be credited within 2-4 hours.
+                                Make a bank transfer using the details below. Send the transfer receipt (screenshot) to <a href="mailto:support@mygeqo.com?subject=Re%C3%A7u%20de%20virement" class="text-emerald-400 hover:underline font-bold">support@mygeqo.com</a>. Your wallet will be credited within 2-4 hours.
                             </p>
                         </div>
                         <div class="bg-[#0A0A0A] border border-neutral-800 p-6 space-y-4 font-mono text-xs">
