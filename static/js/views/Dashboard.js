@@ -242,12 +242,12 @@ export default {
                     <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🔒</div>
                     <h3 class="text-xl font-bold text-slate-900 mb-2">Fonctionnalité Verrouillée</h3>
                     <p class="text-slate-600 mb-6 text-sm">
-                        Cette fonctionnalité nécessite le forfait Scale (1 299 DH/mois). Cliquez ici pour demander une mise à niveau via WhatsApp.
+                        Cette fonctionnalité nécessite le forfait Scale (1 299 DH/mois). Cliquez ici pour demander une mise à niveau par email.
                     </p>
                     <div class="flex gap-3 justify-center">
                         <button @click="showUpgradeModal = false" class="px-5 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors">Fermer</button>
-                        <a href="https://wa.me/212628005370?text=Bonjour,%20je%20souhaite%20passer%20au%20forfait%20Scale" target="_blank" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
-                            <i class="fab fa-whatsapp"></i> Contacter l'équipe
+                        <a href="mailto:sales@mygeqo.com?subject=Demande%20de%20mise%20%C3%A0%20niveau%20-%20Forfait%20Scale&body=Bonjour%2C%20je%20souhaite%20passer%20au%20forfait%20Scale." class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2">
+                            <i class="fas fa-envelope"></i> Contacter l'équipe
                         </a>
                     </div>
                 </div>
