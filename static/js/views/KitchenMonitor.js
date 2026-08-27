@@ -218,6 +218,22 @@ export default {
     let timer = null;
     let pollingTimer = null;
 
+    // Escapes any value that gets interpolated into the raw HTML strings built
+    // by renderTicketHeader/renderTicketItems below (both rendered via v-html).
+    // Order/menu data — tracking codes, statuses, item names, modifier names,
+    // exclusion ingredient names — is restaurant-editable and was previously
+    // interpolated unescaped, allowing a malicious menu item/modifier/exclusion
+    // name to execute as script for every KDS viewer.
+    const escapeHtml = (value) => {
+      if (value === null || value === undefined) return "";
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    };
+
     const getItemName = (item) => {
       if (!item) return "Article Inconnu";
       const lang = props.lang || "fr";
@@ -317,9 +333,9 @@ export default {
       return `
                 <div class="px-4 py-4 border-b ${borderClass} flex justify-between items-start ${bgClass}">
                     <div>
-                        <span class="font-mono text-2xl font-bold text-[#F59E0B]">#${order.tracking_code || order.id}</span>
+                        <span class="font-mono text-2xl font-bold text-[#F59E0B]">#${escapeHtml(order.tracking_code || order.id)}</span>
                         <div class="text-[10px] font-mono tracking-widest text-neutral-500 mt-1 uppercase flex items-center gap-1">
-                            <span class="inline-block px-1.5 py-0.5 rounded-sm bg-${textColor.split("-")[0]}-500/10 text-${textColor} font-bold">${order.status}</span>
+                            <span class="inline-block px-1.5 py-0.5 rounded-sm bg-${textColor.split("-")[0]}-500/10 text-${textColor} font-bold">${escapeHtml(order.status)}</span>
                             ${method}
                         </div>
                     </div>
@@ -341,13 +357,13 @@ export default {
                 obj.name_fr ||
                 obj.name_en ||
                 "";
-              return `<div class="text-amber-400 font-medium text-sm pl-4">+ ${modName}</div>`;
+              return `<div class="text-amber-400 font-medium text-sm pl-4">+ ${escapeHtml(modName)}</div>`;
             })
             .join("");
           const exclusionsHtml = (item.exclusions || [])
             .map(
               (e) =>
-                `<div class="text-red-400 font-medium text-sm pl-4">- SANS ${e.ingredient_name.toUpperCase()}</div>`,
+                `<div class="text-red-400 font-medium text-sm pl-4">- SANS ${escapeHtml(e.ingredient_name.toUpperCase())}</div>`,
             )
             .join("");
           return `
@@ -355,7 +371,7 @@ export default {
                         <span class="text-lg font-black font-mono text-neutral-500 shrink-0">${item.quantity}x</span>
                         <div class="flex-1 min-w-0">
                             <div dir="auto" class="text-lg font-bold text-neutral-50 leading-tight font-sans">
-                                ${getItemName(item)}
+                                ${escapeHtml(getItemName(item))}
                             </div>
                             <div class="mt-1">${modsHtml}${exclusionsHtml}</div>
                         </div>
