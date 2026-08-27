@@ -5,7 +5,8 @@
   "scripts": {
     "lint": "eslint \"static/js/**/*.js\"",
     "lint:fix": "eslint \"static/js/**/*.js\" --fix",
-    "format": "prettier --write \"static/**/*.{js,html,css}\""
+    "format": "prettier --write \"static/**/*.{js,html,css}\"",
+    "build": "echo 'No build step: GEQO_Frontend serves static ES modules directly.'"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
