@@ -95,6 +95,11 @@ export default {
                                 <div v-html="renderTicketHeader(order, 'amber-500')"></div>
                                 <div class="px-4 py-3 space-y-3 flex-1" v-html="renderTicketItems(order)"></div>
                                 <div class="px-4 pb-4 shrink-0">
+                                    <button v-if="isNativeApp" @click="printOrder(order)" class="w-full h-9 mb-2 border border-neutral-700 text-neutral-400 hover:bg-neutral-800 font-mono text-[10px] font-black tracking-widest uppercase flex items-center justify-center gap-2">
+                                        <span v-if="printStatus[order.id] === 'printing'">⏳ PRINTING…</span>
+                                        <span v-else-if="printStatus[order.id] === 'error'">⚠️ PRINT FAILED — RETRY</span>
+                                        <span v-else>🖨️ PRINT TICKET</span>
+                                    </button>
                                     <button @click="promptTransition(order, 'preparing')" class="w-full h-14 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 font-black font-mono text-xs tracking-widest uppercase flex items-center justify-center">
                                         ACCEPTER
                                     </button>
@@ -114,6 +119,11 @@ export default {
                                 <div v-html="renderTicketHeader(order, 'blue-400')"></div>
                                 <div class="px-4 py-3 space-y-3 flex-1" v-html="renderTicketItems(order)"></div>
                                 <div class="px-4 pb-4 shrink-0">
+                                    <button v-if="isNativeApp" @click="printOrder(order)" class="w-full h-9 mb-2 border border-neutral-700 text-neutral-400 hover:bg-neutral-800 font-mono text-[10px] font-black tracking-widest uppercase flex items-center justify-center gap-2">
+                                        <span v-if="printStatus[order.id] === 'printing'">⏳ PRINTING…</span>
+                                        <span v-else-if="printStatus[order.id] === 'error'">⚠️ PRINT FAILED — RETRY</span>
+                                        <span v-else>🖨️ PRINT TICKET</span>
+                                    </button>
                                     <button @click="promptTransition(order, 'ready')" class="w-full h-14 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 font-black font-mono text-xs tracking-widest uppercase flex items-center justify-center">
                                         PRÊT
                                     </button>
@@ -133,6 +143,11 @@ export default {
                                 <div v-html="renderTicketHeader(order, 'emerald-400')"></div>
                                 <div class="px-4 py-3 space-y-3 flex-1" v-html="renderTicketItems(order)"></div>
                                 <div class="px-4 pb-4 shrink-0 space-y-2">
+                                    <button v-if="isNativeApp" @click="printOrder(order)" class="w-full h-9 mb-2 border border-neutral-700 text-neutral-400 hover:bg-neutral-800 font-mono text-[10px] font-black tracking-widest uppercase flex items-center justify-center gap-2">
+                                        <span v-if="printStatus[order.id] === 'printing'">⏳ PRINTING…</span>
+                                        <span v-else-if="printStatus[order.id] === 'error'">⚠️ PRINT FAILED — RETRY</span>
+                                        <span v-else>🖨️ PRINT TICKET</span>
+                                    </button>
                                     <select v-if="order.fulfillment_method === 'delivery'" v-model="selectedDrivers[order.id]" class="w-full bg-[#0A0A0A] border border-neutral-800 text-neutral-300 font-mono text-xs px-2 py-2 outline-none">
                                         <option value="">— Broadcast to Fleet —</option>
                                         <option v-for="d in drivers" :key="d.id" :value="d.id">{{ d.name }}</option>
@@ -156,6 +171,11 @@ export default {
                                 <div v-html="renderTicketHeader(order, 'neutral-400')"></div>
                                 <div class="px-4 py-3 space-y-3 flex-1" v-html="renderTicketItems(order)"></div>
                                 <div class="px-4 pb-4 shrink-0">
+                                    <button v-if="isNativeApp" @click="printOrder(order)" class="w-full h-9 mb-2 border border-neutral-700 text-neutral-400 hover:bg-neutral-800 font-mono text-[10px] font-black tracking-widest uppercase flex items-center justify-center gap-2">
+                                        <span v-if="printStatus[order.id] === 'printing'">⏳ PRINTING…</span>
+                                        <span v-else-if="printStatus[order.id] === 'error'">⚠️ PRINT FAILED — RETRY</span>
+                                        <span v-else>🖨️ PRINT TICKET</span>
+                                    </button>
                                     <div class="w-full py-3 bg-neutral-800/50 text-neutral-400 text-center font-black font-mono text-xs tracking-widest uppercase">
                                         {{ order.status }}
                                     </div>
@@ -172,6 +192,11 @@ export default {
                             <div v-html="renderTicketHeader(order, mobileColor(order.status))"></div>
                             <div class="px-4 py-3" v-html="renderTicketItems(order)"></div>
                             <div class="px-4 pb-4">
+                                <button v-if="isNativeApp" @click="printOrder(order)" class="w-full h-9 mb-2 border border-neutral-700 text-neutral-400 hover:bg-neutral-800 font-mono text-[10px] font-black tracking-widest uppercase flex items-center justify-center gap-2">
+                                    <span v-if="printStatus[order.id] === 'printing'">⏳ PRINTING…</span>
+                                    <span v-else-if="printStatus[order.id] === 'error'">⚠️ PRINT FAILED — RETRY</span>
+                                    <span v-else>🖨️ PRINT TICKET</span>
+                                </button>
                                 <button v-if="['received','accepted'].includes(order.status)" @click="promptTransition(order, 'preparing')" class="w-full h-14 bg-amber-500/10 text-amber-500 border border-amber-500/30 font-black font-mono text-xs tracking-widest uppercase flex items-center justify-center">ACCEPTER</button>
                                 <button v-else-if="order.status === 'preparing'" @click="promptTransition(order, 'ready')" class="w-full h-14 bg-blue-500/10 text-blue-400 border border-blue-500/30 font-black font-mono text-xs tracking-widest uppercase flex items-center justify-center">PRÊT</button>
                                 <button v-else-if="order.status === 'ready'" @click="promptTransition(order, 'dispatched')" class="w-full h-14 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-black font-mono text-xs tracking-widest uppercase flex items-center justify-center">LIVRÉ</button>
@@ -213,6 +238,8 @@ export default {
     const activeTab = ref("pending");
     const selectedDrivers = ref({});
     const pendingTransition = ref(null);
+    const isNativeApp = computed(() => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()));
+    const printStatus = ref({});
 
     let ws = null;
     let timer = null;
@@ -380,6 +407,33 @@ export default {
         .join("");
     };
 
+    const buildPrintableTicket = (order) => {
+      const method = order.fulfillment_method === "delivery" ? "DELIVERY" : "PICKUP";
+      const lines = [];
+      lines.push("[C]<b>GEQO</b>");
+      lines.push("[C]<b>KITCHEN TICKET</b>");
+      lines.push("[L]");
+      lines.push(`[L]<b>#${order.tracking_code || order.id}</b>`);
+      lines.push(`[L]${method}`);
+      lines.push("[L]--------------------------------");
+      (order.items || []).forEach((item) => {
+        lines.push(`[L]<b>${item.quantity}x</b> ${getItemName(item)}`);
+        (item.modifiers || []).forEach((m) => {
+          const obj = m.modifier_option || m;
+          const modName = obj["name_" + (props.lang || "fr")] || obj.name_fr || obj.name_en || "";
+          if (modName) lines.push(`[L]  + ${modName}`);
+        });
+        (item.exclusions || []).forEach((e) => {
+          lines.push(`[L]  - SANS ${(e.ingredient_name || "").toUpperCase()}`);
+        });
+      });
+      lines.push("[L]--------------------------------");
+      lines.push(`[L]${new Date().toLocaleString()}`);
+      lines.push("[L]");
+      lines.push("[L]");
+      return lines.join("\n");
+    };
+
     const pendingTransitionLabel = computed(() => {
       if (!pendingTransition.value) return "";
       return pendingTransition.value.to.toUpperCase();
@@ -420,6 +474,19 @@ export default {
         await loadOrders();
       } catch (err) {
         console.error("[KDS] status update failed", err);
+      }
+    };
+
+    const printOrder = async (order) => {
+      if (!isNativeApp.value || !window.Capacitor?.Plugins?.GeqoPrinter) return;
+      printStatus.value = { ...printStatus.value, [order.id]: "printing" };
+      try {
+        const formattedText = buildPrintableTicket(order);
+        await window.Capacitor.Plugins.GeqoPrinter.printTicket({ formattedText });
+        printStatus.value = { ...printStatus.value, [order.id]: "idle" };
+      } catch (err) {
+        console.error("[KDS] print failed", err);
+        printStatus.value = { ...printStatus.value, [order.id]: "error" };
       }
     };
 
@@ -572,6 +639,9 @@ export default {
       promptTransition,
       executeTransition,
       toggleSound,
+      isNativeApp,
+      printStatus,
+      printOrder,
     };
   },
 };
