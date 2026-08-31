@@ -158,7 +158,7 @@ export default {
                                 class="px-4 py-2 rounded-lg text-sm transition-all whitespace-nowrap flex items-center gap-1">
                             {{ t('📊 Insights & Rapports') }}
                         </button>
-
+                        
                         <!-- GEQO Boost Campaigns: Admin + Restaurant Owner -->
                         <button v-if="['admin', 'restaurant_owner'].includes(user.role)"
                                 @click="handleNavClick('campaigns', 'campaigns')"
