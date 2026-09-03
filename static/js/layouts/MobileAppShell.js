@@ -4,12 +4,13 @@ import OrdersManager from '../views/OrdersManager.js';
 import MenuManager from '../views/MenuManager.js';
 import DriversManager from '../views/DriversManager.js';
 import DeliveryManager from '../views/DeliveryManager.js';
+import Settings from '../views/Settings.js';
 
 export default {
   name: 'MobileAppShell',
   template: `
         <div class="min-h-screen bg-slate-50 flex flex-col">
-            <!-- Top bar: logo, wallet badge, store-open toggle, sign out. No language switcher, no nav row. -->
+            <!-- Top bar: logo, wallet badge, store-open toggle, language switcher, settings, sign out. No nav row (see bottom tab bar). -->
             <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shrink-0">
                 <div class="flex justify-between items-center h-14 px-4">
                     <button @click="currentView = 'overview'" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -18,7 +19,7 @@ export default {
                             GE<span style="color:#F59E0B;">QO</span>
                         </span>
                     </button>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-1.5">
                         <span v-if="user.role === 'restaurant_owner'"
                               class="text-xs font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap"
                               :class="walletBadgeClass">
@@ -37,6 +38,21 @@ export default {
                             <template v-if="!isAcceptingOrders">🔴</template>
                             <template v-else-if="!isOpenBySchedule">🟡</template>
                             <template v-else>🟢</template>
+                        </button>
+                        <div class="flex items-center bg-slate-100 rounded-lg p-0.5">
+                            <button @click="setLanguage('en')" :class="currentLang === 'en' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'" class="px-1.5 py-1 rounded text-[9px] font-bold transition-colors">EN</button>
+                            <button @click="setLanguage('fr')" :class="currentLang === 'fr' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'" class="px-1.5 py-1 rounded text-[9px] font-bold transition-colors">FR</button>
+                            <button @click="setLanguage('ar')" :class="currentLang === 'ar' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'" class="px-1.5 py-1 rounded text-[9px] font-bold transition-colors">AR</button>
+                        </div>
+                        <button @click="currentView = 'settings'"
+                                :title="t('Settings')"
+                                :aria-label="t('Settings')"
+                                class="p-2 rounded-lg transition-colors"
+                                :class="currentView === 'settings' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
                         </button>
                         <button @click="$emit('logout')"
                                 :title="t('Sign Out')"
@@ -118,6 +134,7 @@ export default {
     MenuManager,
     DriversManager,
     DeliveryManager,
+    Settings,
   },
   props: {
     user: Object,

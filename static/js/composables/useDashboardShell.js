@@ -19,6 +19,7 @@ const translations = {
     '💳 Billing': '💳 Billing',
     '📊 Insights & Rapports': '📊 Insights & Reports',
     'Sign Out': 'Sign Out',
+    Settings: 'Settings',
   },
   fr: {
     Overview: 'Aperçu',
@@ -32,6 +33,7 @@ const translations = {
     '💳 Billing': '💳 Facturation',
     '📊 Insights & Rapports': '📊 Insights & Rapports',
     'Sign Out': 'Déconnexion',
+    Settings: 'Paramètres',
   },
   ar: {
     Overview: 'نظرة عامة',
@@ -45,6 +47,7 @@ const translations = {
     '💳 Billing': '💳 الفواتير',
     '📊 Insights & Rapports': '📊 التقارير',
     'Sign Out': 'تسجيل الخروج',
+    Settings: 'الإعدادات',
   },
 };
 

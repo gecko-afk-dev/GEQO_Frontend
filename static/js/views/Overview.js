@@ -5,6 +5,15 @@
  * Active Kitchens, Suspended Kitchens, and 24h Order Volume.
  *
  * For restaurant_owner / cashier: today's stats in the dark surface theme.
+ *
+ * NOTE: the "Today's Overview" heading below was authored against a dark
+ * canvas but actually renders on the shell's light bg-slate-50 background,
+ * so it is a near-invisible light-on-light heading (text-slate-100 on
+ * bg-slate-50). That contrast bug is pre-existing and affects desktop too,
+ * but on the compact tablet/mobile layout it's dead weight with no content
+ * of its own (the stat cards below already cover "today"), so it is hidden
+ * on the app-shell (tablet/phone) breakpoint. Desktop rendering is
+ * unchanged.
  */
 import {
   ref,
@@ -12,6 +21,7 @@ import {
   onMounted,
 } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
 import { api } from "../api.js";
+import { useDeviceClass } from "../composables/useDeviceClass.js";
 
 // ── Reusable stat card component ──────────────────────────────────────────
 const AdminStatCard = {
@@ -189,7 +199,7 @@ export default {
 
             <!-- ════ RESTAURANT OWNER / CASHIER VIEW ════ -->
             <template v-else-if="['restaurant_owner', 'cashier'].includes(user.role)">
-                <div>
+                <div v-if="!isAppShell">
                     <h2 class="text-2xl font-black text-slate-100">Today's Overview</h2>
                     <p class="text-sm text-slate-500 mt-0.5">{{ new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) }}</p>
                 </div>
@@ -214,6 +224,7 @@ export default {
     const loading = ref(true);
     const adminStats = ref({});
     const ownerStats = ref({ orders: 0, revenue: 0 });
+    const { isAppShell } = useDeviceClass();
 
     const fmt = (v, unit = "") =>
       v != null ? `${Number(v).toLocaleString("fr-MA")} ${unit}`.trim() : "—";
@@ -253,6 +264,7 @@ export default {
       fmt,
       fmtMAD,
       avgOrderValue,
+      isAppShell,
     };
   },
 };
