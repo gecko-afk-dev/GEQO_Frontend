@@ -1,4 +1,5 @@
 import {
+  inject,
   ref,
   onMounted,
 } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
@@ -176,10 +177,35 @@ export default {
                 </div>
             </div>
 
+            <!-- Link out to the read-only WhatsApp template preview -->
+            <button @click="openMessageTemplates"
+                    id="settings-message-templates-link"
+                    class="card-dark p-5 w-full flex items-center gap-4 text-left card-hover transition-all duration-200">
+                <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0"
+                     style="background: rgba(16,185,129,0.15); color: #10B981;">💬</div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-slate-100">WhatsApp Message Templates</p>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        See the messages your customers receive at each step of their order
+                    </p>
+                </div>
+                <svg class="w-5 h-5 text-slate-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+
         </div>
     `,
   setup() {
     const activeTab = ref("profile");
+
+    // Navigate to the message-templates view via the shared dashboard shell.
+    // inject() is guarded so Settings still renders if it is ever mounted
+    // outside Dashboard.js (which is what provides 'dashboardShell').
+    const shell = inject("dashboardShell", null);
+    const openMessageTemplates = () => {
+      if (shell?.currentView) shell.currentView.value = "message-templates";
+    };
 
     const weeklyHours = ref([
       { day: "Monday", isOpen: true, open: "11:00", close: "23:30" },
@@ -431,6 +457,7 @@ export default {
 
     return {
       activeTab,
+      openMessageTemplates,
       profile,
       form,
       loading,
