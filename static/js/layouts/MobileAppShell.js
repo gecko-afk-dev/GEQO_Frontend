@@ -5,6 +5,7 @@ import MenuManager from '../views/MenuManager.js';
 import DriversManager from '../views/DriversManager.js';
 import DeliveryManager from '../views/DeliveryManager.js';
 import Settings from '../views/Settings.js';
+import MessageTemplates from '../views/MessageTemplates.js';
 
 export default {
   name: 'MobileAppShell',
@@ -135,6 +136,7 @@ export default {
     DriversManager,
     DeliveryManager,
     Settings,
+    MessageTemplates,
   },
   props: {
     user: Object,

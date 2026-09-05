@@ -309,8 +309,22 @@ export default {
                                     <input v-model="form.wa_phone_number" id="form-phone" type="text" class="input-dark" placeholder="+212600000000">
                                 </div>
                                 <div class="col-span-2">
-                                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Meta Phone Number ID</label>
+                                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                                        Meta Phone Number ID
+                                        <span class="text-slate-700 normal-case font-normal ml-1">(sends messages)</span>
+                                    </label>
                                     <input v-model="form.phone_number_id" id="form-phone-id" type="text" class="input-dark">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                                        Meta WABA ID
+                                        <span class="text-slate-700 normal-case font-normal ml-1">(owns message templates)</span>
+                                    </label>
+                                    <input v-model="form.waba_id" id="form-waba-id" type="text" class="input-dark" placeholder="1234567890123456">
+                                    <p class="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
+                                        The WhatsApp Business Account ID — <span class="text-slate-500 font-semibold">not</span> the Phone Number ID above.
+                                        They are different Meta identifiers. Required to publish this restaurant's order-lifecycle message templates.
+                                    </p>
                                 </div>
                                 <div class="col-span-2">
                                     <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
@@ -396,6 +410,19 @@ export default {
                                            type="text" class="input-dark"
                                            placeholder="+212600000000">
                                 </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                        Meta WABA ID
+                                    </label>
+                                    <input v-model="provisionForm.waba_id"
+                                           id="provision-waba-id"
+                                           type="text" class="input-dark"
+                                           placeholder="1234567890123456">
+                                    <p class="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
+                                        Distinct from the Phone Number ID above. Can be added later from Edit Restaurant,
+                                        but order-lifecycle message templates cannot be published until it is set.
+                                    </p>
+                                </div>
                             </div>
 
                             <div v-if="provisionError" class="p-3 rounded-xl bg-harissa/10 border border-harissa/30 text-harissa text-sm">
@@ -478,6 +505,7 @@ export default {
       wa_phone_number: "",
       api_token: "",
       phone_number_id: "",
+      waba_id: "",
       owner_wa_id: "",
       cuisine_type: "",
       contact_email: "",
@@ -492,7 +520,7 @@ export default {
     const leadsLoading = ref(false);
     const showProvision = ref(false);
     const provisionLead = ref(null);
-    const provisionForm = ref({ phone_number_id: "", wa_phone_number: "" });
+    const provisionForm = ref({ phone_number_id: "", wa_phone_number: "", waba_id: "" });
     const provisionError = ref("");
     const provisionLoading = ref(false);
     const toast = ref("");
@@ -608,6 +636,7 @@ export default {
         wa_phone_number: r.wa_phone_number || "",
         api_token: r.api_token || "",
         phone_number_id: r.phone_number_id || "",
+        waba_id: r.waba_id || "",
         owner_wa_id: r.owner_wa_id || "",
         cuisine_type: r.cuisine_type || "",
         contact_email: r.contact_email || "",
@@ -623,11 +652,14 @@ export default {
         error.value = "Restaurant name is required.";
         return;
       }
+      // Send a blank WABA ID as null rather than "", so the column stays NULL
+      // when it has not been captured yet.
+      const payload = { ...form.value, waba_id: form.value.waba_id?.trim() || null };
       try {
         if (editingId.value) {
-          await api.put(`/admin/restaurants/${editingId.value}`, form.value);
+          await api.put(`/admin/restaurants/${editingId.value}`, payload);
         } else {
-          await api.post("/admin/restaurants", form.value);
+          await api.post("/admin/restaurants", payload);
         }
         showCreate.value = false;
         editingId.value = null;
@@ -679,6 +711,7 @@ export default {
       provisionForm.value = {
         phone_number_id: "",
         wa_phone_number: lead.whatsapp_number || "",
+        waba_id: "",
       };
       provisionError.value = "";
       showProvision.value = true;
@@ -706,7 +739,10 @@ export default {
       try {
         await api.post(
           `/admin/beta-signups/${provisionLead.value.id}/provision`,
-          provisionForm.value,
+          {
+            ...provisionForm.value,
+            waba_id: provisionForm.value.waba_id?.trim() || null,
+          },
         );
         leads.value = leads.value.filter(
           (l) => l.id !== provisionLead.value.id,

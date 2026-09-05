@@ -252,6 +252,8 @@ export function useDashboardShell(user) {
         return 'AuditLog';
       case 'settings':
         return 'Settings';
+      case 'message-templates':
+        return 'MessageTemplates';
       case 'billing':
         return 'Billing';
       case 'insights':

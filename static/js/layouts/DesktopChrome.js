@@ -8,6 +8,7 @@ import DeliveryManager from '../views/DeliveryManager.js';
 import StaffManager from '../views/StaffManager.js';
 import AuditLog from '../views/AuditLog.js';
 import Settings from '../views/Settings.js';
+import MessageTemplates from '../views/MessageTemplates.js';
 import Billing from '../views/Billing.js';
 import SuperAdminInsights from '../views/SuperAdminInsights.js';
 
@@ -215,6 +216,7 @@ export default {
     StaffManager,
     AuditLog,
     Settings,
+    MessageTemplates,
     Billing,
     SuperAdminInsights,
   },
